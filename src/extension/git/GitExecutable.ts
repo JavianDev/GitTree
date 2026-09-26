@@ -126,18 +126,37 @@ export class GitExecutable {
     return new Promise((resolve, reject) => {
       const child = spawn(candidate, ['--version'], { shell: false, windowsHide: true });
       let out = '';
+      let finished = false;
+
+      const timeout = setTimeout(() => {
+        if (!finished) {
+          finished = true;
+          child.kill();
+          reject(new Error(`timeout waiting for git version (${candidate})`));
+        }
+      }, 5000);
 
       child.stdout.on('data', (chunk: Buffer) => {
         out += chunk.toString('utf8');
       });
-      child.on('error', reject);
-      child.on('close', () => {
-        const parsed = parseVersion(out);
-        if (!parsed) {
-          reject(new Error(`unexpected --version output: ${out.trim() || '(empty)'}`));
-          return;
+      child.on('error', (error) => {
+        if (!finished) {
+          finished = true;
+          clearTimeout(timeout);
+          reject(error);
         }
-        resolve(parsed);
+      });
+      child.on('close', () => {
+        if (!finished) {
+          finished = true;
+          clearTimeout(timeout);
+          const parsed = parseVersion(out);
+          if (!parsed) {
+            reject(new Error(`unexpected --version output: ${out.trim() || '(empty)'}`));
+            return;
+          }
+          resolve(parsed);
+        }
       });
     });
   }
