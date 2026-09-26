@@ -316,7 +316,9 @@ export function AppShell(): React.JSX.Element {
         model={repositories}
         openIds={openIds}
         onClose={closeTab}
-        onAdd={() => repositories.refresh()}
+        onAdd={() => {
+          void rpc.request('repos/openFolder', undefined).catch(() => undefined);
+        }}
       />
 
       <Toolbar

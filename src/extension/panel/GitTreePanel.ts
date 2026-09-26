@@ -186,6 +186,19 @@ export class GitTreePanel {
 
     'repos/rescan': async () => ({ nodes: await this.manager.rescan() }),
 
+    'repos/openFolder': async () => {
+      const folder = await vscode.window.showOpenDialog({
+        canSelectFiles: false,
+        canSelectFolders: true,
+        canSelectMany: false,
+        title: 'Open Repository or Workspace',
+      });
+
+      if (folder && folder[0]) {
+        await vscode.commands.executeCommand('vscode.openFolder', folder[0], false);
+      }
+    },
+
     'repos/activate': async ({ repoId }) => {
       this.manager.setActive(repoId);
       const state = await this.manager.refreshState(repoId);

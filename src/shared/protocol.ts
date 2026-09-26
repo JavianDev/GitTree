@@ -94,6 +94,7 @@ export interface Api {
   /* Repositories */
   'repos/list': { params: void; result: { nodes: RepoNode[]; activeId?: RepoId } };
   'repos/rescan': { params: void; result: { nodes: RepoNode[] } };
+  'repos/openFolder': { params: void; result: void };
   'repos/activate': { params: { repoId: RepoId }; result: RepoState };
   'repos/state': { params: { repoId: RepoId }; result: RepoState };
 
