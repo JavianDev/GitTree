@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { COMMANDS, type CommandId, type CommandSpec } from '@shared/commands';
+import { COMMANDS, type CommandId, type CommandSpec, renderCommand, tokenize } from '@shared/commands';
 import type { Commit, RefEntry } from '@shared/model';
 import { CommandLog } from '../features/commands/CommandLog';
 import { type CommandOption, CommandSheet } from '../features/commands/CommandSheet';
@@ -189,6 +189,36 @@ export function AppShell(): React.JSX.Element {
     if (ref.kind !== 'stash') setFocusHash(ref.oid);
   }, []);
 
+  const checkoutRef = useCallback(
+    (ref: RefEntry) => {
+      selectRef(ref);
+      if (!active) return;
+      if (ref.kind === 'localBranch') {
+        const commandText = renderCommand(COMMANDS['branch.checkout'], { branch: ref.name }).replace(
+          /^git /,
+          '',
+        );
+        const argv = tokenize(commandText);
+        void rpc
+          .request('commands/run', { repoId: active.id, argv })
+          .then(() => repositories.refresh())
+          .catch(() => undefined);
+      } else if (ref.kind === 'stash') {
+        // Stash pop for now — TODO: add UI to choose pop/apply
+        const commandText = renderCommand(COMMANDS['stash.pop'], { stashRef: ref.name }).replace(
+          /^git /,
+          '',
+        );
+        const argv = tokenize(commandText);
+        void rpc
+          .request('commands/run', { repoId: active.id, argv })
+          .then(() => repositories.refresh())
+          .catch(() => undefined);
+      }
+    },
+    [active, selectRef, repositories],
+  );
+
   const actions = useMemo<Partial<Record<CommandId, ToolbarAction>>>(() => {
     const branch = activeState?.branch;
 
@@ -335,7 +365,7 @@ export function AppShell(): React.JSX.Element {
             revision={repositories.revision}
             selectedRef={selectedRef}
             onSelect={selectRef}
-            onCheckout={selectRef}
+            onCheckout={checkoutRef}
           />
         ) : (
           <nav className="gt-sidebar" aria-label="Repository objects" />
