@@ -271,33 +271,8 @@ remaining SourceTree surfaces (git-flow, submodule management, patch create/appl
 
 ---
 
-## Contributing
-
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the extension is put together and
-where the sharp edges are, and [CHANGELOG.md](CHANGELOG.md) for release history.
-
-```bash
-npm install        # also points core.hooksPath at .githooks
-npm run build      # both bundles, ~4s
-npm test           # 448 tests, incl. integration tests against real git
-npm run verify     # typecheck + tests, the same check the hook runs
-```
-
-Press <kbd>F5</kbd> to launch an Extension Development Host. It runs the **gittree: bundle**
-task first — declared in `.vscode/tasks.json` rather than relying on `npm:` task auto-detection,
-which can be switched off and then fails F5 with "Could not find the task".
-
-**Typechecking happens at commit, not at build.** esbuild and vite both erase TypeScript without
-checking it, so the check has to live somewhere — but putting it in `npm run build` taxed every
-F5 with two full `tsc` passes to catch something that only matters once. `.githooks/pre-commit`
-runs it instead; `npm install` installs the hooks path, and `git commit --no-verify` bypasses it.
-
-There is also a **Run GitTree (clean host)** configuration that launches with
-`--disable-extensions`, which is how to tell whether console output is GitTree's or another
-extension's.
-
-Press <kbd>F5</kbd> to launch an Extension Development Host.
-
 ## License
 
-MIT
+Copyright (c) 2026 Javian Picardo Group Inc
+
+Licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
