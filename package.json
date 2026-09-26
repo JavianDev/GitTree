@@ -6,7 +6,8 @@
   "publisher": "javian-picardo-group-inc",
   "author": "Javian Picardo Group Inc",
   "license": "MIT",
-  "private": true,
+  "icon": "media/gittree.svg",
+  "private": false,
   "engines": {
     "vscode": "^1.100.0",
     "node": ">=20"
