@@ -12,17 +12,17 @@
 
 Unlike VS Code's flat file list, GitTree shows your branches, commit graph, and changes side-by-side. No modal dialogs, no context switching.
 
-![GitTree Main Interface — three resizable panes with branches, commit graph, and staged/unstaged files visible simultaneously](media/screenshots/01-three-pane-layout.png)
+![Three-pane layout with branches, commit graph, and file diffs](media/screenshots/01-three-pane-layout.png)
 
-- **Left pane:** Branches, tags, remotes, and stashes organized hierarchically
-- **Middle pane:** The full commit graph with correct lane assignment, real-time as you work
-- **Right pane:** File-level diff, line-level staging, and conflict resolution
+- **Left pane:** Branches, tags, remotes, and stashes organized hierarchically with fuzzy-search filtering
+- **Middle pane:** The full commit graph with correct lane assignment, real-time updates as you work
+- **Right pane:** File-level diff, line-level staging, and conflict resolution — all visible at once
 
 ### 2. **Commit Graph That Actually Works**
 
 Real lane assignment across merges, decorations for HEAD/tags/upstream, author and date columns, and instant navigation. Virtualised so a 50,000-commit repository scrolls at full speed.
 
-![Commit Graph — lanes don't cross, merges are clear, clicking a commit shows its diff instantly](media/screenshots/02-commit-graph.png)
+![Commit graph showing lanes, merges, and decorations](media/screenshots/02-commit-graph.png)
 
 **Key features:**
 - Click a commit to see its full diff side-by-side
@@ -34,7 +34,7 @@ Real lane assignment across merges, decorations for HEAD/tags/upstream, author a
 
 Pick individual lines, hunks, or whole files. The interface shows **which state each file is in** using a two-cell pill: `◧` (staged), `◨` (unstaged), or `◧◨` (both).
 
-![Staging UI — two-cell pills show file state, click cells to stage/unstage, drag to reorder](media/screenshots/03-line-level-staging.png)
+![File staging interface with two-cell pills showing file state](media/screenshots/03-line-level-staging.png)
 
 - Stage by file, hunk, or individual line
 - Drag files between Staged and Unstaged groups
@@ -46,7 +46,7 @@ Pick individual lines, hunks, or whole files. The interface shows **which state 
 
 Amend, sign-off, GPG/SSH signing, co-authors, and commit templates — all editable before you press Enter.
 
-![Commit Sheet — editable message, amend checkbox, signoff, GPG signing options](media/screenshots/04-commit-sheet.png)
+![Commit dialog with message, amend, signoff, and signing options](media/screenshots/04-commit-sheet.png)
 
 - **Pre-commit hooks** show their output verbatim, never replaced with "commit failed"
 - **Co-authors** via trailer syntax (recognized by GitHub, GitLab, etc.)
@@ -57,7 +57,7 @@ Amend, sign-off, GPG/SSH signing, co-authors, and commit templates — all edita
 
 Every action opens a modal showing the exact command, **editable in real-time**. Toggle options and the command rewrites itself. Hover to see a plain-English explanation of each flag.
 
-![Command Sheet — editable command field, toggleable options, plain-English explanations](media/screenshots/05-command-sheet.png)
+![Command sheet with editable command field and toggleable options](media/screenshots/05-command-sheet.png)
 
 **Why this matters:**
 - Mistyped? See the dialog **before anything runs**
@@ -69,7 +69,7 @@ Every action opens a modal showing the exact command, **editable in real-time**.
 
 A live console of every git invocation, exit code, runtime, and output. Copy any command and paste it into your terminal. Or send it unsigned so you can read and edit it first.
 
-![Command Log — shows all git commands, exit codes, durations, with Copy and Send buttons](media/screenshots/06-command-log.png)
+![Command log showing all git commands, exit codes, and durations](media/screenshots/06-command-log.png)
 
 - Scroll through your session history
 - Copy any command verbatim (including pipes/redirects)
@@ -80,7 +80,7 @@ A live console of every git invocation, exit code, runtime, and output. Copy any
 
 With forty-seven branches, a flat list is useless. GitTree nests branches by `/`, collapses folders, and lets you fuzzy-search the full path.
 
-![Branch Sidebar — folders collapse/expand, Current/Recent stay pinned, search filters instantly](media/screenshots/07-branch-sidebar.png)
+![Branch sidebar with collapsible folders and Current/Recent pinned](media/screenshots/07-branch-sidebar.png)
 
 - **Current** and **Recent** branches pinned above the tree
 - Type to filter — matches the whole path, not just the prefix
@@ -91,7 +91,7 @@ With forty-seven branches, a flat list is useless. GitTree nests branches by `/`
 
 One-click toolbar buttons for the most common operations. Each opens the command sheet for a second to review. Keyboard shortcuts available (press `?` to see them all).
 
-![Toolbar — Commit, Pull, Push, Branch, Merge, Stash icons with badges for unmerged commits](media/screenshots/08-toolbar.png)
+![Toolbar with Commit, Pull, Push, Branch, Merge, Stash buttons](media/screenshots/08-toolbar.png)
 
 | Action | Keyboard | Notes |
 |--------|----------|-------|
@@ -106,18 +106,19 @@ One-click toolbar buttons for the most common operations. Each opens the command
 
 Open a folder and GitTree finds every repository inside it — at any depth. Understands the difference between nested repos, submodules, and worktrees.
 
-![Repositories View — tabs for each open repo, instant switching, state kept per-repo](media/screenshots/09-multi-repo.png)
+![Repository tabs showing multiple open repos with quick-add button](media/screenshots/09-multi-repo.png)
 
 - **Tabs** for each open repository
 - Scroll position, selection, and filters remembered per-repo
 - Detects and explains submodules vs. nested repos (prevents accidents)
 - Worktrees never presented as independent clones
+- **+** button opens a folder dialog to add another repository
 
 ### 10. **Themes — Light, Dark, macOS, Graphite, Midnight**
 
 Follows your VS Code theme by default. Also offers curated system-class alternatives.
 
-![Theme Selector — dropdown showing Light, Dark, macOS Light, macOS Dark, Graphite, Midnight](media/screenshots/10-themes.png)
+![Theme selector dropdown showing multiple theme options](media/screenshots/10-themes.png)
 
 - Cycle themes with `Ctrl+Alt+T` (macOS: `⌘+⌥+T`)
 - High-contrast mode fully supported
@@ -129,30 +130,15 @@ Follows your VS Code theme by default. Also offers curated system-class alternat
 
 ### Workflow: Stage a Change and Commit It
 
-```
-[Demo GIF: Open a file with staged + unstaged changes, highlight a hunk,
-           press 's' to stage it, write a commit message, Ctrl+Enter to commit]
-```
-
-[**Watch:** git add → commit in 15 seconds](media/demo-stage-commit.gif)
+Find a file with changes, click specific lines or hunks to stage, write a commit message, and press Ctrl+Enter to commit. All changes are visible before you run anything.
 
 ### Workflow: Check Out a Branch Via Sidebar
 
-```
-[Demo GIF: Type in the filter box to find a branch, press Enter to switch,
-           watch the graph and diff update in real time]
-```
-
-[**Watch:** Find and checkout a feature branch](media/demo-checkout-branch.gif)
+Type in the filter box to find a branch, press Enter to switch. Watch the graph and diff update in real time as you work across branches.
 
 ### Workflow: Fetch, Review, and Push
 
-```
-[Demo GIF: Press 'f' for fetch, review incoming changes in the graph,
-           press Shift+P to push when ready]
-```
-
-[**Watch:** Fetch and push with full visibility](media/demo-fetch-push.gif)
+Press `f` for fetch, review incoming changes in the graph, press `Shift+P` to push when ready. Full visibility into what's being pushed.
 
 ---
 
@@ -167,6 +153,8 @@ Follows your VS Code theme by default. Also offers curated system-class alternat
 - ✓ Diff (file-level and line-level, side-by-side and inline)
 - ✓ History search (by message or author)
 - ✓ Fetch, Pull, Push, Branch, Merge, Stash, Tag operations
+- ✓ Branch checkout and delete via sidebar
+- ✓ Stash pop/drop operations
 - ✓ Command log and editable command sheet
 - ✓ Remote management (add / remove / setUrl)
 - ✓ Settings panel (identity, appearance, repository details)
@@ -174,6 +162,7 @@ Follows your VS Code theme by default. Also offers curated system-class alternat
 - ✓ Themes (Light, Dark, macOS Light/Dark, Graphite, Midnight)
 - ✓ Full keyboard navigation
 - ✓ Multi-repo workspaces with per-repo state
+- ✓ Open another repository dialog (+ button)
 
 ---
 
@@ -198,7 +187,7 @@ GitTree runs **your** Git binary, so your config, credential helpers, hooks, SSH
 3. **Open a folder** — or a parent folder holding several repositories
 4. **Click the GitTree icon** in the activity bar (or press `Ctrl+Shift+G` then `T`)
 
-The **Repositories** view lists everything found. Click one to open it as a tab.
+The **Repositories** view lists everything found. Click one to open it as a tab. Click the **+** button to add another repository to your workspace.
 
 ---
 
