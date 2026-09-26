@@ -3,7 +3,7 @@
 **A SourceTree-class Git client inside VS Code — that teaches you Git while you use it.**
 
 GitTree gives you the commit graph, line-level staging, and branch management you'd leave the
-editor for, in a workspace-aware interface built around Apple's Human Interface Guidelines.
+editor for, in a clean, intuitive workspace-aware interface.
 Every button shows the exact Git command it runs, and a live log records everything that
 executed — so the GUI makes you better at the command line instead of hiding it.
 
