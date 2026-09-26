@@ -267,6 +267,19 @@ all core features fully functional and tested.
 
 ---
 
+## Support GitTree
+
+GitTree is free and open source. If you find it useful and want to support development:
+
+**[☕ Buy Me a Coffee](https://buymeacoffee.com/javian)** — Help keep GitTree maintained and improved.
+
+Your support goes directly towards:
+- Bug fixes and stability improvements
+- New features and enhancements
+- Documentation and community support
+
+---
+
 ## License
 
 Copyright (c) 2026 Javian Picardo Group Inc
