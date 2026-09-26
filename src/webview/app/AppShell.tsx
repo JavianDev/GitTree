@@ -115,6 +115,7 @@ export function AppShell(): React.JSX.Element {
     showRemotes: true,
   });
   const [search, setSearch] = useState<SearchOptions>({ field: 'message', query: '' });
+  const [selectedPaths, setSelectedPaths] = useState<readonly string[]>([]);
 
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -250,12 +251,12 @@ export function AppShell(): React.JSX.Element {
       },
       discard: {
         spec: COMMANDS.discard,
-        context: {},
-        disabledReason: 'Select files in the review pane to discard.',
+        context: { paths: [...selectedPaths] },
+        disabledReason: selectedPaths.length > 0 ? undefined : 'Select files in the review pane to discard.',
       },
       'tag.create': { spec: COMMANDS['tag.create'], context: { annotated: true } },
     };
-  }, [activeState, pendingCount]);
+  }, [activeState, pendingCount, selectedPaths]);
 
   const runAction = useCallback((id: CommandId) => {
     // Committing needs a message, which belongs with the files it describes.
@@ -405,6 +406,7 @@ export function AppShell(): React.JSX.Element {
             {...(commit ? { commitHash: commit.hash } : {})}
             revision={repositories.revision}
             onError={setError}
+            onSelectionChange={setSelectedPaths}
           />
         ) : (
           <div className="gt-empty" />

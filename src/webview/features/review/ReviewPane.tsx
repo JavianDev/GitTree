@@ -21,6 +21,7 @@ import {
   findRow,
   firstRow,
   groupKeys,
+  rowPath,
 } from './FileTreeView';
 import type { FileSortMode, ReviewFile } from './fileTree';
 import { useFileSelection } from './useFileSelection';
@@ -55,6 +56,8 @@ export interface ReviewPaneProps {
   /** Bumped by the shell to force a refetch. */
   revision: number;
   onError: (error: string | undefined) => void;
+  /** Called whenever the file selection changes. */
+  onSelectionChange?: (paths: readonly string[]) => void;
 }
 
 export function ReviewPane({
@@ -63,6 +66,7 @@ export function ReviewPane({
   commitHash,
   revision,
   onError,
+  onSelectionChange,
 }: ReviewPaneProps): React.JSX.Element {
   const [status, setStatus] = useState<StatusResult | undefined>();
   const [stagedStats, setStagedStats] = useState<readonly FileStats[]>([]);
@@ -220,6 +224,13 @@ export function ReviewPane({
     // control then switches between them for a file that is in both.
     setSide(row.group === 'staged' ? 'staged' : 'unstaged');
   }, []);
+
+  useEffect(() => {
+    // Lift the selection up to the parent so the toolbar can react to it.
+    if (!onSelectionChange) return;
+    const paths = [...selection.selected].map(rowPath);
+    onSelectionChange(paths);
+  }, [selection.selected, onSelectionChange]);
 
   useEffect(() => {
     // Something is always selected, so the diff half is never blank next to a
