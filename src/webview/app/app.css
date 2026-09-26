@@ -229,7 +229,9 @@
   border-radius: var(--gt-radius-control);
   padding: 2px 20px 2px 8px;
   font-size: var(--gt-text-caption);
-  cursor: default;
+  cursor: pointer;
+  color: var(--gt-label);
+  transition: background var(--gt-duration-hover) var(--gt-ease-standard);
   /* The disclosure chevron is drawn rather than relying on the platform arrow,
      which differs across OSes and breaks the HIG look. */
   background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
@@ -241,6 +243,15 @@
     4px 4px,
     4px 4px;
   background-repeat: no-repeat;
+}
+
+.gt-context-select:hover {
+  background-color: var(--gt-fill-hover);
+}
+
+.gt-context-select:focus {
+  outline: 2px solid var(--gt-accent);
+  outline-offset: -1px;
 }
 
 .gt-context-input {
