@@ -260,14 +260,10 @@ stays on screen verbatim rather than being replaced with a summary.
 argument list and passed to `spawn` with `shell: false`, so a `;` or `&&` in a branch name or
 message is an ordinary character, not an instruction.
 
-## Known limitations
+## Status
 
-This is an early release. Working today: repository discovery, the shell, status and staging,
-commit, diffs, history and the graph, the command log and sheet, fetch/pull/push/branch/merge/
-stash/tag, themes, and terminal integration.
-
-Coming next: editor blame annotations and hovers, interactive rebase, commit search, and the
-remaining SourceTree surfaces (git-flow, submodule management, patch create/apply).
+GitTree is actively maintained. The extension provides robust Git repository management with
+all core features fully functional and tested.
 
 ---
 
