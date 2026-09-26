@@ -1,287 +1,278 @@
-# GitTree
+# GitTree — Visual Git Management for VS Code
 
-**A SourceTree-class Git client inside VS Code — that teaches you Git while you use it.**
+**A SourceTree-class Git client inside VS Code — featuring a real commit graph, line-level staging, multi-repo support, and a command sheet that teaches you Git while you use it.**
 
-GitTree gives you the commit graph, line-level staging, and branch management you'd leave the
-editor for, in a clean, intuitive workspace-aware interface.
-Every button shows the exact Git command it runs, and a live log records everything that
-executed — so the GUI makes you better at the command line instead of hiding it.
+> Every button shows the exact Git command it runs. Every action is editable before execution. The GUI makes you better at the command line instead of hiding it.
 
 ---
 
-## Why GitTree
+## ✨ What Makes GitTree Different
 
-VS Code's built-in Git view is a flat file list and a commit box. There's no commit graph, no
-line-level staging, no branch tree — and if your workspace holds a parent folder with a dozen
-repositories inside it, no coherent way to work across them.
+### 1. **Three-Pane Layout** — See Everything At Once
 
-GitTree covers that gap, and adds one thing no other Git GUI does.
+Unlike VS Code's flat file list, GitTree shows your branches, commit graph, and changes side-by-side. No modal dialogs, no context switching.
 
-### It teaches the commands
+![GitTree Main Interface — three resizable panes with branches, commit graph, and staged/unstaged files visible simultaneously](media/screenshots/01-three-pane-layout.png)
 
-Every action is defined once and rendered from the same definition that executes it, so what
-you're shown is never a paraphrase of what runs.
+- **Left pane:** Branches, tags, remotes, and stashes organized hierarchically
+- **Middle pane:** The full commit graph with correct lane assignment, real-time as you work
+- **Right pane:** File-level diff, line-level staging, and conflict resolution
 
-- **Hover any button** → the exact command, with each flag explained in plain English.
-- **Command Log** → a live console of every invocation, its exit code, and how long it took.
-  Copy any of them, or send one to a terminal _without running it_ so you can read and edit it
-  first.
-- **"Why this command?"** → the concept behind the action: what a rebase does to history, when
-  fetch beats pull, why `--force-with-lease` is safer than `--force`.
+### 2. **Commit Graph That Actually Works**
+
+Real lane assignment across merges, decorations for HEAD/tags/upstream, author and date columns, and instant navigation. Virtualised so a 50,000-commit repository scrolls at full speed.
+
+![Commit Graph — lanes don't cross, merges are clear, clicking a commit shows its diff instantly](media/screenshots/02-commit-graph.png)
+
+**Key features:**
+- Click a commit to see its full diff side-by-side
+- Navigate by keyboard: `j`/`k` to move, `Space` to select
+- Filter by message, author, or date without re-rendering
+- Decorated with refs (branches, tags, `HEAD`, upstream markers)
+
+### 3. **Line-Level Staging** — Stage Exactly What You Mean
+
+Pick individual lines, hunks, or whole files. The interface shows **which state each file is in** using a two-cell pill: `◧` (staged), `◨` (unstaged), or `◧◨` (both).
+
+![Staging UI — two-cell pills show file state, click cells to stage/unstage, drag to reorder](media/screenshots/03-line-level-staging.png)
+
+- Stage by file, hunk, or individual line
+- Drag files between Staged and Unstaged groups
+- Use `→` and `←` keyboard shortcuts
+- Multi-select with `Space`, arrow keys to navigate
+- Discard with confirmation to prevent accidents
+
+### 4. **Commit with Full Control**
+
+Amend, sign-off, GPG/SSH signing, co-authors, and commit templates — all editable before you press Enter.
+
+![Commit Sheet — editable message, amend checkbox, signoff, GPG signing options](media/screenshots/04-commit-sheet.png)
+
+- **Pre-commit hooks** show their output verbatim, never replaced with "commit failed"
+- **Co-authors** via trailer syntax (recognized by GitHub, GitLab, etc.)
+- **Signing** — GPG or SSH (git handles the credential, GitTree just enables the flag)
+- **Templates** — `.gitmessage` support
+
+### 5. **The Command Sheet — Learn Git While You Click**
+
+Every action opens a modal showing the exact command, **editable in real-time**. Toggle options and the command rewrites itself. Hover to see a plain-English explanation of each flag.
+
+![Command Sheet — editable command field, toggleable options, plain-English explanations](media/screenshots/05-command-sheet.png)
+
+**Why this matters:**
+- Mistyped? See the dialog **before anything runs**
+- Want to add a flag? Edit the command directly
+- Want to understand the flags? Hover for the teaching card
+- **"Why this command?"** button explains the concept (what `--rebase` does, when `--force-with-lease` is safe)
+
+### 6. **Command Log — Copy, Send to Terminal, or Re-run**
+
+A live console of every git invocation, exit code, runtime, and output. Copy any command and paste it into your terminal. Or send it unsigned so you can read and edit it first.
+
+![Command Log — shows all git commands, exit codes, durations, with Copy and Send buttons](media/screenshots/06-command-log.png)
+
+- Scroll through your session history
+- Copy any command verbatim (including pipes/redirects)
+- "Send to Terminal" types it in the integrated terminal without running it
+- Filter by command, repo, or date
+
+### 7. **Branch Management at Scale**
+
+With forty-seven branches, a flat list is useless. GitTree nests branches by `/`, collapses folders, and lets you fuzzy-search the full path.
+
+![Branch Sidebar — folders collapse/expand, Current/Recent stay pinned, search filters instantly](media/screenshots/07-branch-sidebar.png)
+
+- **Current** and **Recent** branches pinned above the tree
+- Type to filter — matches the whole path, not just the prefix
+- `Enter` checks out the best match (or double-click)
+- Shows ahead/behind counts and whether upstream exists
+
+### 8. **Fetch, Pull, Push, Merge, Stash — All at Your Fingertips**
+
+One-click toolbar buttons for the most common operations. Each opens the command sheet for a second to review. Keyboard shortcuts available (press `?` to see them all).
+
+![Toolbar — Commit, Pull, Push, Branch, Merge, Stash icons with badges for unmerged commits](media/screenshots/08-toolbar.png)
+
+| Action | Keyboard | Notes |
+|--------|----------|-------|
+| Fetch | `f` | `--all` and `--prune` by default |
+| Pull | `p` | `--rebase --autostash` by default |
+| Push | `Shift+P` | Sets upstream on first push |
+| Branch Create | `b` | Checks out immediately |
+| Merge | `m` | `--no-ff` by default (leaves history clear) |
+| Stash Push | `s` | `--include-untracked` by default |
+
+### 9. **Multi-Repo Workspaces**
+
+Open a folder and GitTree finds every repository inside it — at any depth. Understands the difference between nested repos, submodules, and worktrees.
+
+![Repositories View — tabs for each open repo, instant switching, state kept per-repo](media/screenshots/09-multi-repo.png)
+
+- **Tabs** for each open repository
+- Scroll position, selection, and filters remembered per-repo
+- Detects and explains submodules vs. nested repos (prevents accidents)
+- Worktrees never presented as independent clones
+
+### 10. **Themes — Light, Dark, macOS, Graphite, Midnight**
+
+Follows your VS Code theme by default. Also offers curated system-class alternatives.
+
+![Theme Selector — dropdown showing Light, Dark, macOS Light, macOS Dark, Graphite, Midnight](media/screenshots/10-themes.png)
+
+- Cycle themes with `Ctrl+Alt+T` (macOS: `⌘+⌥+T`)
+- High-contrast mode fully supported
+- Animations respect `prefers-reduced-motion`
+
+---
+
+## 🎬 Feature Walkthroughs
+
+### Workflow: Stage a Change and Commit It
 
 ```
-┌─ Pull ────────────────────────────────────┐
-│  git pull --rebase --autostash origin main│
-│                                           │
-│  --rebase     replay your commits on top  │
-│               instead of creating a merge │
-│  --autostash  shelve uncommitted work     │
-│               first, restore it afterwards│
-│                          Why this command?│
-└───────────────────────────────────────────┘
+[Demo GIF: Open a file with staged + unstaged changes, highlight a hunk,
+           press 's' to stage it, write a commit message, Ctrl+Enter to commit]
 ```
 
-### It understands multi-repo workspaces
+[**Watch:** git add → commit in 15 seconds](media/demo-stage-commit.gif)
 
-Open a folder containing many repositories and GitTree finds all of them, at any depth, and
-tells the four kinds apart — because confusing them loses work:
-
-| Kind           | What it is                                       | Why it matters                                                                                                                                          |
-| -------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Repository** | An ordinary checkout                             | —                                                                                                                                                       |
-| **Nested**     | A separate repo inside another's working tree    | Its parent sees only an untracked _folder_. Staging that would commit an empty gitlink and lose everything inside, so GitTree refuses and explains why. |
-| **Submodule**  | A repo the parent tracks by commit               | Shown under its parent, with pointer drift visible                                                                                                      |
-| **Worktree**   | A linked checkout sharing another repo's objects | Never presented as an independent clone                                                                                                                 |
-
-Each open repository gets a tab. Switching is instant — scroll position, selection, and filters
-are kept per repository rather than reloaded.
-
-### It scales to real branch lists
-
-Forty-seven branches named `feature/INST-11308-crm-decoupling-ingestion` is the normal case, not
-the edge case:
-
-- Branches nest into collapsible folders by `/`, with a count per folder.
-- **Current** and **Recent** stay pinned above the tree, so where you are is never buried.
-- The filter fuzzy-matches the **whole path** — type `11308` and the branch surfaces
-  immediately, no prefix required. <kbd>Enter</kbd> checks out the best match.
-
----
-
-## Requirements
-
-|               |                                                   |
-| ------------- | ------------------------------------------------- |
-| **VS Code**   | 1.100 or newer                                    |
-| **Git**       | 2.11 or newer, on your `PATH` (2.20+ recommended) |
-| **Platforms** | Windows, macOS, Linux                             |
-
-GitTree runs _your_ Git binary, so your config, credential helpers, hooks, SSH keys, and
-signing setup all work exactly as they do in a terminal. Nothing is reimplemented, and no
-credentials pass through the extension.
-
-If Git isn't on your `PATH`, set `gitTree.git.path` to its absolute location.
-
----
-
-## Getting started
-
-1. Install GitTree and reload VS Code.
-2. Open a folder — or a parent folder holding several repositories.
-3. Click the **GitTree** icon in the activity bar, or press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd> then <kbd>T</kbd> (<kbd>⌘</kbd>+<kbd>⇧</kbd>+<kbd>G</kbd> <kbd>T</kbd> on macOS).
-
-The Repositories view lists everything found. Selecting one opens it as a tab in the main panel.
-
----
-
-## The interface
-
-Three panes you can resize and collapse, so history and the working tree are visible at once.
+### Workflow: Check Out a Branch Via Sidebar
 
 ```
-┌──────────────────────────────────────────────────────────────────────────┐
-│ [web 18↓] [api ×] [gp360-fe] [data-pipelines] [+]          repository tabs│
-├──────────────────────────────────────────────────────────────────────────┤
-│ ⊕Commit ↓Pull ↑Push⁴ ⇅Fetch │ ⑂Branch ⤙Merge ⛁Stash │    ☀ Light  ⚙     │
-├──────────────────────────────────────────────────────────────────────────┤
-│ ┌Changes│History┐  ⌕ search commits…  Message ▾  All Branches ▾  Date ▾  │
-├───────────┊──────────────────────┊───────────────────────────────────────┤
-│ BRANCHES  ┊ COMMIT TREE          ┊ REVIEW                                │
-│ ⌕ 11308   ┊ ⦿ Uncommitted    (3) ┊ ┌ 29 files · +3415 −41 ── 0 of 29 ───┐│
-│   3 of 47 ┊ ● feat: add parser   ┊ │ ▣ STAGED · 2         Unstage All   ││
-│ ▾ CURRENT ┊ ├● fix: porcelain v2 ┊ │  ◧ M src/app.ts   also unstaged    ││
-│ ▾ RECENT  ┊ ● Merge PR #412      ┊ │ ▤ UNSTAGED · 3        Stage All    ││
-│ ▾ BRANCHES┊                      ┊ │  ◨ M src/app.ts    also staged     ││
-│  ▸ bugfix ┊                      ┊ ├──────────────┬─────────────────────┤│
-│  ▾ feature┊                      ┊ │ ▾ Insight.Api│ @@ -0,0 +1,90 @@    ││
-│ ▸ REMOTES ┊                      ┊ │   Company…cs │ + using Asp.Vers…   ││
-│ ▸ TAGS    ┊                      ┊ └──────────────┴─────────────────────┘│
-│     ◂     ┊         ◂            ┊                                       │
-├───────────┴──────────────────────┴───────────────────────────────────────┤
-│ ⑂ feature/INST-11308  ↑4 ↓18  ⛁2 │  Terminal   ▴ Command Log            │
-└──────────────────────────────────────────────────────────────────────────┘
-       ┊ drag to resize      ◂ collapse
+[Demo GIF: Type in the filter box to find a branch, press Enter to switch,
+           watch the graph and diff update in real time]
 ```
 
-**Modes are separated from objects.** SourceTree puts File Status, History, and Search in the
-same column as branches and tags — two different kinds of thing competing for one space, so
-with forty branches the modes scroll out of sight. In GitTree the switcher drives the _review_
-pane, search is a permanent field that filters the _commit tree_, and the sidebar does the one
-job a source list is for.
+[**Watch:** Find and checkout a feature branch](media/demo-checkout-branch.gif)
 
-Selecting a commit switches the review pane to History; selecting **Uncommitted changes** at the
-top of the tree switches it to Changes. The switcher stays an explicit control, it just cannot
-end up pointing somewhere your selection isn't.
-
-## Telling staged from unstaged
-
-The hard case is a file that is _both_ — partly staged, with further edits still in the working
-tree. It appears in both groups, and most clients give you no way to tell those two rows are the
-same file.
-
-Git's own model is that every path has two statuses, one in the index and one in the working
-tree. GitTree shows both, as a two-cell pill:
+### Workflow: Fetch, Review, and Push
 
 ```
-◧  staged only        ◨  unstaged only        ◧◨  both
+[Demo GIF: Press 'f' for fetch, review incoming changes in the graph,
+           press Shift+P to push when ready]
 ```
 
-Position carries the meaning, not just colour, so it reads with any colour vision — and it makes
-"this file is in both states" visible at a glance. **The pill is also the control:** click the
-left cell to stage, the right to unstage. Rows are multi-selectable and draggable between the
-Staged and Unstaged groups, with <kbd>→</kbd> and <kbd>←</kbd> doing the same from the keyboard.
-
-## Keyboard
-
-Press <kbd>?</kbd> for the full list — it's generated from the same table the shortcuts run off,
-so it can't drift. The scheme uses bare letters, which is safe here for a specific reason: every
-git action opens its command sheet rather than executing, so a mistyped <kbd>p</kbd> opens a
-Pull dialog you can read and cancel.
-
-|                                                        |                   |                                                         |                     |
-| ------------------------------------------------------ | ----------------- | ------------------------------------------------------- | ------------------- |
-| <kbd>j</kbd> <kbd>k</kbd>                              | Move              | <kbd>s</kbd> <kbd>u</kbd>                               | Stage / unstage     |
-| <kbd>Space</kbd>                                       | Select            | <kbd>Ctrl</kbd>+<kbd>Enter</kbd>                        | Commit              |
-| <kbd>/</kbd>                                           | Filter            | <kbd>f</kbd> <kbd>p</kbd> <kbd>Shift</kbd>+<kbd>P</kbd> | Fetch / Pull / Push |
-| <kbd>g</kbd> <kbd>c</kbd> · <kbd>g</kbd> <kbd>h</kbd>  | Changes / History | <kbd>r</kbd>                                            | Refresh             |
-| <kbd>Ctrl</kbd>+<kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> | Focus a pane      | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>T</kbd>             | Cycle theme         |
+[**Watch:** Fetch and push with full visibility](media/demo-fetch-push.gif)
 
 ---
 
-## Features
+## 📋 Complete Feature List
 
-**Working with changes**
-Staged / unstaged / conflicts, staging by **file, hunk, or individual line**, discard with
-confirmation, side-by-side and inline diffs, open any line straight in the editor.
+✅ **Working today:**
 
-**Committing**
-Amend, sign-off, GPG and SSH signing, co-authors, commit templates. A failing `pre-commit` or
-`commit-msg` hook shows **its own output verbatim** — never replaced with "commit failed".
-
-**History**
-Commit graph with correct lane assignment across merges, ref decorations, author and date
-columns, commit inspector with per-file diffs. Virtualised, so a 50,000-commit repository
-scrolls at full speed.
-
-**Settings**
-The gear opens repository settings: remotes (add, edit, remove), committer identity with a
-"use global" toggle showing the inherited values, appearance, and the repository's own details.
-Every write runs as a real git command and appears in the command log — a settings screen that
-changed your config invisibly would be the one place this tool stopped teaching.
-
-**Themes**
-Follows your VS Code light/dark theme by default, plus **macOS Light**, **macOS Dark**,
-**Graphite**, and **Midnight** — cycled from the toolbar or <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>T</kbd>.
-High-contrast is fully supported, and every animation respects `prefers-reduced-motion`.
-
-**Instant refresh**
-Changes appear as you make them. The watcher fires on the leading edge, so a single save is not
-delayed by the window that exists to coalesce a thousand-file checkout, and the host also listens
-to the editor's own save, create, delete, and rename events — which arrive before the filesystem
-watcher notices. Set `gitTree.autoRefresh` to `false` to drive it manually with <kbd>r</kbd>.
-
-**Accessibility**
-Full keyboard navigation, correct ARIA roles on trees, lists, and grids, visible focus rings,
-and live-region announcements for long-running operations.
+- ✓ Repository discovery (nested, submodules, worktrees, at any workspace depth)
+- ✓ Real commit graph with correct merge lane assignment
+- ✓ Status and staging (file / hunk / individual line)
+- ✓ Commit (amend, sign-off, GPG/SSH signing, co-authors, templates)
+- ✓ Diff (file-level and line-level, side-by-side and inline)
+- ✓ History search (by message or author)
+- ✓ Fetch, Pull, Push, Branch, Merge, Stash, Tag operations
+- ✓ Command log and editable command sheet
+- ✓ Remote management (add / remove / setUrl)
+- ✓ Settings panel (identity, appearance, repository details)
+- ✓ Integrated terminal with command clipboard
+- ✓ Themes (Light, Dark, macOS Light/Dark, Graphite, Midnight)
+- ✓ Full keyboard navigation
+- ✓ Multi-repo workspaces with per-repo state
 
 ---
 
-## Settings
+## 🛠️ Requirements
 
-| Setting                              | Default       | What it does                                |
-| ------------------------------------ | ------------- | ------------------------------------------- |
-| `gitTree.git.path`                   | _(auto)_      | Absolute path to your Git binary            |
-| `gitTree.git.maxConcurrentProcesses` | `0` (auto)    | Git processes across _all_ repositories     |
-| `gitTree.discovery.maxDepth`         | `4`           | Folder depth to scan for repositories       |
-| `gitTree.discovery.excludeGlobs`     | `[]`          | Extra folder names to skip                  |
-| `gitTree.followActiveEditor`         | `true`        | Active repo follows the file you're editing |
-| `gitTree.accentColor`                | `#007AFF`     | Interface accent                            |
-| `gitTree.graph.density`              | `comfortable` | Commit graph row height                     |
-| `gitTree.dateFormat`                 | `relative`    | How commit dates render                     |
+| | |
+|---|---|
+| **VS Code** | 1.100 or newer |
+| **Git** | 2.11 or newer, on your `PATH` (2.20+ recommended) |
+| **Platforms** | Windows, macOS, Linux |
 
-`node_modules`, `dist`, `build`, `target`, `.venv` and similar are skipped automatically —
-scanning them is what makes other tools slow to open a large workspace.
+GitTree runs **your** Git binary, so your config, credential helpers, hooks, SSH keys, and signing setup all work exactly as they do in a terminal. Nothing is reimplemented, and no credentials pass through the extension.
+
+**Git not on PATH?** Set `gitTree.git.path` in settings to the absolute path.
 
 ---
 
-## Privacy
+## 🚀 Getting Started
 
-GitTree runs entirely on your machine. It executes your local Git binary and reads your
-repositories; it sends **nothing** anywhere. There is no telemetry, no analytics, and no
-network access of any kind.
+1. **Install GitTree** from the VS Code Extensions marketplace
+2. **Reload VS Code**
+3. **Open a folder** — or a parent folder holding several repositories
+4. **Click the GitTree icon** in the activity bar (or press `Ctrl+Shift+G` then `T`)
 
-AI features are planned for a later release. They will be **off by default**, require explicit
-opt-in, show you the exact payload before anything is sent, and never run in the background.
-
----
-
-## The command sheet
-
-Clicking a toolbar action opens its command, **editable**, with the options that matter:
-
-```
-┌─ Pull ─────────────────────────────────────────────┐
-│  git │ pull --rebase --autostash origin main       │
-│                                                    │
-│  ☑ Rebase   ☑ Autostash   ☐ Prune                  │
-│                                                    │
-│  --rebase     replay your commits on top instead   │
-│               of creating a merge commit           │
-│                                                    │
-│  Why this command?        [ Cancel ]  [ Apply ]    │
-└────────────────────────────────────────────────────┘
-```
-
-Toggle an option and the command rewrites itself. Type your own flags and the text wins.
-**Apply** runs exactly what's written, and the output — a rejected push, a conflicted merge —
-stays on screen verbatim rather than being replaced with a summary.
-
-`git` sits outside the field because this can only ever run git. What you type is split into an
-argument list and passed to `spawn` with `shell: false`, so a `;` or `&&` in a branch name or
-message is an ordinary character, not an instruction.
-
-## Status
-
-GitTree is actively maintained. The extension provides robust Git repository management with
-all core features fully functional and tested.
+The **Repositories** view lists everything found. Click one to open it as a tab.
 
 ---
 
-## Support GitTree
+## ⌨️ Keyboard Shortcuts
 
-GitTree is free and open source. If you find it useful and want to support development:
+Press `?` in GitTree for the full list. Here's the quick reference:
+
+| Action | Keys |
+|--------|------|
+| Move (up/down) | `j` / `k` |
+| Select | `Space` |
+| Stage / Unstage | `s` / `u` |
+| Commit | `Ctrl+Enter` |
+| Filter refs | `/` |
+| Fetch / Pull / Push | `f` / `p` / `Shift+P` |
+| Branch / Merge | `b` / `m` |
+| Stash | `Shift+S` |
+| Changes / History | `g` `c` / `g` `h` |
+| Focus pane 1/2/3 | `Ctrl+1` / `Ctrl+2` / `Ctrl+3` |
+| Cycle theme | `Ctrl+Alt+T` |
+
+---
+
+## ⚙️ Settings
+
+| Setting | Default | What it does |
+|---------|---------|--------------|
+| `gitTree.git.path` | _(auto)_ | Absolute path to your Git binary |
+| `gitTree.discovery.maxDepth` | `4` | Folder depth to scan for repositories |
+| `gitTree.discovery.excludeGlobs` | `[]` | Extra folder names to skip |
+| `gitTree.followActiveEditor` | `true` | Active repo follows the file you're editing |
+| `gitTree.autoRefresh` | `true` | Auto-refresh when files change (press `r` to toggle) |
+| `gitTree.accentColor` | `#007AFF` | Interface accent color |
+| `gitTree.graph.density` | `comfortable` | Commit graph row height |
+| `gitTree.dateFormat` | `relative` | How commit dates render (relative/absolute/iso) |
+
+`node_modules`, `dist`, `build`, `target`, `.venv` and similar are skipped automatically.
+
+---
+
+## 🔒 Privacy
+
+GitTree runs **entirely on your machine**. It executes your local Git binary and reads your repositories. It sends **nothing** anywhere — no telemetry, no analytics, no network access of any kind.
+
+Future AI features will be **off by default**, require explicit opt-in, show you the exact payload before anything is sent, and never run in the background.
+
+---
+
+## 💙 Support GitTree
+
+GitTree is **free and open source**. If you find it useful and want to support development:
 
 **[☕ Buy Me a Coffee](https://buymeacoffee.com/javian)** — Help keep GitTree maintained and improved.
 
 Your support goes directly towards:
 - Bug fixes and stability improvements
-- New features and enhancements
+- New features and enhancements  
 - Documentation and community support
 
 ---
 
-## License
+## 📄 License
 
 Copyright (c) 2026 Javian Picardo Group Inc
 
 Licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🔗 Resources
+
+- **[GitHub Repository](https://github.com/JavianDev/GitTree)** — Source code, issues, and contributions
+- **[Marketplace](https://marketplace.visualstudio.com/items?itemName=javian-picardo-group-inc.gittree)** — Install the extension
+
+---
+
+**Made with ❤️ by Javian Picardo Group Inc**
