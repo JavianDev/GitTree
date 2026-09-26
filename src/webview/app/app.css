@@ -225,16 +225,20 @@
 .gt-context-select {
   appearance: none;
   border: 1px solid var(--gt-control-border);
-  background: var(--gt-control-bg);
+  background-color: var(--gt-control-bg);
   border-radius: var(--gt-radius-control);
   padding: 2px 20px 2px 8px;
   font-size: var(--gt-text-caption);
   cursor: pointer;
   color: var(--gt-label);
-  transition: background var(--gt-duration-hover) var(--gt-ease-standard);
+  line-height: 1.4;
+  transition:
+    background-color var(--gt-duration-hover) var(--gt-ease-standard),
+    border-color var(--gt-duration-hover) var(--gt-ease-standard);
   /* The disclosure chevron is drawn rather than relying on the platform arrow,
      which differs across OSes and breaks the HIG look. */
-  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentColor 50%),
     linear-gradient(135deg, currentColor 50%, transparent 50%);
   background-position:
     right 9px center,
@@ -243,15 +247,24 @@
     4px 4px,
     4px 4px;
   background-repeat: no-repeat;
+  min-width: 80px;
 }
 
-.gt-context-select:hover {
+.gt-context-select:hover:not(:disabled) {
   background-color: var(--gt-fill-hover);
+  border-color: var(--gt-control-border-active);
 }
 
 .gt-context-select:focus {
   outline: 2px solid var(--gt-accent);
   outline-offset: -1px;
+  border-color: var(--gt-accent);
+}
+
+.gt-context-select:disabled {
+  cursor: not-allowed;
+  color: var(--gt-label-tertiary);
+  opacity: 0.6;
 }
 
 .gt-context-input {
