@@ -1,4 +1,5 @@
-﻿import type {
+﻿import { promises as fs } from 'node:fs';
+import type {
   Commit,
   DiffFile,
   FileStats,
@@ -280,6 +281,61 @@ export class GitService {
     if (paths.length === 0) return;
     await this.runScheduled(options, async (signal) => {
       await this.git.run({ cwd: this.cwd, args: ['restore', '--worktree', '--', ...paths], signal });
+    });
+  }
+
+  async removeFiles(paths: string[], options?: GitServiceOptions): Promise<void> {
+    if (paths.length === 0) return;
+    await this.runScheduled(options, async () => {
+      for (const path of paths) {
+        try {
+          // Try git rm first (works for tracked files)
+          await this.git.run({ cwd: this.cwd, args: ['rm', '-f', '--', path] });
+        } catch {
+          // If git rm fails (e.g., untracked file), delete from disk directly
+          const fullPath = `${this.cwd}/${path}`;
+          try {
+            await fs.unlink(fullPath);
+          } catch {
+            // File doesn't exist, that's OK
+          }
+        }
+      }
+    });
+  }
+
+  async stopTrackingFiles(paths: string[], options?: GitServiceOptions): Promise<void> {
+    if (paths.length === 0) return;
+    await this.runScheduled(options, async (signal) => {
+      await this.git.run({
+        cwd: this.cwd,
+        args: ['rm', '--cached', '--force', '--', ...paths],
+        signal,
+      });
+    });
+  }
+
+  async ignoreFiles(paths: string[], options?: GitServiceOptions): Promise<void> {
+    if (paths.length === 0) return;
+    await this.runScheduled(options, async () => {
+      const gitignorePath = `${this.cwd}/.gitignore`;
+      let content = '';
+
+      try {
+        content = await fs.readFile(gitignorePath, 'utf8');
+      } catch {
+        // .gitignore doesn't exist yet, start with empty content
+      }
+
+      const lines = content.split('\n').map((line) => line.trimEnd());
+      const existingSet = new Set(lines.filter((line) => line.length > 0));
+
+      for (const path of paths) {
+        existingSet.add(path);
+      }
+
+      const newContent = Array.from(existingSet).join('\n') + (existingSet.size > 0 ? '\n' : '');
+      await fs.writeFile(gitignorePath, newContent, 'utf8');
     });
   }
 

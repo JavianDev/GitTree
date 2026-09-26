@@ -226,6 +226,21 @@ export class GitTreePanel {
     'discard/files': async ({ repoId, paths }) =>
       this.requireService(repoId).discardFiles(paths, { priority: 'foreground' }),
 
+    'files/remove': async ({ repoId, paths }) =>
+      this.requireService(repoId).removeFiles(paths, { priority: 'foreground' }),
+
+    'files/stopTracking': async ({ repoId, paths }) =>
+      this.requireService(repoId).stopTrackingFiles(paths, { priority: 'foreground' }),
+
+    'files/ignore': async ({ repoId, paths }) =>
+      this.requireService(repoId).ignoreFiles(paths, { priority: 'foreground' }),
+
+    'files/reveal': async ({ repoId, path: relativePath }) => {
+      const repo = this.requireRepo(repoId);
+      const uri = vscode.Uri.joinPath(vscode.Uri.file(repo.root), relativePath);
+      await vscode.commands.executeCommand('revealFileInOS', uri);
+    },
+
     'stage/hunks': async ({ repoId, path, hunkIndices, reverse }) =>
       this.requireService(repoId).applyHunks(path, hunkIndices, reverse, { priority: 'foreground' }),
 

@@ -324,6 +324,41 @@ export function ReviewPane({
     [mutate, repoId],
   );
 
+  const discard = useCallback(
+    (paths: readonly string[]) => {
+      void mutate(() => rpc.request('discard/files', { repoId, paths: [...paths] }));
+    },
+    [mutate, repoId],
+  );
+
+  const remove = useCallback(
+    (paths: readonly string[]) => {
+      void mutate(() => rpc.request('files/remove', { repoId, paths: [...paths] }));
+    },
+    [mutate, repoId],
+  );
+
+  const stopTracking = useCallback(
+    (paths: readonly string[]) => {
+      void mutate(() => rpc.request('files/stopTracking', { repoId, paths: [...paths] }));
+    },
+    [mutate, repoId],
+  );
+
+  const ignore = useCallback(
+    (paths: readonly string[]) => {
+      void mutate(() => rpc.request('files/ignore', { repoId, paths: [...paths] }));
+    },
+    [mutate, repoId],
+  );
+
+  const reveal = useCallback(
+    (path: string) => {
+      void rpc.request('files/reveal', { repoId, path });
+    },
+    [repoId],
+  );
+
   /* -- Responsive -------------------------------------------------------- */
 
   useEffect(() => {
@@ -442,6 +477,11 @@ export function ReviewPane({
             onStage={stage}
             onUnstage={unstage}
             onRefuse={setNotice}
+            onDiscard={discard}
+            onRemove={remove}
+            onStopTracking={stopTracking}
+            onIgnore={ignore}
+            onReveal={reveal}
             busy={busy}
           />
         </div>

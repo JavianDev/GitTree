@@ -111,6 +111,10 @@ export interface Api {
   'stage/files': { params: { repoId: RepoId; paths: string[] }; result: void };
   'unstage/files': { params: { repoId: RepoId; paths: string[] }; result: void };
   'discard/files': { params: { repoId: RepoId; paths: string[] }; result: void };
+  'files/remove': { params: { repoId: RepoId; paths: string[] }; result: void };
+  'files/stopTracking': { params: { repoId: RepoId; paths: string[] }; result: void };
+  'files/ignore': { params: { repoId: RepoId; paths: string[] }; result: void };
+  'files/reveal': { params: { repoId: RepoId; path: string }; result: void };
   'stage/hunks': {
     params: { repoId: RepoId; path: string; hunkIndices: number[]; reverse: boolean };
     result: void;

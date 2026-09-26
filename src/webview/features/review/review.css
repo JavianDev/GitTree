@@ -475,3 +475,49 @@
 .gt-diff-side[data-kind='empty'] {
   background: var(--gt-fill);
 }
+
+/* -------------------------------------------------------------------------- */
+/* File context menu                                                          */
+/* -------------------------------------------------------------------------- */
+
+.gt-file-menu {
+  position: fixed;
+  z-index: 100;
+  min-width: 220px;
+  background: var(--gt-control-bg);
+  border: 1px solid var(--gt-control-border);
+  border-radius: var(--gt-radius-control);
+  padding: 4px 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.gt-file-menu-item {
+  display: block;
+  width: 100%;
+  padding: 6px 12px;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: var(--gt-label);
+  font-size: var(--gt-text-caption);
+  cursor: pointer;
+  transition: background var(--gt-duration-hover) var(--gt-ease-standard);
+}
+
+.gt-file-menu-item:hover {
+  background: var(--gt-fill-hover);
+}
+
+.gt-file-menu-item[data-destructive='true'] {
+  color: var(--gt-red);
+}
+
+.gt-file-menu-item[data-destructive='true']:hover {
+  background: color-mix(in srgb, var(--gt-red) 14%, transparent);
+}
+
+.gt-file-menu-separator {
+  height: 1px;
+  background: var(--gt-separator);
+  margin: 4px 0;
+}

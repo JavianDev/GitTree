@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import type { FileChangeKind } from '@shared/model';
 import { FileStatePill } from './FileStatePill';
+import { FileContextMenu, type FileContextMenuItem } from './FileContextMenu';
 import {
   type FileNode,
   type FileSortMode,
@@ -238,6 +239,12 @@ export interface FileTreeProps {
   onUnstage: (paths: readonly string[]) => void;
   /** Reports a refused drop, with the reason, so it is never silent. */
   onRefuse: (message: string) => void;
+  /** Right-click menu actions */
+  onDiscard?: (paths: readonly string[]) => void;
+  onRemove?: (paths: readonly string[]) => void;
+  onStopTracking?: (paths: readonly string[]) => void;
+  onIgnore?: (paths: readonly string[]) => void;
+  onReveal?: (path: string) => void;
   busy?: boolean;
 }
 
@@ -253,10 +260,21 @@ export function FileTree({
   onStage,
   onUnstage,
   onRefuse,
+  onDiscard,
+  onRemove,
+  onStopTracking,
+  onIgnore,
+  onReveal,
   busy,
 }: FileTreeProps): React.JSX.Element {
   const treeRef = useRef<HTMLDivElement>(null);
   const [dropTarget, setDropTarget] = useState<FileGroupId | undefined>();
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    key: string;
+    group: FileGroupId;
+  } | undefined>();
 
   const byPath = useMemo(() => {
     const map = new Map<string, ReviewFile>();
@@ -486,6 +504,11 @@ export function FileTree({
             });
             onActivate(row);
           }}
+          onContextMenu={(event) => {
+            event.preventDefault();
+            if (!selection.isSelected(key)) selection.click(key);
+            setContextMenu({ x: event.clientX, y: event.clientY, key, group: group.id });
+          }}
           onDragStart={(event) => {
             const payload: DragPayload = { source: group.id, paths: actOn(key, group.id) };
             inFlight = payload;
@@ -582,6 +605,27 @@ export function FileTree({
           </section>
         );
       })}
+      {contextMenu && (
+        <FileContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          items={buildContextMenuItems(
+            contextMenu.key,
+            contextMenu.group,
+            groups,
+            byPath,
+            actOn,
+            onStage,
+            onUnstage,
+            onDiscard,
+            onRemove,
+            onStopTracking,
+            onIgnore,
+            onReveal,
+          )}
+          onClose={() => setContextMenu(undefined)}
+        />
+      )}
     </div>
   );
 }
@@ -607,6 +651,123 @@ function bulkAction(
   if (group.id === 'staged') return { label: 'Unstage All', run: () => unstage(all) };
   if (group.id === 'unstaged') return { label: 'Stage All', run: () => stage(all) };
   return undefined;
+}
+
+function buildContextMenuItems(
+  key: string,
+  group: FileGroupId,
+  groups: readonly FileGroupView[],
+  byPath: Map<string, ReviewFile>,
+  actOn: (key: string, group: FileGroupId) => string[],
+  onStage?: (paths: readonly string[]) => void,
+  onUnstage?: (paths: readonly string[]) => void,
+  onDiscard?: (paths: readonly string[]) => void,
+  onRemove?: (paths: readonly string[]) => void,
+  onStopTracking?: (paths: readonly string[]) => void,
+  onIgnore?: (paths: readonly string[]) => void,
+  onReveal?: (path: string) => void,
+): FileContextMenuItem[] {
+  const paths = actOn(key, group);
+  const singlePath = paths.length === 1 ? paths[0] : undefined;
+  const files = paths.map((p) => byPath.get(p)).filter((f) => f !== undefined) as ReviewFile[];
+
+  if (files.length === 0) return [];
+
+  const items: FileContextMenuItem[] = [];
+
+  // Open (single file only)
+  if (singlePath && onReveal) {
+    const file = files[0];
+    items.push({
+      label: 'Open',
+      run: () => {
+        // Find editor/open RPC - for now this is placeholder
+        // Will be wired in ReviewPane
+      },
+    });
+  }
+
+  // Copy Path(s)
+  if (paths.length > 0) {
+    items.push({
+      label: paths.length === 1 ? 'Copy Path' : `Copy Paths`,
+      run: () => {
+        navigator.clipboard.writeText(paths.join('\n'));
+      },
+    });
+  }
+
+  items.push({ label: '', run: () => {}, separator: true });
+
+  // Stage
+  if (onStage && files.some((f) => f.unstaged || f.kind === 'untracked')) {
+    items.push({
+      label: 'Stage',
+      run: () => onStage(paths),
+    });
+  }
+
+  // Unstage
+  if (onUnstage && files.some((f) => f.staged)) {
+    items.push({
+      label: 'Unstage',
+      run: () => onUnstage(paths),
+    });
+  }
+
+  // Discard Changes
+  if (onDiscard && files.some((f) => f.unstaged && f.kind !== 'untracked')) {
+    items.push({
+      label: 'Discard Changes…',
+      destructive: true,
+      run: () => {
+        const fileList = paths.length === 1 ? `"${paths[0]}"` : `${paths.length} files`;
+        if (window.confirm(`Discard changes to ${fileList}? This cannot be undone.`)) {
+          onDiscard(paths);
+        }
+      },
+    });
+  }
+
+  // Remove
+  if (onRemove) {
+    items.push({
+      label: 'Remove…',
+      destructive: true,
+      run: () => {
+        const fileList = paths.length === 1 ? `"${paths[0]}"` : `${paths.length} files`;
+        if (window.confirm(`Remove ${fileList} from disk? This cannot be undone.`)) {
+          onRemove(paths);
+        }
+      },
+    });
+  }
+
+  // Stop Tracking
+  if (onStopTracking && files.every((f) => f.kind !== 'untracked')) {
+    items.push({
+      label: 'Stop Tracking',
+      run: () => onStopTracking(paths),
+    });
+  }
+
+  // Add to .gitignore
+  if (onIgnore && files.every((f) => f.kind === 'untracked')) {
+    items.push({
+      label: 'Add to .gitignore',
+      run: () => onIgnore(paths),
+    });
+  }
+
+  // Reveal in File Explorer
+  if (singlePath && onReveal && paths.length === 1) {
+    items.push({
+      label: 'Reveal in File Explorer',
+      run: () => onReveal(singlePath),
+    });
+  }
+
+  return items.filter((item) => item.label !== '' || item.separator);
 }
 
 function LineCounts({
