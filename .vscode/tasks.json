@@ -1,0 +1,46 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      // Declared explicitly rather than relying on "npm: build" auto-detection.
+      // That detection can be switched off (npm.autoDetect), and when it is,
+      // F5 fails with "Could not find the task" and the host never launches —
+      // which reads as the extension being broken rather than the task being
+      // missing.
+      "label": "gittree: bundle",
+      "type": "shell",
+      "command": "npm run build",
+      "group": "build",
+      "problemMatcher": [],
+      "presentation": { "reveal": "silent", "panel": "dedicated", "clear": true }
+    },
+    {
+      // Types run beside the debug session, not in front of it. Gating every F5
+      // on two full tsc passes put roughly twenty seconds between a keystroke
+      // and the app, which is the wrong trade for the inner loop; `npm run
+      // build` still gates packaging.
+      "label": "gittree: watch types",
+      "type": "shell",
+      "command": "npm run watch:types",
+      "isBackground": true,
+      // $tsc-watch is what makes this worth having: errors land in the Problems
+      // panel as you type, with file and line, instead of surfacing at build
+      // time. That is strictly earlier than the gate it replaced — and it costs
+      // the inner loop nothing, because it runs beside the debugger rather than
+      // in front of it.
+      "problemMatcher": "$tsc-watch",
+      // Starts with the folder, so the Problems panel is populated without
+      // anyone remembering to run it. VS Code asks once whether to allow
+      // automatic tasks in this folder.
+      "runOptions": { "runOn": "folderOpen" },
+      "presentation": { "reveal": "never", "panel": "dedicated" }
+    },
+    {
+      "label": "gittree: verify",
+      "type": "shell",
+      "command": "npm run verify",
+      "group": "test",
+      "problemMatcher": ["$tsc"]
+    }
+  ]
+}

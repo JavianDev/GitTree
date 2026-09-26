@@ -1,0 +1,18 @@
+# Normalise line endings to LF in the repository.
+#
+# Without this, a Windows checkout commits CRLF and every macOS or Linux
+# contributor sees whole files as changed. Working copies still get native
+# endings; only what is stored is normalised.
+* text=auto eol=lf
+
+# Binary — never normalise, never diff as text.
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.vsix binary
+*.woff binary
+*.woff2 binary
+
+# Generated. Collapsed in diffs and marked so language stats ignore it.
+package-lock.json linguist-generated=true -diff

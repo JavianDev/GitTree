@@ -1,0 +1,26 @@
+#!/bin/sh
+#
+# Typecheck before a commit lands.
+#
+# esbuild and vite both erase TypeScript without checking it, so a build alone
+# will happily produce a bundle from code that does not typecheck. The check has
+# to live somewhere; here is the right somewhere. Putting it in `npm run build`
+# instead meant every F5 waited on two full tsc passes before the debugger
+# launched, which taxes the inner loop dozens of times a day to catch something
+# that only matters once, at the commit.
+#
+# Bypass with `git commit --no-verify` when you genuinely need to.
+
+set -e
+
+# A commit from a worktree or a subdirectory still has to run from the root.
+cd "$(git rev-parse --show-toplevel)"
+
+# Nothing to check before dependencies exist — do not fail a commit over it.
+if [ ! -d node_modules ]; then
+  echo "pre-commit: node_modules missing, skipping typecheck"
+  exit 0
+fi
+
+echo "pre-commit: typechecking…"
+npm run --silent typecheck

@@ -1,0 +1,324 @@
+/*
+ * Splitter, rails, and the theme control.
+ *
+ * The geometry is not here: pane widths come from the model in useLayout and
+ * arrive as inline flex values, so this file only says what a handle and a
+ * collapsed rail look like. Every value resolves to a token in tokens.css.
+ *
+ * Imported by the two components it styles rather than by main.tsx, so either
+ * can be dropped into a view without that view remembering to load it.
+ */
+
+.gt-split {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* A drag has to feel like one gesture: without this, crossing a pane selects
+   whatever text the cursor passes over. */
+.gt-split[data-dragging='true'] {
+  user-select: none;
+  cursor: col-resize;
+}
+
+.gt-split-pane {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.gt-split-body {
+  /* Anchors the floating pane controls, and becomes the peek overlay itself. */
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Hidden rather than unmounted, so a collapsed pane keeps its scroll position
+   and its expanded folders while it is out of sight. The peek exemption is
+   stated here rather than left to source order, so neither rule depends on
+   which of them a bundler happens to emit last. */
+.gt-split-pane[data-collapsed='true']:not([data-peek='true']) > .gt-split-body {
+  display: none;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Peek — an unpinned pane, open over its neighbour                           */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * The pane keeps its rail in the row and paints outside it.
+ *
+ * Reflowing on hover was the alternative and is worse than the problem: the
+ * graph and the diff would jump every time the pointer crossed the rail. So the
+ * flex row is left alone and the body is lifted out of it.
+ */
+.gt-split-pane[data-peek='true'] {
+  overflow: visible;
+  /* The neighbour is positioned and comes later in the row, so paint order
+     alone would put it on top of the overlay meant to cover it. Above the
+     handle's z-index: 1 for the same reason. */
+  z-index: 2;
+}
+
+.gt-split-pane[data-peek='true'] > .gt-split-body {
+  position: absolute;
+  inset-block: 0;
+  /* Starts where the rail ends, so the rail stays visible and clickable and the
+     pane reads as sliding out of it. Width is inline: only the caller knows it. */
+  left: 100%;
+  background: var(--gt-bg-content);
+  border-right: 1px solid var(--gt-separator);
+  box-shadow: var(--gt-shadow-popover);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Handles                                                                    */
+/* -------------------------------------------------------------------------- */
+
+.gt-split-handle {
+  position: relative;
+  /* Above the panes, which are positioned and come later in the row: without
+     this the pane on the right paints over the handle's grab area and swallows
+     the last few pixels of every approach to it. */
+  z-index: 1;
+  flex: none;
+  align-self: stretch;
+  background: transparent;
+  cursor: col-resize;
+  /* A pointer drag must not be read as a scroll gesture, or the capture is torn
+     away mid-drag on a trackpad or a touch screen. */
+  touch-action: none;
+}
+
+/* The hairline. The handle is wider than the line it draws so there is
+   something to grab. */
+.gt-split-handle::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+  background: var(--gt-separator);
+}
+
+/* The grab area reaches a few pixels into both neighbours: six is a fair target
+   with a mouse and a poor one with anything else. */
+.gt-split-handle::after {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline: -3px;
+}
+
+.gt-split-handle:hover::before,
+.gt-split-handle:active::before,
+.gt-split-handle:focus-visible::before {
+  width: 3px;
+  background: var(--gt-accent);
+}
+
+/* Beside a collapsed pane the handle is a re-expand affordance, not a splitter,
+   so it must not advertise a drag it will refuse. */
+.gt-split-handle[data-locked='true'] {
+  cursor: default;
+}
+
+.gt-split-handle[data-locked='true']:hover::before,
+.gt-split-handle[data-locked='true']:active::before {
+  width: 1px;
+  background: var(--gt-separator);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Collapsed rail                                                             */
+/* -------------------------------------------------------------------------- */
+
+.gt-split-rail {
+  appearance: none;
+  border: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gt-space-2);
+  padding: var(--gt-space-2) 0;
+  background: var(--gt-bg-sidebar);
+  color: var(--gt-label-secondary);
+  cursor: default;
+  overflow: hidden;
+}
+
+.gt-split-rail:hover {
+  background: var(--gt-fill-hover);
+  color: var(--gt-label);
+}
+
+.gt-split-rail-glyph {
+  flex: none;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.gt-split-rail-label {
+  writing-mode: vertical-rl;
+  font-size: var(--gt-text-caption);
+  font-weight: var(--gt-weight-medium);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Pane controls                                                              */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * Pin and collapse, floating over the top-right corner of the pane.
+ *
+ * Out of the flow because the panes hold arbitrary content: a strip above them
+ * would cost every pane a row of height and leave the three of them starting at
+ * different points down the window.
+ */
+.gt-split-controls {
+  position: absolute;
+  top: var(--gt-space-1);
+  /* Clear of the scrollbar the pane's own list draws. */
+  right: var(--gt-space-3);
+  z-index: 3;
+  display: flex;
+  gap: 1px;
+  padding: 1px;
+  border-radius: var(--gt-radius-control);
+  background: var(--gt-bg-toolbar);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--gt-separator);
+  opacity: 0;
+  /* Invisible and untouchable together: a transparent control that still
+     swallows the click meant for the row underneath is worse than no control. */
+  pointer-events: none;
+}
+
+.gt-split-pane:hover > .gt-split-body > .gt-split-controls,
+.gt-split-pane:focus-within > .gt-split-body > .gt-split-controls {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.gt-split-control {
+  appearance: none;
+  border: 0;
+  /* `appearance: none` leaves the UA's buttonface fill in place, so omitting
+     this paints a light grey chip on a dark theme. */
+  background: transparent;
+  color: var(--gt-label-secondary);
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border-radius: 4px;
+  cursor: default;
+}
+
+.gt-split-control:hover {
+  background: var(--gt-fill-hover);
+  color: var(--gt-label);
+}
+
+.gt-split-control-glyph {
+  font-size: 11px;
+  line-height: 1;
+}
+
+/* An unpinned pin reads as switched off — dimmed, and tipped out of upright. */
+.gt-split-control[aria-pressed='false'] .gt-split-control-glyph {
+  opacity: 0.45;
+  transform: rotate(-35deg);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Theme control                                                              */
+/* -------------------------------------------------------------------------- */
+
+/* Compounded with .gt-tool rather than left to win on order: this file is
+   pulled in by a component, so which of the two stylesheets the bundler emits
+   last is not something either of them gets to decide. */
+.gt-tool.gt-theme-toggle {
+  /* The dot below anchors to this, and it must hold even if the toolbar rule
+     that also sets it is ever rewritten. */
+  position: relative;
+  min-width: 64px;
+}
+
+.gt-tool .gt-theme-glyph {
+  font-size: 14px;
+}
+
+/* Being pinned to a palette is otherwise invisible until the editor theme
+   changes and this one panel does not follow, so the button says so. */
+.gt-theme-toggle[data-pinned='true']::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: 7px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--gt-accent);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Motion — opt in, never assumed                                             */
+/* -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: no-preference) {
+  .gt-split-pane {
+    transition:
+      flex-grow var(--gt-duration-control) var(--gt-ease-spring),
+      flex-basis var(--gt-duration-control) var(--gt-ease-spring);
+  }
+
+  .gt-split-handle::before {
+    transition:
+      width var(--gt-duration-hover) var(--gt-ease-standard),
+      background var(--gt-duration-hover) var(--gt-ease-standard);
+  }
+
+  .gt-split-rail {
+    transition: background var(--gt-duration-hover) var(--gt-ease-standard);
+  }
+
+  .gt-split-controls {
+    transition: opacity var(--gt-duration-hover) var(--gt-ease-standard);
+  }
+
+  /* An entrance only. The body goes from `display: none` to shown, which is what
+     restarts the animation; on the way out it is gone before it could play. */
+  .gt-split-pane[data-peek='true'] > .gt-split-body {
+    animation: gt-peek-in var(--gt-duration-control) var(--gt-ease-spring);
+  }
+
+  @keyframes gt-peek-in {
+    from {
+      opacity: 0;
+      transform: translateX(-8px);
+    }
+  }
+
+  /* Easing a collapse is right; easing a drag is not — the pane would trail the
+     cursor by the duration of the transition on every move. */
+  .gt-split[data-dragging='true'] .gt-split-pane {
+    transition: none;
+  }
+}

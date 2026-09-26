@@ -1,0 +1,27 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run GitTree",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      // Bundles only, ~2s. Types are checked by "gittree: watch types" and by
+      // `npm run build` before packaging; making the debugger wait on two full
+      // tsc passes only punishes the inner loop.
+      "preLaunchTask": "gittree: bundle"
+    },
+    {
+      // For reproducing a bug that only appears without other extensions
+      // running — which is also how to confirm that console noise from
+      // Mermaid, telemetry, or a deprecation warning is not GitTree's.
+      "name": "Run GitTree (clean host)",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}", "--disable-extensions"],
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "preLaunchTask": "gittree: bundle"
+    }
+  ]
+}

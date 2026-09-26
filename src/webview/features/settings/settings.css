@@ -1,0 +1,332 @@
+/*
+ * The settings sheet.
+ *
+ * The sheet chrome itself — backdrop, panel, title, actions — is shared with
+ * the command sheet and lives in app.css. Only the sections inside it are here,
+ * so the two dialogs cannot drift apart in shape.
+ */
+
+/* -------------------------------------------------------------------------- */
+/* Shell                                                                      */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * Wider and taller than a command sheet, because this one is read rather than
+ * confirmed: remote URLs are long, and wrapping every one of them made the
+ * panel a wall of text.
+ */
+.gt-sheet-settings {
+  width: min(940px, 94vw);
+  height: min(660px, 86vh);
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+}
+
+.gt-settings-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--gt-space-3);
+  padding: var(--gt-space-4) var(--gt-space-5) var(--gt-space-3);
+  border-bottom: 1px solid var(--gt-separator);
+}
+
+.gt-settings-subtitle {
+  margin: 0;
+  font-size: var(--gt-text-callout);
+  color: var(--gt-label-secondary);
+}
+
+/* Nav rail beside the content, the way a settings window is normally read:
+   pick a subject, then work in it — rather than scrolling past three sections
+   to reach the fourth. */
+.gt-settings-layout {
+  display: grid;
+  grid-template-columns: 216px minmax(0, 1fr);
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.gt-settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--gt-space-3) var(--gt-space-2);
+  border-right: 1px solid var(--gt-separator);
+  overflow-y: auto;
+}
+
+/* A <button>, so it needs `background` stated: `appearance: none` removes the
+   platform look but not the UA's buttonface fill. */
+.gt-settings-nav-item {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--gt-label);
+  text-align: left;
+  cursor: default;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: var(--gt-space-2) var(--gt-space-3);
+  border-radius: var(--gt-radius-control);
+  border-left: 2px solid transparent;
+}
+
+.gt-settings-nav-item:hover {
+  background: var(--gt-fill-hover);
+}
+
+.gt-settings-nav-item[aria-current='true'] {
+  background: color-mix(in srgb, var(--gt-accent) 14%, transparent);
+  border-left-color: var(--gt-accent);
+}
+
+.gt-settings-nav-label {
+  font-size: var(--gt-text-body);
+  font-weight: var(--gt-weight-medium);
+}
+
+.gt-settings-nav-hint {
+  font-size: var(--gt-text-caption);
+  color: var(--gt-label-tertiary);
+  line-height: var(--gt-leading-tight);
+}
+
+.gt-settings-body {
+  overflow-y: auto;
+  padding: var(--gt-space-4) var(--gt-space-5);
+  min-height: 0;
+}
+
+/*
+ * The action row needs its own padding here.
+ *
+ * `.gt-sheet` supplies padding for its children, and this sheet sets
+ * `padding: 0` so the header, nav rail, and scrolling body can each own their
+ * edges — which left the shared actions row inheriting nothing and sitting hard
+ * against the bottom-right corner. Restated as a footer band it matches the
+ * header's inset and reads as the panel's base rather than as content that ran
+ * out of room.
+ *
+ * `flex: none` matters too: the sheet is a flex column with a scrolling middle,
+ * and without it the row is a shrink candidate that loses height as the body
+ * fills.
+ */
+.gt-sheet-settings .gt-sheet-actions {
+  flex: none;
+  align-items: center;
+  padding: var(--gt-space-3) var(--gt-space-5);
+  border-top: 1px solid var(--gt-separator);
+  background: var(--gt-bg-sheet);
+}
+
+/* Shaped like the rows it stands in for, so nothing jumps when data lands. */
+.gt-settings-skeleton-heading,
+.gt-settings-skeleton-row {
+  background: var(--gt-fill);
+  border-radius: var(--gt-radius-control);
+}
+
+.gt-settings-skeleton-heading {
+  width: 128px;
+  height: 15px;
+  margin-bottom: var(--gt-space-3);
+}
+
+.gt-settings-skeleton-row {
+  height: 26px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .gt-settings-skeleton-heading,
+  .gt-settings-skeleton-row {
+    animation: gt-settings-pulse 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes gt-settings-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/*
+ * One section is on screen at a time now, so the rule that used to separate it
+ * from the section above has nothing left to separate — it just drew a line
+ * across the top of the panel. The nav rail carries the grouping instead.
+ */
+.gt-settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-3);
+  align-items: flex-start;
+}
+
+/*
+ * A real heading now, not an uppercase micro-label.
+ *
+ * With one section on screen at a time it names the page rather than
+ * distinguishing a band from its neighbours, and uppercase caption text reads
+ * as a footnote at the top of the content it heads.
+ */
+.gt-settings-heading {
+  margin: 0;
+  font-size: var(--gt-text-title2);
+  font-weight: var(--gt-weight-semibold);
+  letter-spacing: -0.01em;
+  color: var(--gt-label);
+}
+
+.gt-settings-note {
+  margin: 0;
+  /* Explanatory prose, so it is set at reading size rather than caption size —
+     these lines are the part of the panel people actually read. */
+  font-size: var(--gt-text-callout);
+  line-height: var(--gt-leading-normal);
+  max-width: 64ch;
+  color: var(--gt-label-secondary);
+}
+
+.gt-settings-note code {
+  font-family: var(--gt-font-mono);
+  font-size: var(--gt-text-caption);
+  color: var(--gt-label);
+}
+
+.gt-settings-error {
+  padding: var(--gt-space-2) var(--gt-space-3);
+  border-radius: var(--gt-radius-control);
+  background: color-mix(in srgb, var(--gt-red) 12%, transparent);
+}
+
+.gt-settings-error pre {
+  margin: 0;
+  font-family: var(--gt-font-mono);
+  font-size: var(--gt-text-caption);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Rows                                                                       */
+/* -------------------------------------------------------------------------- */
+
+.gt-settings-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-2);
+  width: 100%;
+}
+
+/* A fixed label column so every value in the sheet starts on the same edge,
+   however long the label beside it happens to be. */
+.gt-settings-row {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--gt-space-3);
+  width: 100%;
+  /* Rows are scanned down the label column, so they need vertical rhythm of
+     their own rather than sitting flush against each other. */
+  padding: var(--gt-space-1) 0;
+  min-height: 30px;
+}
+
+.gt-settings-label {
+  font-size: var(--gt-text-body);
+  color: var(--gt-label-secondary);
+}
+
+.gt-settings-value {
+  min-width: 0;
+  font-size: var(--gt-text-body);
+  /* Paths and URLs are read from the end as often as the start, so they wrap
+     rather than being cut off at the sheet edge. */
+  overflow-wrap: anywhere;
+}
+
+.gt-settings-input {
+  min-width: 0;
+  border: 1px solid var(--gt-control-border);
+  background: var(--gt-control-bg);
+  border-radius: var(--gt-radius-control);
+  padding: 5px var(--gt-space-3);
+  font-size: var(--gt-text-body);
+}
+
+.gt-settings-select {
+  appearance: none;
+  justify-self: start;
+  border: 1px solid var(--gt-control-border);
+  background: var(--gt-control-bg);
+  border-radius: var(--gt-radius-control);
+  padding: 5px 26px 5px var(--gt-space-3);
+  font-size: var(--gt-text-body);
+  cursor: default;
+  /* Drawn chevron, as on the context bar: the platform arrow differs per OS. */
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position:
+    right 10px center,
+    right 6px center;
+  background-size:
+    4px 4px,
+    4px 4px;
+  background-repeat: no-repeat;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Remotes                                                                    */
+/* -------------------------------------------------------------------------- */
+
+.gt-remote-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-1);
+}
+
+.gt-remote {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--gt-space-2);
+  padding: var(--gt-space-1) 0;
+}
+
+.gt-remote-name {
+  font-size: var(--gt-text-callout);
+  font-weight: var(--gt-weight-semibold);
+}
+
+.gt-remote-urls {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: var(--gt-text-caption);
+  color: var(--gt-label-secondary);
+  overflow-wrap: anywhere;
+}
+
+.gt-remote-fields,
+.gt-remote-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-1);
+  min-width: 0;
+  width: 100%;
+}
+
+.gt-remote-form {
+  padding-top: var(--gt-space-2);
+}
+
+.gt-remote-actions {
+  display: flex;
+  gap: var(--gt-space-1);
+  justify-content: flex-end;
+}

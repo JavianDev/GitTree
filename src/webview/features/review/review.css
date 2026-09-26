@@ -1,0 +1,477 @@
+/*
+ * The review pane: header, grouped file list, state pill, and diff.
+ *
+ * Every value resolves to a token in tokens.css, so the pane follows the theme
+ * without a second stylesheet per appearance. Imported by the components it
+ * styles rather than by main.tsx, so any of them can be dropped into a view
+ * without that view remembering to load it.
+ *
+ * The one rule that carries meaning rather than decoration: green is the index
+ * and amber is the working tree, used for the group rail, the group header, and
+ * the drop-target highlight alike — so by the time you drag onto a group, its
+ * colour already means "staged" or "not staged".
+ */
+
+.gt-review {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  background: var(--gt-bg-content);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Header                                                                     */
+/* -------------------------------------------------------------------------- */
+
+.gt-review-header {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-1);
+  padding: var(--gt-space-2) var(--gt-space-3);
+  border-bottom: 1px solid var(--gt-separator);
+  background: var(--gt-bg-toolbar);
+}
+
+.gt-review-summary,
+.gt-review-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  min-width: 0;
+}
+
+.gt-review-summary strong {
+  font-size: var(--gt-text-headline);
+  font-weight: var(--gt-weight-semibold);
+}
+
+.gt-review-progress {
+  font-size: var(--gt-text-caption);
+  font-variant-numeric: tabular-nums;
+  color: var(--gt-label-secondary);
+}
+
+.gt-review-spacer {
+  flex: 1 1 auto;
+}
+
+/* A refused drop is not a git failure, so it is stated here rather than in the
+   shell's error banner, and it stays until dismissed or replaced. */
+.gt-review-notice {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  margin: var(--gt-space-2) var(--gt-space-3) 0;
+  padding: var(--gt-space-2) var(--gt-space-3);
+  border-radius: var(--gt-radius-card);
+  border: 1px solid color-mix(in srgb, var(--gt-orange) 40%, transparent);
+  background: color-mix(in srgb, var(--gt-orange) 12%, transparent);
+  font-size: var(--gt-text-callout);
+}
+
+.gt-review-notice span {
+  flex: 1 1 auto;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Body — side by side above 900px, stacked below                             */
+/* -------------------------------------------------------------------------- */
+
+.gt-review-body {
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+}
+
+.gt-review[data-layout='stacked'] .gt-review-body {
+  flex-direction: column;
+}
+
+.gt-review-list {
+  flex: 0 0 42%;
+  min-width: 0;
+  overflow-y: auto;
+  border-right: 1px solid var(--gt-separator);
+}
+
+.gt-review-diff {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+}
+
+/* Stacked, the list keeps roughly a third of the height and the diff takes the
+   rest: a file list you cannot see past is worse than a short diff you scroll. */
+.gt-review[data-layout='stacked'] .gt-review-list {
+  flex: 0 1 34%;
+  border-right: 0;
+  border-bottom: 1px solid var(--gt-separator);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Groups                                                                     */
+/* -------------------------------------------------------------------------- */
+
+/* The scroll container holding the Staged / Unstaged / Conflicted groups. */
+.gt-review-groups {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.gt-review-group {
+  border-left: 3px solid transparent;
+}
+
+/* Uppercase label; the count and line totals beside it are set separately. */
+.gt-review-group-title {
+  font-weight: var(--gt-weight-semibold);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.gt-review-group[data-group='staged'] {
+  border-left-color: var(--gt-green);
+}
+
+.gt-review-group[data-group='unstaged'] {
+  border-left-color: var(--gt-orange);
+}
+
+.gt-review-group[data-group='conflicted'] {
+  border-left-color: var(--gt-red);
+}
+
+.gt-review-group-header {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: var(--gt-space-1) var(--gt-space-3);
+  min-height: var(--gt-row-sidebar);
+  border-bottom: 1px solid var(--gt-separator);
+  background: var(--gt-bg-toolbar);
+  backdrop-filter: blur(20px);
+  font-size: var(--gt-text-caption);
+  font-weight: var(--gt-weight-semibold);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gt-label-secondary);
+}
+
+.gt-review-group[data-group='staged'] .gt-review-group-header {
+  background: color-mix(in srgb, var(--gt-green) 10%, var(--gt-bg-toolbar));
+}
+
+.gt-review-group[data-group='unstaged'] .gt-review-group-header {
+  background: color-mix(in srgb, var(--gt-orange) 10%, var(--gt-bg-toolbar));
+}
+
+.gt-review-group[data-group='conflicted'] .gt-review-group-header {
+  background: color-mix(in srgb, var(--gt-red) 10%, var(--gt-bg-toolbar));
+}
+
+/* The drop target. Same hue as the group's own rail, so the colour has already
+   taught what dropping here will do. */
+.gt-review-group[data-drop='true'] {
+  background: color-mix(in srgb, var(--gt-green) 12%, transparent);
+  outline: 2px dashed var(--gt-green);
+  outline-offset: -2px;
+}
+
+.gt-review-group[data-group='unstaged'][data-drop='true'] {
+  background: color-mix(in srgb, var(--gt-orange) 12%, transparent);
+  outline-color: var(--gt-orange);
+}
+
+.gt-review-group-empty {
+  margin: 0;
+  padding: var(--gt-space-2) var(--gt-space-4);
+  font-size: var(--gt-text-caption);
+  color: var(--gt-label-tertiary);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Rows                                                                       */
+/* -------------------------------------------------------------------------- */
+
+.gt-review-row {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  height: var(--gt-row-list);
+  padding-right: var(--gt-space-3);
+  cursor: default;
+  user-select: none;
+  transition: background var(--gt-duration-hover) var(--gt-ease-standard);
+}
+
+.gt-review-row:hover {
+  background: var(--gt-fill-hover);
+}
+
+/* The row being read, distinct from the rows that are selected: the diff on the
+   right belongs to exactly one of them. */
+.gt-review-row[data-active='true'] {
+  background: var(--gt-fill-active);
+  box-shadow: inset 2px 0 0 var(--gt-accent);
+}
+
+.gt-review-row[aria-selected='true'] {
+  background: var(--gt-accent);
+  color: var(--gt-on-accent);
+}
+
+.gt-review-row[aria-selected='true'] .gt-review-tag,
+.gt-review-row[aria-selected='true'] .gt-group-count,
+.gt-review-row[aria-selected='true'] .gt-review-add,
+.gt-review-row[aria-selected='true'] .gt-review-del {
+  color: color-mix(in srgb, var(--gt-on-accent) 78%, transparent);
+}
+
+/* Viewed dims the row rather than hiding it: the file is still part of the
+   change, it has just been read. */
+.gt-review-row[data-viewed='true'] {
+  opacity: 0.5;
+}
+
+.gt-review-row[data-viewed='true']:hover,
+.gt-review-row[data-viewed='true'][data-active='true'] {
+  opacity: 1;
+}
+
+.gt-review-name {
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gt-review-folder .gt-review-name {
+  font-weight: var(--gt-weight-medium);
+}
+
+/* `also staged` / `also unstaged` — the same file in its other state. */
+.gt-review-tag {
+  flex: none;
+  padding: 0 6px;
+  border-radius: var(--gt-radius-pill);
+  background: var(--gt-fill);
+  font-size: var(--gt-text-caption);
+  color: var(--gt-label-secondary);
+  white-space: nowrap;
+}
+
+.gt-review-counts {
+  flex: none;
+  display: inline-flex;
+  gap: var(--gt-space-1);
+  font-family: var(--gt-font-mono);
+  font-size: var(--gt-text-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+.gt-review-add {
+  color: var(--gt-diff-add-marker);
+}
+
+.gt-review-del {
+  color: var(--gt-diff-del-marker);
+}
+
+.gt-review-viewed {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* -------------------------------------------------------------------------- */
+/* The two-cell state pill                                                    */
+/* -------------------------------------------------------------------------- */
+
+.gt-pill {
+  flex: none;
+  display: inline-flex;
+  gap: 1px;
+  padding: 1px;
+  border-radius: 4px;
+  background: var(--gt-fill);
+}
+
+.gt-pill-cell {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  width: 9px;
+  height: 14px;
+  border-radius: 2px;
+  cursor: default;
+  /* Off is an outline rather than a paler fill: the difference between lit and
+     unlit has to survive a monochrome screen, and an outline is a shape. */
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--gt-label-tertiary);
+  transition: background var(--gt-duration-hover) var(--gt-ease-standard);
+}
+
+.gt-pill-cell:hover:not(:disabled) {
+  box-shadow: inset 0 0 0 1px var(--gt-label-secondary);
+}
+
+.gt-pill-cell:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.gt-pill-cell[data-state='on'][data-side='index'] {
+  background: var(--gt-green);
+  box-shadow: none;
+}
+
+.gt-pill-cell[data-state='on'][data-side='worktree'] {
+  background: var(--gt-orange);
+  box-shadow: none;
+}
+
+/* Conflict is hatched, not merely red: it must be distinguishable from a lit
+   cell without relying on hue, and it is neither of the two staging states. */
+.gt-pill-cell[data-state='conflict'] {
+  box-shadow: inset 0 0 0 1px var(--gt-red);
+  background-color: color-mix(in srgb, var(--gt-red) 22%, transparent);
+  background-image: repeating-linear-gradient(
+    45deg,
+    var(--gt-red) 0 1.5px,
+    transparent 1.5px 4px
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Diff                                                                       */
+/* -------------------------------------------------------------------------- */
+
+.gt-diff-view {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.gt-diff-toolbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  min-height: var(--gt-row-list);
+  padding: 0 var(--gt-space-3);
+  border-bottom: 1px solid var(--gt-separator);
+}
+
+.gt-diff-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.gt-diff-note {
+  margin: 0;
+  padding: var(--gt-space-3);
+  font-size: var(--gt-text-callout);
+  color: var(--gt-label-secondary);
+}
+
+/* One hunk. Separated from its neighbour so the jump in line numbers between
+   two hunks reads as a gap rather than as continuous code. */
+.gt-diff-hunk + .gt-diff-hunk {
+  margin-top: var(--gt-space-2);
+  border-top: 1px solid var(--gt-separator);
+}
+
+.gt-diff-file + .gt-diff-file {
+  border-top: 1px solid var(--gt-separator);
+}
+
+.gt-diff-file-header {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: var(--gt-space-1) var(--gt-space-3);
+  background: var(--gt-bg-toolbar);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--gt-separator);
+}
+
+.gt-diff-file-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gt-space-1);
+  min-width: 0;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  font-weight: var(--gt-weight-medium);
+  cursor: default;
+}
+
+.gt-diff-file-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--gt-font-mono);
+  font-size: var(--gt-text-caption);
+}
+
+.gt-diff-nonewline {
+  color: var(--gt-label-tertiary);
+  font-style: italic;
+}
+
+/* -- Side by side ---------------------------------------------------------- */
+
+.gt-diff-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.gt-diff-side {
+  display: grid;
+  /* Same gutter width as the unified layout, so switching between them does not
+     move the code sideways. */
+  grid-template-columns: 44px minmax(0, 1fr);
+  column-gap: var(--gt-space-2);
+  padding-right: var(--gt-space-2);
+  white-space: pre;
+  min-width: 0;
+}
+
+.gt-diff-side + .gt-diff-side {
+  border-left: 1px solid var(--gt-separator);
+}
+
+.gt-diff-side[data-kind='add'] {
+  background: var(--gt-diff-add-bg);
+}
+
+.gt-diff-side[data-kind='delete'] {
+  background: var(--gt-diff-del-bg);
+}
+
+/* The filler opposite a one-sided edit. Neutral, so it reads as absence rather
+   than as a third kind of change. */
+.gt-diff-side[data-kind='empty'] {
+  background: var(--gt-fill);
+}

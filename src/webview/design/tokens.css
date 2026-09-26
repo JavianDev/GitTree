@@ -1,0 +1,333 @@
+/*
+ * GitTree design tokens — Apple Human Interface Guidelines, theme-aware.
+ *
+ * Every colour, size, and duration in the interface resolves through a token
+ * declared here. No component hard-codes a hex value or a pixel gap, which is
+ * what keeps light, dark, and high-contrast consistent without three parallel
+ * stylesheets.
+ *
+ * Theming follows the class VS Code stamps on <body>. The full light palette is
+ * declared on :root, and only the tokens that actually differ are redeclared
+ * for dark and high contrast.
+ */
+
+:root {
+  /* --- Apple system colours (light variants) ------------------------------ */
+  --gt-blue: #007aff;
+  --gt-green: #34c759;
+  --gt-indigo: #5856d6;
+  --gt-orange: #ff9500;
+  --gt-pink: #ff2d55;
+  --gt-purple: #af52de;
+  --gt-red: #ff3b30;
+  --gt-teal: #30b0c7;
+  --gt-yellow: #ffcc00;
+
+  /* Product mark. systemYellow reads as GitTree the way systemBlue reads as
+     "generic Apple control", so the brand and the selection accent differ. */
+  --gt-brand: var(--gt-yellow);
+  --gt-accent: var(--gt-blue);
+  --gt-on-accent: #ffffff;
+
+  /* --- Surfaces ----------------------------------------------------------- */
+  --gt-bg: #f5f5f7;
+  --gt-bg-content: #ffffff;
+  --gt-bg-sidebar: rgba(246, 246, 248, 0.72);
+  --gt-bg-toolbar: rgba(246, 246, 248, 0.8);
+  --gt-bg-inspector: rgba(250, 250, 252, 0.86);
+  --gt-bg-elevated: #ffffff;
+  --gt-bg-sheet: rgba(252, 252, 253, 0.98);
+  --gt-scrim: rgba(0, 0, 0, 0.22);
+
+  /* --- Labels: hierarchy by opacity, per HIG ------------------------------ */
+  --gt-label: rgba(0, 0, 0, 0.85);
+  --gt-label-secondary: rgba(0, 0, 0, 0.5);
+  --gt-label-tertiary: rgba(0, 0, 0, 0.26);
+  --gt-label-quaternary: rgba(0, 0, 0, 0.14);
+
+  /* --- Fills and separators ---------------------------------------------- */
+  --gt-separator: rgba(0, 0, 0, 0.1);
+  --gt-separator-opaque: #d8d8dc;
+  --gt-fill: rgba(120, 120, 128, 0.12);
+  --gt-fill-hover: rgba(0, 0, 0, 0.045);
+  --gt-fill-active: rgba(0, 0, 0, 0.08);
+  --gt-control-bg: #ffffff;
+  --gt-control-border: rgba(0, 0, 0, 0.14);
+  --gt-shadow-sheet: 0 12px 40px rgba(0, 0, 0, 0.22);
+  --gt-shadow-popover: 0 6px 20px rgba(0, 0, 0, 0.16);
+
+  /* --- Diff surfaces ------------------------------------------------------ */
+  --gt-diff-add-bg: rgba(52, 199, 89, 0.14);
+  --gt-diff-add-marker: #248a3d;
+  --gt-diff-del-bg: rgba(255, 59, 48, 0.13);
+  --gt-diff-del-marker: #c9271e;
+
+  /* --- Graph rails -------------------------------------------------------
+     Twelve hues walking the wheel in large steps, so colours issued back to
+     back are far apart and never read as "nearly the same branch". Saturation
+     is high enough for a 2px rail to hold its identity against the page. */
+  --gt-lane-0: #007aff;
+  --gt-lane-1: #ff9500;
+  --gt-lane-2: #af52de;
+  --gt-lane-3: #34c759;
+  --gt-lane-4: #ff2d55;
+  --gt-lane-5: #30b0c7;
+  --gt-lane-6: #ffb300;
+  --gt-lane-7: #5856d6;
+  --gt-lane-8: #00a37a;
+  --gt-lane-9: #e0457b;
+  --gt-lane-10: #8e6bd4;
+  --gt-lane-11: #c2761d;
+
+  /* Node fill sits behind every commit dot so passing rails never touch it. */
+  --gt-node-ring: var(--gt-bg-content);
+
+  /* --- Typography --------------------------------------------------------- */
+  --gt-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    "Segoe UI Variable Text", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  --gt-font-mono: "SF Mono", ui-monospace, "Cascadia Code", "Cascadia Mono",
+    "JetBrains Mono", Menlo, Consolas, monospace;
+
+  --gt-text-title: 22px;
+  --gt-text-title2: 17px;
+  --gt-text-headline: 13px;
+  --gt-text-body: 13px;
+  --gt-text-callout: 12px;
+  --gt-text-caption: 11px;
+
+  --gt-weight-regular: 400;
+  --gt-weight-medium: 500;
+  --gt-weight-semibold: 600;
+
+  --gt-leading-tight: 1.25;
+  --gt-leading-normal: 1.45;
+
+  /* --- Spacing: 8pt grid with 4pt half-steps ------------------------------ */
+  --gt-space-1: 4px;
+  --gt-space-2: 8px;
+  --gt-space-3: 12px;
+  --gt-space-4: 16px;
+  --gt-space-5: 24px;
+  --gt-space-6: 32px;
+
+  /* --- Radii -------------------------------------------------------------- */
+  --gt-radius-control: 6px;
+  --gt-radius-card: 10px;
+  --gt-radius-sheet: 14px;
+  --gt-radius-pill: 999px;
+
+  /* --- Metrics ------------------------------------------------------------ */
+  --gt-row-sidebar: 24px;
+  --gt-row-list: 28px;
+  --gt-toolbar-height: 44px;
+  --gt-sidebar-width: 248px;
+  --gt-inspector-width: 320px;
+
+  /* --- Motion ------------------------------------------------------------- */
+  /* The macOS spring: fast out, settled landing, no overshoot. */
+  --gt-ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --gt-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --gt-duration-sheet: 350ms;
+  --gt-duration-control: 180ms;
+  --gt-duration-hover: 150ms;
+
+  /* --- Focus -------------------------------------------------------------- */
+  --gt-focus-ring: 0 0 0 3px color-mix(in srgb, var(--gt-accent) 50%, transparent);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Dark                                                                       */
+/* -------------------------------------------------------------------------- */
+
+body.vscode-dark {
+  --gt-blue: #0a84ff;
+  --gt-green: #30d158;
+  --gt-indigo: #5e5ce6;
+  --gt-orange: #ff9f0a;
+  --gt-pink: #ff375f;
+  --gt-purple: #bf5af2;
+  --gt-red: #ff453a;
+  --gt-teal: #40c8e0;
+  --gt-yellow: #ffd60a;
+
+  --gt-bg: #262628;
+  --gt-bg-content: #1e1e20;
+  --gt-bg-sidebar: rgba(40, 40, 43, 0.72);
+  --gt-bg-toolbar: rgba(44, 44, 47, 0.8);
+  --gt-bg-inspector: rgba(34, 34, 37, 0.86);
+  --gt-bg-elevated: #2c2c2e;
+  --gt-bg-sheet: rgba(46, 46, 49, 0.98);
+  --gt-scrim: rgba(0, 0, 0, 0.5);
+
+  --gt-label: rgba(255, 255, 255, 0.92);
+  --gt-label-secondary: rgba(255, 255, 255, 0.55);
+  --gt-label-tertiary: rgba(255, 255, 255, 0.28);
+  --gt-label-quaternary: rgba(255, 255, 255, 0.16);
+
+  --gt-separator: rgba(255, 255, 255, 0.12);
+  --gt-separator-opaque: #3a3a3c;
+  --gt-fill: rgba(120, 120, 128, 0.24);
+  --gt-fill-hover: rgba(255, 255, 255, 0.06);
+  --gt-fill-active: rgba(255, 255, 255, 0.1);
+  --gt-control-bg: #3a3a3c;
+  --gt-control-border: rgba(255, 255, 255, 0.16);
+  --gt-shadow-sheet: 0 12px 40px rgba(0, 0, 0, 0.55);
+  --gt-shadow-popover: 0 6px 20px rgba(0, 0, 0, 0.45);
+
+  --gt-diff-add-bg: rgba(48, 209, 88, 0.16);
+  --gt-diff-add-marker: #30d158;
+  --gt-diff-del-bg: rgba(255, 69, 58, 0.16);
+  --gt-diff-del-marker: #ff453a;
+
+  /* Rails lift in brightness on a dark ground; the darker light-mode values
+     would sink into the background rather than reading as colour. */
+  --gt-lane-0: #4c9dff;
+  --gt-lane-1: #ff9f0a;
+  --gt-lane-2: #c07ce8;
+  --gt-lane-3: #48d868;
+  --gt-lane-4: #ff5c78;
+  --gt-lane-5: #46c8e0;
+  --gt-lane-6: #ffc93c;
+  --gt-lane-7: #7d7bea;
+  --gt-lane-8: #2ecfa4;
+  --gt-lane-9: #f26a9c;
+  --gt-lane-10: #a68df0;
+  --gt-lane-11: #e0a04a;
+}
+
+/* -------------------------------------------------------------------------- */
+/* High contrast — materials off, borders up                                  */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * The doubled class is a deliberate specificity bump, not a typo.
+ *
+ * A named theme matches as `body[data-gt-theme='…']` (0-2-1). A single class
+ * here would be (0-1-1) and lose, so picking Midnight would silently switch
+ * high contrast off for a user who needs it. Repeating the class reaches (0-2-1)
+ * and, being declared before themes.css, would still lose on a tie — so it is
+ * repeated once more to reach (0-3-1) and win outright.
+ */
+body.vscode-high-contrast.vscode-high-contrast.vscode-high-contrast,
+body.vscode-high-contrast-light.vscode-high-contrast-light.vscode-high-contrast-light {
+  --gt-bg-sidebar: var(--gt-bg);
+  --gt-bg-toolbar: var(--gt-bg);
+  --gt-bg-inspector: var(--gt-bg);
+  --gt-bg-sheet: var(--gt-bg-elevated);
+  --gt-separator: currentColor;
+  --gt-label-secondary: var(--gt-label);
+  --gt-label-tertiary: var(--gt-label);
+  --gt-control-border: currentColor;
+}
+
+/* Same specificity bump, for the same reason. */
+body.vscode-high-contrast.vscode-high-contrast.vscode-high-contrast {
+  --gt-label: #ffffff;
+  --gt-bg: #000000;
+  --gt-bg-content: #000000;
+  --gt-bg-elevated: #0d0d0d;
+}
+
+body.vscode-high-contrast-light.vscode-high-contrast-light.vscode-high-contrast-light {
+  --gt-label: #000000;
+  --gt-bg: #ffffff;
+  --gt-bg-content: #ffffff;
+  --gt-bg-elevated: #ffffff;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Base                                                                       */
+/* -------------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--gt-bg);
+  color: var(--gt-label);
+  font-family: var(--gt-font);
+  font-size: var(--gt-text-body);
+  line-height: var(--gt-leading-normal);
+  /* HIG interfaces are dense; unhinted rendering keeps small type legible. */
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+:focus {
+  outline: none;
+}
+
+/* Keyboard focus only — a ring on every mouse click is noise. */
+:focus-visible {
+  box-shadow: var(--gt-focus-ring);
+  border-radius: var(--gt-radius-control);
+}
+
+::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gt-label-quaternary);
+  border: 3px solid transparent;
+  border-radius: var(--gt-radius-pill);
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gt-label-tertiary);
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Motion — opt in, never assumed                                             */
+/* -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Materials degrade to opaque where backdrop-filter is unavailable. */
+@supports not (backdrop-filter: blur(1px)) {
+  :root {
+    --gt-bg-sidebar: #f6f6f8;
+    --gt-bg-toolbar: #f6f6f8;
+    --gt-bg-inspector: #fafafc;
+  }
+
+  body.vscode-dark {
+    --gt-bg-sidebar: #28282b;
+    --gt-bg-toolbar: #2c2c2f;
+    --gt-bg-inspector: #222225;
+  }
+}

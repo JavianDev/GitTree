@@ -1,0 +1,153 @@
+/*
+ * Named themes.
+ *
+ * Each is nothing but a token override block on `[data-gt-theme]`, so adding a
+ * theme never touches a component. The default — no attribute set — inherits
+ * the VS Code body class handled in tokens.css, so "Follow VS Code" costs
+ * nothing and stays correct when the user changes editor theme.
+ */
+
+/* -------------------------------------------------------------------------- */
+/* macOS Light — the reference HIG palette, regardless of editor theme         */
+/* -------------------------------------------------------------------------- */
+
+body[data-gt-theme='macos-light'] {
+  --gt-blue: #007aff;
+  --gt-green: #34c759;
+  --gt-red: #ff3b30;
+  --gt-yellow: #ffcc00;
+
+  --gt-bg: #f5f5f7;
+  --gt-bg-content: #ffffff;
+  --gt-bg-sidebar: rgba(246, 246, 248, 0.72);
+  --gt-bg-toolbar: rgba(246, 246, 248, 0.8);
+  --gt-bg-inspector: rgba(250, 250, 252, 0.86);
+  --gt-bg-elevated: #ffffff;
+  --gt-bg-sheet: rgba(252, 252, 253, 0.98);
+
+  --gt-label: rgba(0, 0, 0, 0.85);
+  --gt-label-secondary: rgba(0, 0, 0, 0.5);
+  --gt-label-tertiary: rgba(0, 0, 0, 0.26);
+  --gt-label-quaternary: rgba(0, 0, 0, 0.14);
+
+  --gt-separator: rgba(0, 0, 0, 0.1);
+  --gt-fill: rgba(120, 120, 128, 0.12);
+  --gt-fill-hover: rgba(0, 0, 0, 0.045);
+  --gt-control-bg: #ffffff;
+  --gt-control-border: rgba(0, 0, 0, 0.14);
+}
+
+/* -------------------------------------------------------------------------- */
+/* macOS Dark                                                                 */
+/* -------------------------------------------------------------------------- */
+
+body[data-gt-theme='macos-dark'] {
+  --gt-blue: #0a84ff;
+  --gt-green: #30d158;
+  --gt-red: #ff453a;
+  --gt-yellow: #ffd60a;
+
+  --gt-bg: #262628;
+  --gt-bg-content: #1e1e20;
+  --gt-bg-sidebar: rgba(40, 40, 43, 0.72);
+  --gt-bg-toolbar: rgba(44, 44, 47, 0.8);
+  --gt-bg-inspector: rgba(34, 34, 37, 0.86);
+  --gt-bg-elevated: #2c2c2e;
+  --gt-bg-sheet: rgba(46, 46, 49, 0.98);
+
+  --gt-label: rgba(255, 255, 255, 0.92);
+  --gt-label-secondary: rgba(255, 255, 255, 0.55);
+  --gt-label-tertiary: rgba(255, 255, 255, 0.28);
+  --gt-label-quaternary: rgba(255, 255, 255, 0.16);
+
+  --gt-separator: rgba(255, 255, 255, 0.12);
+  --gt-fill: rgba(120, 120, 128, 0.24);
+  --gt-fill-hover: rgba(255, 255, 255, 0.06);
+  --gt-control-bg: #3a3a3c;
+  --gt-control-border: rgba(255, 255, 255, 0.16);
+
+  --gt-diff-add-bg: rgba(48, 209, 88, 0.16);
+  --gt-diff-add-marker: #30d158;
+  --gt-diff-del-bg: rgba(255, 69, 58, 0.16);
+  --gt-diff-del-marker: #ff453a;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Graphite — neutral and low-chroma, for long sessions in a colourful editor  */
+/* -------------------------------------------------------------------------- */
+
+body[data-gt-theme='graphite'] {
+  --gt-accent: #8e8e93;
+  --gt-blue: #7d8590;
+  --gt-green: #6f9e77;
+  --gt-red: #b06a63;
+  --gt-orange: #a8865c;
+  --gt-purple: #8d7fa8;
+  --gt-teal: #6f959e;
+  --gt-yellow: #b09a5c;
+
+  --gt-bg: #2a2a2c;
+  --gt-bg-content: #232325;
+  --gt-bg-sidebar: rgba(44, 44, 46, 0.78);
+  --gt-bg-toolbar: rgba(48, 48, 50, 0.85);
+  --gt-bg-inspector: rgba(38, 38, 40, 0.88);
+  --gt-bg-elevated: #313133;
+  --gt-bg-sheet: rgba(50, 50, 52, 0.98);
+
+  --gt-label: rgba(255, 255, 255, 0.88);
+  --gt-label-secondary: rgba(255, 255, 255, 0.52);
+  --gt-label-tertiary: rgba(255, 255, 255, 0.3);
+  --gt-label-quaternary: rgba(255, 255, 255, 0.16);
+
+  --gt-separator: rgba(255, 255, 255, 0.1);
+  --gt-fill: rgba(255, 255, 255, 0.07);
+  --gt-fill-hover: rgba(255, 255, 255, 0.05);
+  --gt-control-bg: #3a3a3c;
+  --gt-control-border: rgba(255, 255, 255, 0.14);
+
+  /* Lanes stay distinguishable without the saturation the default palette uses. */
+  --gt-lane-0: #7d8590;
+  --gt-lane-1: #8d7fa8;
+  --gt-lane-2: #6f9e77;
+  --gt-lane-3: #a8865c;
+  --gt-lane-4: #a87f8d;
+  --gt-lane-5: #6f959e;
+  --gt-lane-6: #7f83a8;
+  --gt-lane-7: #9a8f7d;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Midnight — deep navy, higher contrast for dim rooms                        */
+/* -------------------------------------------------------------------------- */
+
+body[data-gt-theme='midnight'] {
+  --gt-accent: #4c8dff;
+  --gt-blue: #4c8dff;
+  --gt-green: #3ddc84;
+  --gt-red: #ff6b60;
+  --gt-yellow: #ffd60a;
+
+  --gt-bg: #0e1420;
+  --gt-bg-content: #0a0f18;
+  --gt-bg-sidebar: rgba(16, 24, 38, 0.82);
+  --gt-bg-toolbar: rgba(18, 27, 43, 0.88);
+  --gt-bg-inspector: rgba(13, 20, 32, 0.9);
+  --gt-bg-elevated: #162031;
+  --gt-bg-sheet: rgba(20, 30, 48, 0.98);
+
+  --gt-label: rgba(233, 240, 255, 0.94);
+  --gt-label-secondary: rgba(233, 240, 255, 0.58);
+  --gt-label-tertiary: rgba(233, 240, 255, 0.32);
+  --gt-label-quaternary: rgba(233, 240, 255, 0.18);
+
+  --gt-separator: rgba(140, 170, 220, 0.16);
+  --gt-fill: rgba(90, 130, 190, 0.16);
+  --gt-fill-hover: rgba(90, 130, 190, 0.14);
+  --gt-control-bg: #172133;
+  --gt-control-border: rgba(140, 170, 220, 0.22);
+
+  --gt-diff-add-bg: rgba(61, 220, 132, 0.15);
+  --gt-diff-add-marker: #3ddc84;
+  --gt-diff-del-bg: rgba(255, 107, 96, 0.15);
+  --gt-diff-del-marker: #ff6b60;
+}

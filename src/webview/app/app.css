@@ -1,0 +1,1569 @@
+/*
+ * Layout and component styles.
+ *
+ * Structure follows the macOS three-pane pattern: source list, content, and a
+ * collapsible inspector under a translucent toolbar. Every value below resolves
+ * to a token in tokens.css.
+ */
+
+.gt-shell {
+  display: grid;
+  /* tabs · toolbar · context bar · body · command log · ribbon.
+     The log row is `auto` so it takes no space at all when collapsed. */
+  grid-template-rows: 32px var(--gt-toolbar-height) 36px minmax(0, 1fr) auto 28px;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Repository tabs                                                            */
+/* -------------------------------------------------------------------------- */
+
+.gt-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 1px;
+  padding: 0 var(--gt-space-2);
+  background: var(--gt-bg);
+  border-bottom: 1px solid var(--gt-separator);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.gt-tabs::-webkit-scrollbar {
+  height: 0;
+}
+
+.gt-tab {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-1);
+  flex: 0 0 auto;
+  /* Tabs shrink to a floor and then scroll, rather than compressing every tab
+     into illegibility as more repositories open. */
+  min-width: 96px;
+  max-width: 220px;
+  padding: 0 var(--gt-space-2);
+  cursor: default;
+  user-select: none;
+  font-size: var(--gt-text-callout);
+  color: var(--gt-label-secondary);
+  border-top: 2px solid transparent;
+  transition: background var(--gt-duration-hover) var(--gt-ease-standard);
+}
+
+.gt-tab:hover {
+  background: var(--gt-fill-hover);
+}
+
+.gt-tab[aria-selected='true'] {
+  background: var(--gt-bg-content);
+  color: var(--gt-label);
+  border-top-color: var(--gt-brand);
+}
+
+.gt-tab-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gt-tab-kind,
+.gt-tab-count {
+  flex: none;
+  font-size: var(--gt-text-caption);
+  font-variant-numeric: tabular-nums;
+  color: var(--gt-label-tertiary);
+}
+
+.gt-tab-dirty {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gt-orange);
+}
+
+.gt-tab-close,
+.gt-tab-add {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--gt-label-tertiary);
+  cursor: default;
+  border-radius: 4px;
+  line-height: 1;
+  padding: 2px 5px;
+}
+
+.gt-tab-close:hover,
+.gt-tab-add:hover {
+  background: var(--gt-fill);
+  color: var(--gt-label);
+}
+
+.gt-tab-add {
+  flex: none;
+  align-self: center;
+  font-size: 15px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Toolbar                                                                    */
+/* -------------------------------------------------------------------------- */
+
+.gt-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 var(--gt-space-3);
+  background: var(--gt-bg-toolbar);
+  backdrop-filter: blur(30px) saturate(180%);
+  border-bottom: 1px solid var(--gt-separator);
+  /* The toolbar floats over scrolled content, as in a macOS window. */
+  position: relative;
+  z-index: 3;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.gt-toolbar::-webkit-scrollbar {
+  height: 0;
+}
+
+/* A toolbar action: glyph over label, 44px hit target per HIG. */
+.gt-tool {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--gt-label);
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-width: 52px;
+  height: 44px;
+  padding: 0 var(--gt-space-2);
+  border-radius: var(--gt-radius-control);
+  cursor: default;
+  position: relative;
+  transition:
+    background var(--gt-duration-hover) var(--gt-ease-standard),
+    transform var(--gt-duration-control) var(--gt-ease-spring);
+}
+
+.gt-tool:hover:not(:disabled) {
+  background: var(--gt-fill-hover);
+}
+
+.gt-tool:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.gt-tool:disabled {
+  color: var(--gt-label-tertiary);
+}
+
+.gt-tool[data-destructive='true']:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--gt-red) 14%, transparent);
+  color: var(--gt-red);
+}
+
+.gt-tool-glyph {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.gt-tool-label {
+  font-size: var(--gt-text-caption);
+  font-weight: var(--gt-weight-medium);
+  white-space: nowrap;
+}
+
+.gt-tool-badge {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: var(--gt-radius-pill);
+  background: var(--gt-accent);
+  color: var(--gt-on-accent);
+  font-size: 9px;
+  font-weight: var(--gt-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  display: grid;
+  place-items: center;
+}
+
+.gt-toolbar-sep {
+  flex: none;
+  width: 1px;
+  height: 24px;
+  margin: 0 var(--gt-space-2);
+  background: var(--gt-separator);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Context bar                                                                */
+/* -------------------------------------------------------------------------- */
+
+.gt-context {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  padding: 0 var(--gt-space-3);
+  background: var(--gt-bg);
+  border-bottom: 1px solid var(--gt-separator);
+  position: relative;
+  z-index: 2;
+}
+
+.gt-context-select {
+  appearance: none;
+  border: 1px solid var(--gt-control-border);
+  background: var(--gt-control-bg);
+  border-radius: var(--gt-radius-control);
+  padding: 2px 20px 2px 8px;
+  font-size: var(--gt-text-caption);
+  cursor: default;
+  /* The disclosure chevron is drawn rather than relying on the platform arrow,
+     which differs across OSes and breaks the HIG look. */
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position:
+    right 9px center,
+    right 5px center;
+  background-size:
+    4px 4px,
+    4px 4px;
+  background-repeat: no-repeat;
+}
+
+.gt-context-input {
+  flex: 0 1 260px;
+  border: 1px solid var(--gt-control-border);
+  background: var(--gt-control-bg);
+  border-radius: var(--gt-radius-pill);
+  padding: 3px var(--gt-space-3);
+  font-size: var(--gt-text-caption);
+}
+
+.gt-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  font-size: var(--gt-text-headline);
+  font-weight: var(--gt-weight-semibold);
+  letter-spacing: -0.01em;
+  color: var(--gt-label);
+  white-space: nowrap;
+}
+
+.gt-brand-mark {
+  flex: none;
+  color: var(--gt-brand);
+}
+
+.gt-toolbar-spacer {
+  flex: 1 1 auto;
+  min-width: var(--gt-space-2);
+}
+
+.gt-toolbar-title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--gt-space-2);
+  min-width: 0;
+}
+
+.gt-toolbar-repo {
+  font-size: var(--gt-text-headline);
+  font-weight: var(--gt-weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gt-toolbar-branch {
+  font-size: var(--gt-text-callout);
+  color: var(--gt-label-secondary);
+  white-space: nowrap;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Segmented control                                                          */
+/* -------------------------------------------------------------------------- */
+
+.gt-segmented {
+  display: inline-flex;
+  padding: 2px;
+  gap: 2px;
+  background: var(--gt-fill);
+  border-radius: var(--gt-radius-control);
+}
+
+.gt-segment {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--gt-label-secondary);
+  font-size: var(--gt-text-callout);
+  font-weight: var(--gt-weight-medium);
+  padding: 3px 12px;
+  border-radius: 4px;
+  cursor: default;
+  white-space: nowrap;
+  transition: color var(--gt-duration-hover) var(--gt-ease-standard);
+}
+
+.gt-segment:hover {
+  color: var(--gt-label);
+}
+
+.gt-segment[aria-selected='true'] {
+  background: var(--gt-bg-elevated);
+  color: var(--gt-label);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Panes                                                                      */
+/* -------------------------------------------------------------------------- */
+
+.gt-body {
+  display: grid;
+  grid-template-columns: var(--gt-sidebar-width) minmax(0, 1fr) var(--gt-inspector-width);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.gt-body[data-inspector='hidden'] {
+  grid-template-columns: var(--gt-sidebar-width) minmax(0, 1fr);
+}
+
+.gt-sidebar {
+  background: var(--gt-bg-sidebar);
+  backdrop-filter: blur(30px) saturate(180%);
+  border-right: 1px solid var(--gt-separator);
+  overflow-y: auto;
+  padding: var(--gt-space-2) 0;
+}
+
+.gt-content {
+  background: var(--gt-bg-content);
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.gt-inspector {
+  background: var(--gt-bg-inspector);
+  backdrop-filter: blur(30px) saturate(180%);
+  border-left: 1px solid var(--gt-separator);
+  overflow-y: auto;
+  padding: var(--gt-space-4);
+  min-width: 0;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Source list                                                                */
+/* -------------------------------------------------------------------------- */
+
+/* Rendered as a <button> so sections are keyboard-operable, but styled as a
+   label. Declared once: a second rule further down was overriding half of this
+   depending on source order, which is exactly the kind of collision that makes
+   spacing drift for no visible reason. */
+.gt-section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-1);
+  width: 100%;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: default;
+  font-size: var(--gt-text-caption);
+  font-weight: var(--gt-weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gt-label-tertiary);
+  padding: var(--gt-space-3) var(--gt-space-3) var(--gt-space-1);
+}
+
+.gt-source-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.gt-source-row {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  height: var(--gt-row-sidebar);
+  padding: 0 var(--gt-space-3);
+  border-radius: var(--gt-radius-control);
+  margin: 0 var(--gt-space-2);
+  cursor: default;
+  user-select: none;
+  font-size: var(--gt-text-body);
+  color: var(--gt-label);
+  transition: background var(--gt-duration-hover) var(--gt-ease-standard);
+}
+
+.gt-source-row:hover {
+  background: var(--gt-fill-hover);
+}
+
+.gt-source-row[aria-selected='true'] {
+  background: var(--gt-accent);
+  color: var(--gt-on-accent);
+}
+
+.gt-source-row[aria-selected='true'] .gt-source-meta,
+.gt-source-row[aria-selected='true'] .gt-kind-badge {
+  color: color-mix(in srgb, var(--gt-on-accent) 75%, transparent);
+}
+
+.gt-source-name {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gt-source-meta {
+  flex: none;
+  font-size: var(--gt-text-caption);
+  font-variant-numeric: tabular-nums;
+  color: var(--gt-label-secondary);
+}
+
+.gt-kind-badge {
+  flex: none;
+  font-size: var(--gt-text-caption);
+  color: var(--gt-label-tertiary);
+}
+
+.gt-disclosure {
+  flex: none;
+  width: 12px;
+  text-align: center;
+  color: var(--gt-label-tertiary);
+  font-size: 9px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Lists and rows                                                             */
+/* -------------------------------------------------------------------------- */
+
+.gt-scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.gt-group-header {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: var(--gt-space-2) var(--gt-space-4);
+  background: var(--gt-bg-toolbar);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--gt-separator);
+  font-size: var(--gt-text-caption);
+  font-weight: var(--gt-weight-semibold);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gt-label-secondary);
+}
+
+.gt-group-count {
+  font-variant-numeric: tabular-nums;
+  color: var(--gt-label-tertiary);
+}
+
+.gt-file-row {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  height: var(--gt-row-list);
+  padding: 0 var(--gt-space-4);
+  cursor: default;
+  user-select: none;
+  transition: background var(--gt-duration-hover) var(--gt-ease-standard);
+}
+
+.gt-file-row:hover {
+  background: var(--gt-fill-hover);
+}
+
+.gt-file-row[aria-selected='true'] {
+  background: var(--gt-accent);
+  color: var(--gt-on-accent);
+}
+
+.gt-file-path {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  text-align: left;
+}
+
+.gt-file-dir {
+  color: var(--gt-label-tertiary);
+}
+
+.gt-file-row[aria-selected='true'] .gt-file-dir {
+  color: color-mix(in srgb, var(--gt-on-accent) 70%, transparent);
+}
+
+/* Single-letter status glyph, colour-coded and shape-coded so the meaning
+   survives a colour-vision difference. */
+.gt-status-glyph {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: var(--gt-weight-semibold);
+  font-family: var(--gt-font-mono);
+  background: var(--gt-fill);
+  color: var(--gt-label-secondary);
+}
+
+.gt-status-glyph[data-kind='added'],
+.gt-status-glyph[data-kind='untracked'] {
+  background: color-mix(in srgb, var(--gt-green) 20%, transparent);
+  color: var(--gt-diff-add-marker);
+}
+
+.gt-status-glyph[data-kind='deleted'] {
+  background: color-mix(in srgb, var(--gt-red) 20%, transparent);
+  color: var(--gt-diff-del-marker);
+}
+
+.gt-status-glyph[data-kind='modified'],
+.gt-status-glyph[data-kind='typechange'] {
+  background: color-mix(in srgb, var(--gt-orange) 22%, transparent);
+  color: var(--gt-orange);
+}
+
+.gt-status-glyph[data-kind='renamed'],
+.gt-status-glyph[data-kind='copied'] {
+  background: color-mix(in srgb, var(--gt-purple) 20%, transparent);
+  color: var(--gt-purple);
+}
+
+.gt-status-glyph[data-kind='conflicted'] {
+  background: var(--gt-red);
+  color: #fff;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Controls                                                                   */
+/* -------------------------------------------------------------------------- */
+
+.gt-button {
+  appearance: none;
+  border: 1px solid var(--gt-control-border);
+  background: var(--gt-control-bg);
+  color: var(--gt-label);
+  border-radius: var(--gt-radius-control);
+  padding: 4px 12px;
+  font-size: var(--gt-text-callout);
+  font-weight: var(--gt-weight-medium);
+  cursor: default;
+  white-space: nowrap;
+  transition:
+    background var(--gt-duration-hover) var(--gt-ease-standard),
+    transform var(--gt-duration-hover) var(--gt-ease-spring);
+}
+
+.gt-button:hover:not(:disabled) {
+  background: var(--gt-fill-hover);
+}
+
+.gt-button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.gt-button:disabled {
+  color: var(--gt-label-tertiary);
+  background: transparent;
+}
+
+.gt-button[data-variant='primary'] {
+  background: var(--gt-accent);
+  border-color: transparent;
+  color: var(--gt-on-accent);
+}
+
+.gt-button[data-variant='primary']:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--gt-accent) 88%, black);
+}
+
+.gt-button[data-variant='destructive'] {
+  color: var(--gt-red);
+}
+
+.gt-button[data-size='small'] {
+  padding: 2px 8px;
+  font-size: var(--gt-text-caption);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Commit box                                                                 */
+/* -------------------------------------------------------------------------- */
+
+.gt-commit-box {
+  flex: none;
+  border-top: 1px solid var(--gt-separator);
+  padding: var(--gt-space-3) var(--gt-space-4);
+  background: var(--gt-bg-content);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-2);
+}
+
+.gt-commit-input {
+  width: 100%;
+  min-height: 62px;
+  max-height: 220px;
+  resize: vertical;
+  border: 1px solid var(--gt-control-border);
+  border-radius: var(--gt-radius-card);
+  background: var(--gt-control-bg);
+  padding: var(--gt-space-2) var(--gt-space-3);
+  font-size: var(--gt-text-body);
+  line-height: var(--gt-leading-normal);
+}
+
+.gt-commit-input::placeholder {
+  color: var(--gt-label-tertiary);
+}
+
+.gt-commit-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-3);
+}
+
+.gt-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gt-space-1);
+  font-size: var(--gt-text-callout);
+  color: var(--gt-label-secondary);
+  user-select: none;
+}
+
+/* -------------------------------------------------------------------------- */
+/* History and graph                                                          */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * The column that holds the pinned working-tree row above the graph.
+ *
+ * It must be a flex container. Without it the element defaults to `display:
+ * block`, and the `flex: 1 1 auto` / `min-height: 0` on `.gt-history` below mean
+ * nothing — flex properties only apply to children of a flex container. The list
+ * then sizes to its content instead of the available box, and the graph canvas,
+ * which is painted to the measured list height, stops partway down while the
+ * commits carry on: the "graph is cut off" symptom.
+ */
+.gt-history-pane {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.gt-history-empty {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.gt-history {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+/* The working tree, pinned above history rather than scrolling with it. */
+.gt-uncommitted-row {
+  flex: none;
+  gap: var(--gt-space-2);
+  border-bottom: 1px solid var(--gt-separator);
+  background: var(--gt-bg-content);
+}
+
+.gt-uncommitted-node {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  margin-left: 3px;
+  border-radius: 50%;
+  /* Dashed, because this row is not a commit — nothing here is recorded yet. */
+  border: 1.5px dashed var(--gt-label-tertiary);
+}
+
+.gt-uncommitted-row[aria-selected='true'] .gt-uncommitted-node {
+  border-color: var(--gt-accent);
+  border-style: solid;
+}
+
+.gt-uncommitted-count {
+  flex: none;
+  min-width: 17px;
+  padding: 0 6px;
+  border-radius: var(--gt-radius-pill);
+  background: var(--gt-orange);
+  color: #fff;
+  font-size: var(--gt-text-caption);
+  font-weight: var(--gt-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.gt-graph-gutter {
+  flex: none;
+  position: relative;
+}
+
+.gt-commit-list {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+.gt-commit-row {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  height: var(--gt-row-list);
+  padding: 0 var(--gt-space-4) 0 var(--gt-space-3);
+  cursor: default;
+  user-select: none;
+  white-space: nowrap;
+  /* A transparent inset edge reserves the space the selected state fills, so
+     selecting a row never shifts its contents sideways. */
+  border-left: 2px solid transparent;
+}
+
+.gt-commit-row:hover {
+  background: var(--gt-fill-hover);
+}
+
+/* Selection is a tinted band with an accent edge rather than a solid fill.
+   A saturated block would fight the rail colours immediately beside it and
+   flatten the ref pills into one wash. */
+.gt-commit-row[aria-selected='true'] {
+  background: color-mix(in srgb, var(--gt-accent) 14%, transparent);
+  border-left-color: var(--gt-accent);
+}
+
+.gt-commit-row[aria-selected='true'] .gt-commit-subject {
+  font-weight: var(--gt-weight-medium);
+}
+
+/* --- Author chip ---------------------------------------------------------- */
+
+.gt-avatar {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 8.5px;
+  font-weight: var(--gt-weight-semibold);
+  letter-spacing: 0.02em;
+  /* White on a fixed 46% lightness clears contrast for every generated hue. */
+  color: #fff;
+  user-select: none;
+}
+
+.gt-commit-subject {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gt-commit-author,
+.gt-commit-date {
+  flex: none;
+  font-size: var(--gt-text-callout);
+  color: var(--gt-label-secondary);
+}
+
+.gt-commit-hash {
+  flex: none;
+  font-family: var(--gt-font-mono);
+  font-size: var(--gt-text-caption);
+  color: var(--gt-label-tertiary);
+}
+
+/* --- Ref decorations ------------------------------------------------------
+   Each pill is tinted by kind and carries a glyph, so branch, remote, and tag
+   are distinguishable without reading the label — which matters on a row that
+   may carry four of them. */
+
+.gt-ref-pill {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 17px;
+  padding: 0 8px;
+  border-radius: var(--gt-radius-pill);
+  font-size: var(--gt-text-caption);
+  font-weight: var(--gt-weight-medium);
+  background: var(--gt-fill);
+  color: var(--gt-label-secondary);
+  border: 1px solid transparent;
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gt-ref-glyph {
+  font-size: 9px;
+  opacity: 0.85;
+  line-height: 1;
+}
+
+.gt-ref-pill[data-kind='localBranch'] {
+  background: color-mix(in srgb, var(--gt-lane-0) 16%, transparent);
+  border-color: color-mix(in srgb, var(--gt-lane-0) 34%, transparent);
+  color: var(--gt-lane-0);
+}
+
+.gt-ref-pill[data-kind='remoteBranch'] {
+  background: color-mix(in srgb, var(--gt-lane-2) 14%, transparent);
+  border-color: color-mix(in srgb, var(--gt-lane-2) 30%, transparent);
+  color: var(--gt-lane-2);
+}
+
+.gt-ref-pill[data-kind='tag'] {
+  background: color-mix(in srgb, var(--gt-lane-6) 20%, transparent);
+  border-color: color-mix(in srgb, var(--gt-lane-6) 40%, transparent);
+  color: color-mix(in srgb, var(--gt-lane-6) 78%, var(--gt-label));
+}
+
+.gt-ref-pill[data-kind='stash'] {
+  background: color-mix(in srgb, var(--gt-lane-5) 16%, transparent);
+  border-color: color-mix(in srgb, var(--gt-lane-5) 32%, transparent);
+  color: var(--gt-lane-5);
+}
+
+/* The checked-out branch is filled rather than outlined: it is the one ref on
+   screen the user is standing on, and it should be findable instantly. */
+.gt-ref-pill[data-head='true'] {
+  background: var(--gt-lane-0);
+  border-color: transparent;
+  color: #fff;
+  font-weight: var(--gt-weight-semibold);
+}
+
+.gt-ref-pill[data-head='true'] .gt-ref-glyph {
+  opacity: 1;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Diff                                                                       */
+/* -------------------------------------------------------------------------- */
+
+.gt-diff {
+  font-family: var(--gt-font-mono);
+  font-size: var(--gt-text-callout);
+  line-height: 1.5;
+}
+
+.gt-diff-hunk-header {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  padding: var(--gt-space-1) var(--gt-space-3);
+  background: var(--gt-fill);
+  color: var(--gt-label-secondary);
+  font-size: var(--gt-text-caption);
+  position: sticky;
+  top: 0;
+}
+
+.gt-diff-line {
+  display: grid;
+  grid-template-columns: 44px 44px 1fr;
+  column-gap: var(--gt-space-2);
+  padding-right: var(--gt-space-3);
+  white-space: pre;
+}
+
+.gt-diff-line[data-kind='add'] {
+  background: var(--gt-diff-add-bg);
+}
+
+.gt-diff-line[data-kind='delete'] {
+  background: var(--gt-diff-del-bg);
+}
+
+.gt-diff-lineno {
+  text-align: right;
+  color: var(--gt-label-tertiary);
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+
+.gt-diff-text {
+  overflow-x: auto;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Empty and error states                                                     */
+/* -------------------------------------------------------------------------- */
+
+.gt-empty {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--gt-space-2);
+  height: 100%;
+  padding: var(--gt-space-6);
+  text-align: center;
+  color: var(--gt-label-secondary);
+}
+
+.gt-empty-title {
+  font-size: var(--gt-text-title2);
+  font-weight: var(--gt-weight-semibold);
+  color: var(--gt-label);
+}
+
+.gt-empty-detail {
+  max-width: 42ch;
+  font-size: var(--gt-text-callout);
+}
+
+.gt-error {
+  margin: var(--gt-space-3) var(--gt-space-4);
+  padding: var(--gt-space-3);
+  border-radius: var(--gt-radius-card);
+  background: color-mix(in srgb, var(--gt-red) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--gt-red) 40%, transparent);
+  color: var(--gt-label);
+  font-size: var(--gt-text-callout);
+}
+
+/* Hook output and git stderr are shown verbatim; they are the diagnostic. */
+.gt-error pre {
+  margin: var(--gt-space-2) 0 0;
+  font-family: var(--gt-font-mono);
+  font-size: var(--gt-text-caption);
+  white-space: pre-wrap;
+  overflow-x: auto;
+  max-height: 220px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Ref filter and source list                                                 */
+/* -------------------------------------------------------------------------- */
+
+.gt-filter {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-1);
+  padding: var(--gt-space-2) var(--gt-space-3) var(--gt-space-1);
+}
+
+.gt-filter-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 1px solid var(--gt-control-border);
+  background: var(--gt-control-bg);
+  border-radius: var(--gt-radius-pill);
+  padding: 3px var(--gt-space-3);
+  font-size: var(--gt-text-caption);
+}
+
+.gt-filter-count {
+  flex: none;
+  font-size: var(--gt-text-caption);
+  font-variant-numeric: tabular-nums;
+  color: var(--gt-label-tertiary);
+}
+
+/*
+ * A folder row is a <button> so it is keyboard-operable, which means it needs
+ * `background` stated explicitly. `appearance: none` removes the platform look
+ * but not the UA's `background-color: buttonface`, so omitting it left every
+ * folder header painted light grey — reading as a selection when it is only
+ * structure.
+ */
+.gt-folder-row {
+  width: calc(100% - var(--gt-space-4));
+  appearance: none;
+  background: transparent;
+  color: inherit;
+  border: 0;
+  text-align: left;
+  font: inherit;
+}
+
+.gt-folder-row:hover {
+  background: var(--gt-fill-hover);
+}
+
+/* The matched characters of a fuzzy hit, so the reason a ref is in the list
+   is visible rather than inferred. */
+.gt-match {
+  color: var(--gt-accent);
+  font-weight: var(--gt-weight-semibold);
+}
+
+.gt-source-row[aria-selected='true'] .gt-match {
+  color: var(--gt-on-accent);
+  text-decoration: underline;
+}
+
+.gt-ref-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: 1.5px solid var(--gt-label-quaternary);
+}
+
+.gt-ref-dot[data-head='true'] {
+  background: var(--gt-green);
+  border-color: var(--gt-green);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Command preview popover                                                    */
+/* -------------------------------------------------------------------------- */
+
+.gt-preview-anchor {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Portalled to <body> and positioned from the trigger's measured rect, so the
+   toolbar's horizontal scroll container cannot clip it. */
+.gt-preview {
+  position: fixed;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-2);
+  width: max-content;
+  max-width: 340px;
+  padding: var(--gt-space-3);
+  border-radius: var(--gt-radius-card);
+  background: var(--gt-bg-sheet);
+  border: 1px solid var(--gt-separator);
+  box-shadow: var(--gt-shadow-popover);
+  backdrop-filter: blur(30px) saturate(180%);
+  text-align: left;
+  white-space: normal;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .gt-preview {
+    animation: gt-pop var(--gt-duration-control) var(--gt-ease-spring);
+  }
+}
+
+@keyframes gt-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+}
+
+.gt-preview-command {
+  display: block;
+  font-family: var(--gt-font-mono);
+  font-size: var(--gt-text-caption);
+  color: var(--gt-label);
+  background: var(--gt-fill);
+  padding: var(--gt-space-1) var(--gt-space-2);
+  border-radius: var(--gt-radius-control);
+  overflow-wrap: anywhere;
+}
+
+.gt-preview-summary {
+  font-size: var(--gt-text-caption);
+  color: var(--gt-label-secondary);
+}
+
+.gt-preview-flags {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-1);
+}
+
+.gt-preview-flag {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--gt-space-2);
+  font-size: var(--gt-text-caption);
+  color: var(--gt-label-secondary);
+}
+
+.gt-preview-flag code {
+  font-family: var(--gt-font-mono);
+  color: var(--gt-accent);
+}
+
+.gt-preview-explain {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--gt-accent);
+  font-size: var(--gt-text-caption);
+  text-align: left;
+  padding: 0;
+  cursor: default;
+}
+
+.gt-preview-explain:hover {
+  text-decoration: underline;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Command log                                                                */
+/* -------------------------------------------------------------------------- */
+
+.gt-log {
+  display: flex;
+  flex-direction: column;
+  max-height: 260px;
+  border-top: 1px solid var(--gt-separator);
+  background: var(--gt-bg-content);
+}
+
+.gt-log-header {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  padding: var(--gt-space-1) var(--gt-space-3);
+  border-bottom: 1px solid var(--gt-separator);
+  font-size: var(--gt-text-caption);
+  font-weight: var(--gt-weight-semibold);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gt-label-secondary);
+}
+
+.gt-log-body {
+  overflow-y: auto;
+  font-family: var(--gt-font-mono);
+  font-size: var(--gt-text-caption);
+}
+
+.gt-log-entry {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto auto;
+  align-items: center;
+  gap: var(--gt-space-2);
+  padding: 2px var(--gt-space-3);
+  border-bottom: 1px solid var(--gt-separator);
+}
+
+.gt-log-entry:hover {
+  background: var(--gt-fill-hover);
+}
+
+/* Reads are the constant background noise of a watcher; mutations are what the
+   user is trying to learn, so the two are tinted differently. */
+.gt-log-entry[data-mutating='false'] {
+  color: var(--gt-label-tertiary);
+}
+
+.gt-log-entry[data-failed='true'] .gt-log-result {
+  color: var(--gt-red);
+}
+
+.gt-log-time {
+  color: var(--gt-label-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.gt-log-command {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gt-log-entry[data-mutating='true'] .gt-log-command {
+  color: var(--gt-label);
+}
+
+.gt-log-result {
+  color: var(--gt-label-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.gt-log-stderr {
+  grid-column: 1 / -1;
+  margin: var(--gt-space-1) 0 var(--gt-space-2);
+  padding: var(--gt-space-2);
+  border-radius: var(--gt-radius-control);
+  background: color-mix(in srgb, var(--gt-red) 10%, transparent);
+  color: var(--gt-label);
+  white-space: pre-wrap;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Bottom ribbon                                                              */
+/* -------------------------------------------------------------------------- */
+
+.gt-ribbon {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-3);
+  padding: 0 var(--gt-space-3);
+  background: var(--gt-bg-toolbar);
+  backdrop-filter: blur(30px) saturate(180%);
+  border-top: 1px solid var(--gt-separator);
+  font-size: var(--gt-text-caption);
+  color: var(--gt-label-secondary);
+}
+
+.gt-ribbon-branch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gt-space-1);
+  color: var(--gt-label);
+  font-weight: var(--gt-weight-medium);
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gt-ribbon-item {
+  font-variant-numeric: tabular-nums;
+}
+
+.gt-ribbon-item[data-alert='true'] {
+  color: var(--gt-red);
+  font-weight: var(--gt-weight-semibold);
+}
+
+.gt-ribbon-busy {
+  color: var(--gt-label-tertiary);
+}
+
+.gt-ribbon-button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--gt-label-secondary);
+  font-size: var(--gt-text-caption);
+  padding: 1px var(--gt-space-2);
+  border-radius: var(--gt-radius-control);
+  cursor: default;
+}
+
+.gt-ribbon-button:hover {
+  background: var(--gt-fill-hover);
+  color: var(--gt-label);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Sheets                                                                     */
+/* -------------------------------------------------------------------------- */
+
+.gt-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  /* Anchored near the top, the way a macOS sheet drops from the title bar,
+     rather than centred like a modal dialog. */
+  place-items: start center;
+  padding-top: 8vh;
+  background: var(--gt-scrim);
+}
+
+.gt-sheet {
+  width: min(560px, 92vw);
+  max-height: 78vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-3);
+  padding: var(--gt-space-5);
+  border-radius: var(--gt-radius-sheet);
+  background: var(--gt-bg-sheet);
+  border: 1px solid var(--gt-separator);
+  box-shadow: var(--gt-shadow-sheet);
+  backdrop-filter: blur(40px) saturate(180%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .gt-sheet {
+    animation: gt-sheet-in var(--gt-duration-sheet) var(--gt-ease-spring);
+  }
+}
+
+@keyframes gt-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(-24px);
+  }
+}
+
+.gt-sheet-title {
+  margin: 0;
+  font-size: var(--gt-text-title);
+  font-weight: var(--gt-weight-semibold);
+  letter-spacing: -0.01em;
+}
+
+.gt-sheet-summary {
+  margin: 0;
+  font-size: var(--gt-text-body);
+  color: var(--gt-label);
+}
+
+.gt-sheet-body {
+  margin: 0;
+  font-size: var(--gt-text-callout);
+  line-height: var(--gt-leading-normal);
+  color: var(--gt-label-secondary);
+}
+
+.gt-sheet-flags {
+  margin: 0;
+  padding: var(--gt-space-2) 0 0;
+  border-top: 1px solid var(--gt-separator);
+}
+
+.gt-sheet-warning {
+  margin: 0;
+  padding: var(--gt-space-2) var(--gt-space-3);
+  border-radius: var(--gt-radius-control);
+  background: color-mix(in srgb, var(--gt-red) 12%, transparent);
+  font-size: var(--gt-text-caption);
+}
+
+.gt-sheet-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--gt-space-2);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Shortcuts sheet                                                            */
+/* -------------------------------------------------------------------------- */
+
+.gt-sheet-wide {
+  width: min(820px, 94vw);
+}
+
+/* Columns rather than one long list: the whole scheme should be scannable
+   without scrolling, which is the only way a reference sheet gets used twice. */
+.gt-shortcut-groups {
+  columns: 2;
+  column-gap: var(--gt-space-5);
+}
+
+@media (max-width: 640px) {
+  .gt-shortcut-groups {
+    columns: 1;
+  }
+}
+
+.gt-shortcut-group {
+  break-inside: avoid;
+  margin-bottom: var(--gt-space-4);
+}
+
+.gt-shortcut-heading {
+  margin: 0 0 var(--gt-space-1);
+  font-size: var(--gt-text-caption);
+  font-weight: var(--gt-weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gt-label-tertiary);
+}
+
+.gt-shortcut-list {
+  margin: 0;
+}
+
+.gt-shortcut-row {
+  display: grid;
+  grid-template-columns: minmax(96px, auto) 1fr;
+  gap: var(--gt-space-2);
+  align-items: baseline;
+  padding: 2px 0;
+  font-size: var(--gt-text-caption);
+}
+
+.gt-shortcut-row dd {
+  margin: 0;
+  color: var(--gt-label-secondary);
+}
+
+.gt-shortcut-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+
+.gt-shortcut-keys kbd {
+  display: inline-block;
+  min-width: 17px;
+  padding: 1px 5px;
+  text-align: center;
+  border: 1px solid var(--gt-control-border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--gt-control-bg);
+  font-family: var(--gt-font-mono);
+  font-size: 10px;
+  color: var(--gt-label);
+}
+
+.gt-shortcut-then,
+.gt-shortcut-or {
+  color: var(--gt-label-tertiary);
+  font-size: 10px;
+  margin: 0 1px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Editable command line                                                      */
+/* -------------------------------------------------------------------------- */
+
+.gt-cmdline {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  padding: var(--gt-space-2) var(--gt-space-3);
+  border: 1px solid var(--gt-control-border);
+  border-radius: var(--gt-radius-control);
+  background: var(--gt-control-bg);
+}
+
+.gt-cmdline:focus-within {
+  border-color: var(--gt-accent);
+  box-shadow: var(--gt-focus-ring);
+}
+
+/* `git` is fixed text, not part of the field: this can only ever run git. */
+.gt-cmdline-prefix {
+  flex: none;
+  font-family: var(--gt-font-mono);
+  font-size: var(--gt-text-callout);
+  color: var(--gt-label-tertiary);
+  user-select: none;
+}
+
+.gt-cmdline-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font-family: var(--gt-font-mono);
+  font-size: var(--gt-text-callout);
+  color: var(--gt-label);
+}
+
+.gt-cmdline-input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.gt-cmd-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gt-space-3);
+}
+
+.gt-cmd-result {
+  border-radius: var(--gt-radius-control);
+  border: 1px solid var(--gt-separator);
+  background: var(--gt-sunken, var(--gt-fill));
+  padding: var(--gt-space-2) var(--gt-space-3);
+  font-size: var(--gt-text-caption);
+}
+
+.gt-cmd-result[data-failed='true'] {
+  border-color: color-mix(in srgb, var(--gt-red) 45%, transparent);
+  background: color-mix(in srgb, var(--gt-red) 10%, transparent);
+}
+
+.gt-cmd-result-head {
+  font-weight: var(--gt-weight-semibold);
+  color: var(--gt-label);
+}
+
+.gt-cmd-result pre {
+  margin: var(--gt-space-2) 0 0;
+  font-family: var(--gt-font-mono);
+  font-size: var(--gt-text-caption);
+  white-space: pre-wrap;
+  overflow-x: auto;
+  max-height: 200px;
+  color: var(--gt-label-secondary);
+}
+
+/* The destructive acknowledgement reads as a warning, not a plain checkbox. */
+label.gt-sheet-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--gt-space-2);
+  color: var(--gt-label);
+}
+
+.gt-inspector-title {
+  font-size: var(--gt-text-title2);
+  font-weight: var(--gt-weight-semibold);
+  margin: 0 0 var(--gt-space-2);
+  overflow-wrap: anywhere;
+}
+
+.gt-field {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  gap: var(--gt-space-2);
+  padding: 3px 0;
+  font-size: var(--gt-text-callout);
+}
+
+.gt-field dt {
+  color: var(--gt-label-tertiary);
+}
+
+.gt-field dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.gt-mono {
+  font-family: var(--gt-font-mono);
+}

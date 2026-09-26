@@ -1,0 +1,240 @@
+{
+  "name": "gittree",
+  "displayName": "GitTree",
+  "description": "A SourceTree- and GitLens-class Git client for VS Code, with an Apple HIG interface and first-class multi-repo support.",
+  "version": "0.1.0",
+  "publisher": "javian-picardo-group-inc",
+  "author": "Javian Picardo Group Inc",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "vscode": "^1.100.0",
+    "node": ">=20"
+  },
+  "categories": [
+    "SCM Providers",
+    "Visualization",
+    "Other"
+  ],
+  "keywords": [
+    "git",
+    "sourcetree",
+    "gitlens",
+    "commit graph",
+    "monorepo"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "gittree",
+          "title": "GitTree",
+          "icon": "media/gittree.svg"
+        }
+      ]
+    },
+    "views": {
+      "gittree": [
+        {
+          "id": "gittree.repositories",
+          "name": "Repositories",
+          "icon": "media/gittree.svg"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "gitTree.open",
+        "title": "Open GitTree",
+        "category": "GitTree",
+        "icon": "$(git-branch)"
+      },
+      {
+        "command": "gitTree.refresh",
+        "title": "Refresh Repositories",
+        "category": "GitTree",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "gitTree.rescan",
+        "title": "Rescan Workspace for Repositories",
+        "category": "GitTree"
+      },
+      {
+        "command": "gitTree.revealRepository",
+        "title": "Reveal Repository in GitTree",
+        "category": "GitTree"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "gitTree.open",
+          "when": "view == gittree.repositories",
+          "group": "navigation@1"
+        },
+        {
+          "command": "gitTree.refresh",
+          "when": "view == gittree.repositories",
+          "group": "navigation@2"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "gitTree.revealRepository",
+          "when": "view == gittree.repositories && viewItem =~ /^repo:/",
+          "group": "inline"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "gitTree.open",
+        "key": "ctrl+shift+g t",
+        "mac": "cmd+shift+g t"
+      },
+      {
+        "command": "gitTree.refresh",
+        "key": "ctrl+shift+g r",
+        "mac": "cmd+shift+g r"
+      }
+    ],
+    "configuration": {
+      "title": "GitTree",
+      "properties": {
+        "gitTree.git.path": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to the git executable. Leave empty to auto-detect."
+        },
+        "gitTree.git.maxConcurrentProcesses": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 32,
+          "description": "Maximum concurrent git processes across all repositories. 0 = auto (min(8, cpuCount))."
+        },
+        "gitTree.discovery.maxDepth": {
+          "type": "number",
+          "default": 4,
+          "minimum": 1,
+          "maximum": 12,
+          "description": "How many directory levels below each workspace folder to scan for repositories."
+        },
+        "gitTree.discovery.excludeGlobs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Additional directory names to skip while scanning for repositories."
+        },
+        "gitTree.followActiveEditor": {
+          "type": "boolean",
+          "default": true,
+          "description": "Make the repository owning the active editor the active repository."
+        },
+        "gitTree.autoRefresh": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically refresh repositories when their files change. When off, refresh manually with the Refresh Repositories command."
+        },
+        "gitTree.accentColor": {
+          "type": "string",
+          "default": "#007AFF",
+          "description": "Accent color for the GitTree interface (defaults to Apple systemBlue)."
+        },
+        "gitTree.graph.density": {
+          "type": "string",
+          "enum": [
+            "comfortable",
+            "compact"
+          ],
+          "default": "comfortable",
+          "description": "Row density of the commit graph."
+        },
+        "gitTree.dateFormat": {
+          "type": "string",
+          "enum": [
+            "relative",
+            "absolute",
+            "iso"
+          ],
+          "default": "relative",
+          "description": "How commit dates are rendered."
+        },
+        "gitTree.ai.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable AI features. Requires explicit opt-in; no AI request is ever sent in the background."
+        },
+        "gitTree.ai.provider": {
+          "type": "string",
+          "enum": [
+            "vscode-lm",
+            "anthropic"
+          ],
+          "default": "vscode-lm",
+          "description": "AI backend. 'vscode-lm' uses the editor's built-in language model (no API key)."
+        },
+        "gitTree.ai.model": {
+          "type": "string",
+          "enum": [
+            "claude-opus-5",
+            "claude-sonnet-5",
+            "claude-haiku-4-5"
+          ],
+          "default": "claude-opus-5",
+          "description": "Model used when the provider is 'anthropic'."
+        },
+        "gitTree.ai.excludeGlobs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            ".env*",
+            "*.pem",
+            "*.key",
+            "*.p12",
+            "secrets/**"
+          ],
+          "description": "Files never included in an AI request payload."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs --production && vite build",
+    "build:ext": "node esbuild.mjs --production",
+    "build:web": "vite build",
+    "watch:ext": "node esbuild.mjs --watch",
+    "watch:web": "vite build --watch",
+    "watch:types": "tsc -p tsconfig.extension.json --noEmit --watch --preserveWatchOutput",
+    "typecheck": "tsc -p tsconfig.extension.json --noEmit && tsc -p tsconfig.webview.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "verify": "npm run typecheck && npm test",
+    "prepare": "git config core.hooksPath .githooks || exit 0",
+    "vscode:prepublish": "npm run build"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@types/vscode": "^1.100.0",
+    "@vitejs/plugin-react": "^4.4.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.8.0",
+    "vite": "^6.3.0",
+    "vitest": "^3.1.0"
+  }
+}

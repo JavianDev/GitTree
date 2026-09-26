@@ -1,0 +1,9 @@
+node_modules/
+dist/
+out/
+# Local agent/tool permissions, not project configuration.
+.claude/
+*.vsix
+.vscode-test/
+coverage/
+*.log
