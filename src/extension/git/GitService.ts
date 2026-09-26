@@ -286,13 +286,15 @@ export class GitService {
 
   async removeFiles(paths: string[], options?: GitServiceOptions): Promise<void> {
     if (paths.length === 0) return;
-    await this.runScheduled(options, async () => {
+    await this.runScheduled(options, async (signal) => {
       for (const path of paths) {
+        if (signal?.aborted) break;
         try {
           // Try git rm first (works for tracked files)
-          await this.git.run({ cwd: this.cwd, args: ['rm', '-f', '--', path] });
+          await this.git.run({ cwd: this.cwd, args: ['rm', '-f', '--', path], signal });
         } catch {
           // If git rm fails (e.g., untracked file), delete from disk directly
+          if (signal?.aborted) break;
           const fullPath = `${this.cwd}/${path}`;
           try {
             await fs.unlink(fullPath);
@@ -317,7 +319,8 @@ export class GitService {
 
   async ignoreFiles(paths: string[], options?: GitServiceOptions): Promise<void> {
     if (paths.length === 0) return;
-    await this.runScheduled(options, async () => {
+    await this.runScheduled(options, async (signal) => {
+      if (signal?.aborted) return;
       const gitignorePath = `${this.cwd}/.gitignore`;
       let content = '';
 
@@ -331,6 +334,7 @@ export class GitService {
       const existingSet = new Set(lines.filter((line) => line.length > 0));
 
       for (const path of paths) {
+        if (signal?.aborted) break;
         existingSet.add(path);
       }
 
