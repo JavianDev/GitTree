@@ -43,7 +43,7 @@ export class GitTreePanel {
       return;
     }
 
-    const panel = vscode.window.createWebviewPanel('gitTree', 'GitTree', column, {
+    const panel = vscode.window.createWebviewPanel('gitTree', 'Git Tree', column, {
       enableScripts: true,
       // History and diffs are expensive to rebuild; keeping the context alive
       // makes tab switching instant instead of a full reload.
@@ -466,7 +466,7 @@ export class GitTreePanel {
     <meta http-equiv="Content-Security-Policy" content="${csp}" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="${style}" />
-    <title>GitTree</title>
+    <title>Git Tree</title>
   </head>
   <body>
     <div id="root"></div>
