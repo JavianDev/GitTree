@@ -262,8 +262,6 @@ export function AppShell(): React.JSX.Element {
     // Committing needs a message, which belongs with the files it describes.
     if (id === 'commit') {
       setMode('changes');
-      setPending(id);
-      return;
     }
     setPending(id);
   }, []);
