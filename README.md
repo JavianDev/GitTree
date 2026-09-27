@@ -231,6 +231,8 @@ The panel opens with three panes: **Branches** (left), **Commit Graph** (middle)
 - **Open Settings**: Click the **Settings** icon (gear) in top right
 - **Cycle Themes**: Press `Ctrl+Alt+T`
 
+📖 **[See COMMANDS.md](COMMANDS.md)** for a complete guide with workflows, keyboard shortcuts, and common patterns — printable and bookmarkable!
+
 ---
 
 ## ⌨️ Keyboard Shortcuts
