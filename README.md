@@ -6,17 +6,18 @@
 
 ---
 
-## ✨ What Makes GitTree Different
+## ✨ What Makes Git Tree Different
 
 ### 1. **Three-Pane Layout** — See Everything At Once
 
-Unlike VS Code's flat file list, GitTree shows your branches, commit graph, and changes side-by-side. No modal dialogs, no context switching.
+Unlike VS Code's flat file list, Git Tree shows your branches, commit graph, and changes side-by-side. No modal dialogs, no context switching.
 
 ![Three-pane layout with branches, commit graph, and file diffs](media/screenshots/01-three-pane-layout.png)
 
-- **Left pane:** Branches, tags, remotes, and stashes organized hierarchically with fuzzy-search filtering
-- **Middle pane:** The full commit graph with correct lane assignment, real-time updates as you work
-- **Right pane:** File-level diff, line-level staging, and conflict resolution — all visible at once
+- **Left pane:** Branches, tags, remotes, and stashes organized hierarchically with fuzzy-search filtering (180px default)
+- **Middle pane:** The full commit graph with correct lane assignment, real-time updates as you work (250px default, collapsible)
+- **Right pane:** File-level diff, line-level staging, and conflict resolution — all visible at once (890px default)
+- **Fully draggable:** Resize any pane by dragging the divider; layout persists across sessions
 
 ### 2. **Commit Graph That Actually Works**
 
