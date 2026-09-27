@@ -184,18 +184,58 @@ GitTree runs **your** Git binary, so your config, credential helpers, hooks, SSH
 
 ## 🚀 Getting Started
 
-1. **Install GitTree** from the VS Code Extensions marketplace
+### Installation
+1. **Install Git Tree** from the [VS Code Extensions marketplace](https://marketplace.visualstudio.com/items?itemName=javian-picardo-group-inc.git-tree)
 2. **Reload VS Code**
-3. **Open a folder** — or a parent folder holding several repositories
-4. **Click the GitTree icon** in the activity bar (or press `Ctrl+Shift+G` then `T`)
 
-The **Repositories** view lists everything found. Click one to open it as a tab. Click the **+** button to add another repository to your workspace.
+### Opening Git Tree
+
+Choose any of these methods:
+
+**Method 1: Activity Bar** (Easiest)
+- Click the **Git Tree icon** in the left activity bar (branch icon)
+- Or press `Ctrl+Shift+G` then `T` (Windows/Linux) / `Cmd+Shift+G` then `T` (macOS)
+
+**Method 2: Command Palette**
+- Press `Ctrl+Shift+P` (Windows/Linux) or `Cmd+Shift+P` (macOS)
+- Type `Git Tree` to see commands:
+  - **Git Tree: Open GitTree** — Open the main panel
+  - **Git Tree: Refresh Repositories** — Refresh repo list
+  - **Git Tree: Rescan Workspace for Repositories** — Find all repos
+  - **Git Tree: Reveal Repository in GitTree** — Jump to a repo
+
+**Method 3: Explorer Context Menu**
+- Right-click any folder in Explorer
+- Select "Reveal Repository in GitTree"
+
+### First Time Setup
+
+1. **Open a folder** — or a parent folder holding several repositories
+2. **Click a repository** in the Repositories view to open it as a tab
+3. Click the **+** button to add more repositories
+
+The panel opens with three panes: **Branches** (left), **Commit Graph** (middle), **File Changes** (right).
+
+---
+
+## 💡 Quick Tips Inside Git Tree
+
+**Press `?` inside Git Tree** to see the full keyboard reference.
+
+**Common in-app actions:**
+- **Commit**: Click the **Commit** button in the toolbar, or press `Ctrl+Enter` with a message
+- **Pull/Push/Fetch**: Click the toolbar buttons or use keyboard shortcuts
+- **Create Branch**: Click **New Branch** or press `b`
+- **Checkout Branch**: Type `/` to filter branches, then press `Enter`
+- **View Keyboard Shortcuts**: Press `?` inside Git Tree
+- **Open Settings**: Click the **Settings** icon (gear) in top right
+- **Cycle Themes**: Press `Ctrl+Alt+T`
 
 ---
 
 ## ⌨️ Keyboard Shortcuts
 
-Press `?` in GitTree for the full list. Here's the quick reference:
+Press `?` in Git Tree for the full list. Here's the quick reference:
 
 | Action | Keys |
 |--------|------|
@@ -232,17 +272,17 @@ Press `?` in GitTree for the full list. Here's the quick reference:
 
 ## 🔒 Privacy
 
-GitTree runs **entirely on your machine**. It executes your local Git binary and reads your repositories. It sends **nothing** anywhere — no telemetry, no analytics, no network access of any kind.
+Git Tree runs **entirely on your machine**. It executes your local Git binary and reads your repositories. It sends **nothing** anywhere — no telemetry, no analytics, no network access of any kind.
 
 Future AI features will be **off by default**, require explicit opt-in, show you the exact payload before anything is sent, and never run in the background.
 
 ---
 
-## 💙 Support GitTree
+## 💙 Support Git Tree
 
-GitTree is **free and open source**. If you find it useful and want to support development:
+Git Tree is **free and open source**. If you find it useful and want to support development:
 
-**[☕ Buy Me a Coffee](https://buymeacoffee.com/javian)** — Help keep GitTree maintained and improved.
+**[☕ Buy Me a Coffee](https://buymeacoffee.com/javian)** — Help keep Git Tree maintained and improved.
 
 Your support goes directly towards:
 - Bug fixes and stability improvements
