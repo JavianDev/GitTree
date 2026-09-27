@@ -269,7 +269,36 @@ input,
 textarea,
 select {
   font: inherit;
-  color: inherit;
+  color: var(--gt-label);
+  background-color: var(--gt-control-bg);
+  border: 1px solid var(--gt-control-border);
+}
+
+/* Ensure select options are properly themed in all browsers */
+select option {
+  color: var(--gt-label);
+  background-color: var(--gt-control-bg);
+}
+
+/* Midnight theme: ensure select is properly styled */
+body[data-gt-theme='midnight'] select,
+body[data-gt-theme='midnight'] select option {
+  color: rgba(233, 240, 255, 0.94);
+  background-color: #172133;
+}
+
+/* Dark theme: ensure consistency */
+body.vscode-dark select,
+body.vscode-dark select option {
+  color: rgba(255, 255, 255, 0.92);
+  background-color: #3a3a3c;
+}
+
+/* Light theme: ensure consistency */
+body[data-gt-theme='macos-light'] select,
+body[data-gt-theme='macos-light'] select option {
+  color: rgba(0, 0, 0, 0.85);
+  background-color: #ffffff;
 }
 
 :focus {
