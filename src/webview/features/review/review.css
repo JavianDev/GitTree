@@ -29,8 +29,8 @@
   flex: none;
   display: flex;
   flex-direction: column;
-  gap: var(--gt-space-1);
-  padding: var(--gt-space-2) var(--gt-space-3);
+  gap: 0;
+  padding: var(--gt-space-1) var(--gt-space-2);
   border-bottom: 1px solid var(--gt-separator);
   background: var(--gt-bg-toolbar);
 }
@@ -86,6 +86,7 @@
   display: flex;
   min-height: 0;
   min-width: 0;
+  gap: 0;
 }
 
 .gt-review[data-layout='stacked'] .gt-review-body {
@@ -93,10 +94,21 @@
 }
 
 .gt-review-list {
-  flex: 0 0 42%;
-  min-width: 0;
+  flex: 0 0 28%;
+  min-width: 120px;
   overflow-y: auto;
   border-right: 1px solid var(--gt-separator);
+  position: relative;
+}
+
+.gt-review-list-handle {
+  position: absolute;
+  right: -4px;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  z-index: 10;
 }
 
 .gt-review-diff {

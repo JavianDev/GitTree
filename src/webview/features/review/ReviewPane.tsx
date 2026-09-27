@@ -84,6 +84,7 @@ export function ReviewPane({
   const [side, setSide] = useState<DiffSide>('unstaged');
   const [diffLayout, setDiffLayout] = useState<DiffLayout>('unified');
   const [wide, setWide] = useState(true);
+  const [listWidth, setListWidth] = useState<number | undefined>(undefined);
 
   const [busy, setBusy] = useState(false);
   /** A refused drop. Not an error from git, so it does not go to `onError`. */
@@ -95,6 +96,7 @@ export function ReviewPane({
   const reload = useCallback(() => setNonce((value) => value + 1), []);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   /* -- Loading ----------------------------------------------------------- */
 
@@ -359,7 +361,7 @@ export function ReviewPane({
     [repoId],
   );
 
-  /* -- Responsive -------------------------------------------------------- */
+  /* -- Responsive & Draggable ------------------------------------------- */
 
   useEffect(() => {
     const node = containerRef.current;
@@ -379,6 +381,70 @@ export function ReviewPane({
     observer.observe(node);
     return () => observer.disconnect();
   }, []);
+
+  /* -- Divider dragging -------------------------------------------------- */
+
+  useEffect(() => {
+    const handle = listRef.current?.querySelector('.gt-review-list-handle') as HTMLElement | null;
+    if (!handle) return;
+
+    let startX = 0;
+    let startWidth = 0;
+
+    const onMouseDown = (event: Event) => {
+      const e = event as MouseEvent;
+      startX = e.clientX;
+      startWidth = listRef.current?.offsetWidth ?? 0;
+      document.addEventListener('mousemove', onMouseMove as EventListener);
+      document.addEventListener('mouseup', onMouseUp as EventListener);
+      handle.style.background = 'var(--gt-accent)';
+    };
+
+    const onMouseMove = (event: Event) => {
+      const e = event as MouseEvent;
+      if (!listRef.current || !containerRef.current) return;
+      const delta = e.clientX - startX;
+      const newWidth = Math.max(120, Math.min(startWidth + delta, containerRef.current.offsetWidth - 260));
+      listRef.current.style.flex = `0 0 ${newWidth}px`;
+      setListWidth(newWidth);
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove as EventListener);
+      document.removeEventListener('mouseup', onMouseUp as EventListener);
+      handle.style.background = '';
+      // Persist width
+      if (listWidth) {
+        try {
+          localStorage.setItem('gitTree.reviewListWidth', String(listWidth));
+        } catch {
+          // Silently ignore storage errors
+        }
+      }
+    };
+
+    handle.addEventListener('mousedown', onMouseDown as EventListener);
+    return () => {
+      handle.removeEventListener('mousedown', onMouseDown as EventListener);
+    };
+  }, [listWidth]);
+
+  /* -- Load persisted width ---------------------------------------------- */
+
+  useEffect(() => {
+    if (listWidth !== undefined) return;
+    try {
+      const stored = localStorage.getItem('gitTree.reviewListWidth');
+      if (stored) {
+        const parsed = parseInt(stored, 10);
+        if (Number.isFinite(parsed) && parsed > 0) {
+          setListWidth(parsed);
+        }
+      }
+    } catch {
+      // Silently ignore storage errors
+    }
+  }, [listWidth]);
 
   /* -- Derived ----------------------------------------------------------- */
 
@@ -464,7 +530,7 @@ export function ReviewPane({
       )}
 
       <div className="gt-review-body">
-        <div className="gt-review-list">
+        <div className="gt-review-list" ref={listRef} style={listWidth ? { flex: `0 0 ${listWidth}px` } : undefined}>
           <FileTree
             groups={groups}
             selection={selection}
@@ -484,6 +550,7 @@ export function ReviewPane({
             onReveal={reveal}
             busy={busy}
           />
+          <div className="gt-review-list-handle" title="Drag to resize" />
         </div>
 
         <div className="gt-review-diff">
