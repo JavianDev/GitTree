@@ -62,9 +62,12 @@ export interface LayoutState {
  *
  * Widths are absolute rather than fractions so a reset means the same thing at
  * any window size; the first `fit` scales them into the real container.
+ *
+ * Defaults: branches 180px, commit tree 250px, diff pane ~890px.
+ * This maximizes diff visibility while keeping navigation and history accessible.
  */
-export const DEFAULT_SIZES: readonly number[] = [248, 452, 620];
-export const DEFAULT_MINS: readonly number[] = [150, 240, 260];
+export const DEFAULT_SIZES: readonly number[] = [180, 250, 890];
+export const DEFAULT_MINS: readonly number[] = [120, 150, 260];
 
 /** A fresh default state. A shared constant would be mutable across callers. */
 export function defaultLayout(): LayoutState {
