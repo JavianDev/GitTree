@@ -1,4 +1,4 @@
-# GitTree — Visual Git Management for VS Code
+# Git Tree — Visual Git Management for VS Code
 
 **A SourceTree-class Git client inside VS Code — featuring a real commit graph, line-level staging, multi-repo support, and a command sheet that teaches you Git while you use it.**
 
@@ -260,7 +260,7 @@ Licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 ## 🔗 Resources
 
 - **[GitHub Repository](https://github.com/JavianDev/GitTree)** — Source code, issues, and contributions
-- **[Marketplace](https://marketplace.visualstudio.com/items?itemName=javian-picardo-group-inc.gittree)** — Install the extension
+- **[Marketplace](https://marketplace.visualstudio.com/items?itemName=javian-picardo-group-inc.git-tree)** — Install the extension
 
 ---
 
