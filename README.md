@@ -39,6 +39,7 @@ Pick individual lines, hunks, or whole files. The interface shows **which state 
 
 - Stage by file, hunk, or individual line
 - Drag files between Staged and Unstaged groups
+- **Drag the divider** between file list and diff to resize (persists across sessions)
 - Use `→` and `←` keyboard shortcuts
 - Multi-select with `Space`, arrow keys to navigate
 - Discard with confirmation to prevent accidents
