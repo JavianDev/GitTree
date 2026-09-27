@@ -23,7 +23,8 @@
   "categories": [
     "SCM Providers",
     "Visualization",
-    "Other"
+    "Debuggers",
+    "Testing"
   ],
   "keywords": [
     "git",
