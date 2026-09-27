@@ -27,10 +27,7 @@
   ],
   "keywords": [
     "git",
-    "sourcetree",
-    "gitlens",
-    "commit graph",
-    "monorepo"
+    "Git Tree"
   ],
   "main": "./dist/extension.js",
   "activationEvents": [
