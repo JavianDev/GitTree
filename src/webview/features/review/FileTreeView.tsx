@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import type { FileChangeKind } from '@shared/model';
 import { FileStatePill } from './FileStatePill';
-import { FileContextMenu, type FileContextMenuItem } from './FileContextMenu';
+import { ContextMenu, type ContextMenuItem } from '../../shared/ContextMenu';
 import {
   type FileNode,
   type FileSortMode,
@@ -606,7 +606,7 @@ export function FileTree({
         );
       })}
       {contextMenu && (
-        <FileContextMenu
+        <ContextMenu
           x={contextMenu.x}
           y={contextMenu.y}
           items={buildContextMenuItems(
@@ -666,14 +666,14 @@ function buildContextMenuItems(
   onStopTracking?: (paths: readonly string[]) => void,
   onIgnore?: (paths: readonly string[]) => void,
   onReveal?: (path: string) => void,
-): FileContextMenuItem[] {
+): ContextMenuItem[] {
   const paths = actOn(key, group);
   const singlePath = paths.length === 1 ? paths[0] : undefined;
   const files = paths.map((p) => byPath.get(p)).filter((f) => f !== undefined) as ReviewFile[];
 
   if (files.length === 0) return [];
 
-  const items: FileContextMenuItem[] = [];
+  const items: ContextMenuItem[] = [];
 
   // Open (single file only)
   if (singlePath && onReveal) {

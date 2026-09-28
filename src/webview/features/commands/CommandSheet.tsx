@@ -25,6 +25,10 @@ export interface CommandOption {
   label: string;
   /** Why you would want this. Shown beneath the label. */
   hint?: string;
+  /** A checkbox toggling a boolean flag (default), or a free-text field. */
+  kind?: 'checkbox' | 'text';
+  /** Placeholder for a `kind: 'text'` field. */
+  placeholder?: string;
 }
 
 interface RunResult {
@@ -153,19 +157,35 @@ export function CommandSheet({
 
         {options.length > 0 && (
           <div className="gt-cmd-options">
-            {options.map((option) => (
-              <label className="gt-checkbox" key={String(option.key)} title={option.hint}>
-                <input
-                  type="checkbox"
-                  checked={Boolean(ctx[option.key])}
-                  // Editing by hand takes precedence; toggling after that would
-                  // silently throw the typed command away.
-                  disabled={edited !== undefined}
-                  onChange={(event) => setCtx({ ...ctx, [option.key]: event.target.checked })}
-                />
-                {option.label}
-              </label>
-            ))}
+            {options.map((option) =>
+              option.kind === 'text' ? (
+                <label className="gt-cmd-option-text" key={String(option.key)} title={option.hint}>
+                  <span>{option.label}</span>
+                  <input
+                    type="text"
+                    className="gt-text-input"
+                    value={typeof ctx[option.key] === 'string' ? (ctx[option.key] as string) : ''}
+                    placeholder={option.placeholder}
+                    // Editing the command by hand takes precedence; typing after
+                    // that would silently throw the typed command away.
+                    disabled={edited !== undefined}
+                    onChange={(event) => setCtx({ ...ctx, [option.key]: event.target.value })}
+                  />
+                </label>
+              ) : (
+                <label className="gt-checkbox" key={String(option.key)} title={option.hint}>
+                  <input
+                    type="checkbox"
+                    checked={Boolean(ctx[option.key])}
+                    // Editing by hand takes precedence; toggling after that would
+                    // silently throw the typed command away.
+                    disabled={edited !== undefined}
+                    onChange={(event) => setCtx({ ...ctx, [option.key]: event.target.checked })}
+                  />
+                  {option.label}
+                </label>
+              ),
+            )}
           </div>
         )}
 

@@ -191,6 +191,22 @@ export interface RefEntry {
   subject?: string;
 }
 
+/** One entry from `git stash list`. */
+export interface StashEntry {
+  /** `stash@{0}` — accepted verbatim by every `git stash` subcommand. */
+  ref: string;
+  index: number;
+  oid: string;
+  shortOid: string;
+  author: Identity;
+  /** ISO-8601 with offset. */
+  createdAt: string;
+  /** Branch the stash was taken from, when git's subject exposes one. */
+  branch?: string;
+  /** The part after "WIP on <branch>:" / "On <branch>:", or the raw subject. */
+  message: string;
+}
+
 /** `%G?` — signature verification status. */
 export type SignatureStatus =
   | 'good'

@@ -22,6 +22,7 @@ export type CommandId =
   | 'branch.delete'
   | 'merge'
   | 'stash.push'
+  | 'stash.apply'
   | 'stash.pop'
   | 'stash.drop'
   | 'tag.create';
@@ -335,6 +336,19 @@ export const COMMANDS: Record<CommandId, CommandSpec> = {
       if (ctx.message) argv.push('-m', ctx.message);
       return argv;
     },
+  },
+
+  'stash.apply': {
+    id: 'stash.apply',
+    title: 'Apply Stash',
+    group: 'work',
+    summary: 'Reapply the stashed changes and keep them in the stash list.',
+    concept:
+      'apply reapplies the stash without deleting it; pop applies and then deletes it. Prefer apply when ' +
+      'the stash might conflict — the entry survives no matter how the apply goes, so a bad merge costs ' +
+      'nothing, and you can drop it yourself once you are sure.',
+    flags: [],
+    build: (ctx) => ['stash', 'apply', ...(ctx.stashRef ? [ctx.stashRef] : [])],
   },
 
   'stash.pop': {

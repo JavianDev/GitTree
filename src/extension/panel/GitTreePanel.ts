@@ -251,6 +251,10 @@ export class GitTreePanel {
       refs: await this.requireService(repoId).refs({ priority: 'visible' }),
     }),
 
+    'stash/list': async ({ repoId }) => ({
+      stashes: await this.requireService(repoId).stashes({ priority: 'visible' }),
+    }),
+
     'stats/get': async ({ repoId, staged }) => ({
       stats: await this.requireService(repoId).stats(staged, { priority: 'visible' }),
     }),

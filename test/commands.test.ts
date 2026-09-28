@@ -80,6 +80,35 @@ describe('build — options change the command', () => {
     // -m would have to survive quoting; -F - cannot be misread whatever it holds.
     expect(COMMANDS.commit.build({})).toEqual(['commit', '-F', '-']);
   });
+
+  it('stash.apply, stash.pop, and stash.drop all take an optional stashRef', () => {
+    expect(COMMANDS['stash.apply'].build({})).toEqual(['stash', 'apply']);
+    expect(COMMANDS['stash.apply'].build({ stashRef: 'stash@{1}' })).toEqual([
+      'stash',
+      'apply',
+      'stash@{1}',
+    ]);
+    expect(COMMANDS['stash.pop'].build({ stashRef: 'stash@{1}' })).toEqual([
+      'stash',
+      'pop',
+      'stash@{1}',
+    ]);
+    expect(COMMANDS['stash.drop'].build({ stashRef: 'stash@{1}' })).toEqual([
+      'stash',
+      'drop',
+      'stash@{1}',
+    ]);
+  });
+
+  it('stash.push includes a -m flag only when a message is given', () => {
+    expect(COMMANDS['stash.push'].build({})).toEqual(['stash', 'push']);
+    expect(COMMANDS['stash.push'].build({ message: 'before rebase' })).toEqual([
+      'stash',
+      'push',
+      '-m',
+      'before rebase',
+    ]);
+  });
 });
 
 describe('renderCommand', () => {

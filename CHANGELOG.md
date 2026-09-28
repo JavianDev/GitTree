@@ -6,6 +6,23 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — full stash management
+
+- **Every stash is now visible, not just the tip.** The sidebar's Stashes section calls a new
+  `stash/list` RPC instead of relying on `refs/list`'s single `refs/stash` entry, which only ever
+  exposed the most recent one.
+- **Apply, Pop, and Drop are reachable from a right-click menu on each stash row**, each opening
+  the same review-before-run command sheet every other mutating action uses. There is deliberately
+  no double-click default — apply-vs-pop is not a safe thing to guess, and Drop requires the same
+  destructive confirmation as any other unrecoverable action.
+- **Clicking a stash previews its diff** through the same commit-diff pipeline the commit graph
+  uses — a stash's commit is a real git object, just one not reachable from any branch, so no new
+  diff endpoint was needed.
+- **The Command Sheet gained a text field option** (`stash.push`'s message), alongside the existing
+  checkboxes, so a stash description no longer requires hand-editing the raw command.
+- Removed the standing `// TODO: add UI to choose pop/apply` — double-clicking a stash used to
+  hardcode a plain `stash pop` with no way to preview it or choose apply instead.
+
 ### Fixed
 
 - **The commit graph was cut off partway down.** Adding the pinned "Uncommitted changes" row

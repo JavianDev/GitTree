@@ -8,6 +8,7 @@ import type {
   RefEntry,
   RepoNode,
   RepoSettings,
+  StashEntry,
   StatusResult,
 } from '@shared/model';
 import { GraphLayout } from '../graph/layout';
@@ -21,6 +22,7 @@ import { parseDiff } from './parsers/diff';
 import { numstatArgs, parseNumstat } from './parsers/numstat';
 import { REF_ARGS, parseRefs } from './parsers/refs';
 import { REMOTE_ARGS, parseRemotes } from './parsers/remote';
+import { STASH_ARGS, parseStashes } from './parsers/stash';
 import { NUL, RS } from './separators';
 
 export interface GitServiceOptions {
@@ -153,6 +155,14 @@ export class GitService {
     return this.runScheduled(options, async (signal) => {
       const result = await this.git.run({ cwd: this.cwd, args: [...REF_ARGS], signal });
       return parseRefs(result.stdout);
+    });
+  }
+
+  /** Every stash, newest first — `refs()` only ever surfaces the tip via `refs/stash`. */
+  async stashes(options?: GitServiceOptions): Promise<StashEntry[]> {
+    return this.runScheduled(options, async (signal) => {
+      const result = await this.git.run({ cwd: this.cwd, args: [...STASH_ARGS], signal });
+      return parseStashes(result.stdout);
     });
   }
 

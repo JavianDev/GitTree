@@ -1,32 +1,33 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
-export interface FileContextMenuItem {
+export interface ContextMenuItem {
   label: string;
   run: () => void;
   destructive?: boolean;
   separator?: boolean;
 }
 
-export interface FileContextMenuProps {
+export interface ContextMenuProps {
   x: number;
   y: number;
-  items: readonly FileContextMenuItem[];
+  items: readonly ContextMenuItem[];
   onClose: () => void;
 }
 
 /**
- * A right-click context menu for file rows, positioned near the cursor.
+ * A right-click context menu, positioned near the cursor.
  *
  * Modeled on CommandPreview.tsx's portal + viewport-aware positioning,
- * but click-toggled instead of hover-toggled.
+ * but click-toggled instead of hover-toggled. Shared across any row-based
+ * list (file rows, stash rows, PR rows, ...) rather than owned by one feature.
  */
-export function FileContextMenu({
+export function ContextMenu({
   x,
   y,
   items,
   onClose,
-}: FileContextMenuProps): React.JSX.Element {
+}: ContextMenuProps): React.JSX.Element {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

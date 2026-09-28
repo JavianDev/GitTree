@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { RefEntry } from '@shared/model';
+import type { RefEntry, StashEntry } from '@shared/model';
 import { rpc } from '../../rpc/client';
 import { type RefNode, buildRefTree, folderPaths, recentRefs } from './BranchTree';
 import { filterRefs, highlightSegments } from './RefFilter';
+import { type StashActionId, StashSection } from './StashSection';
 
 export interface ObjectSidebarProps {
   repoId: string;
@@ -10,15 +11,18 @@ export interface ObjectSidebarProps {
   selectedRef?: string;
   onSelect: (ref: RefEntry) => void;
   onCheckout: (ref: RefEntry) => void;
+  /** Shows a stash's diff via the same commit-diff pipeline `HistoryView` uses. */
+  onSelectStash: (stash: StashEntry) => void;
+  /** Opens the review-before-run command sheet, pre-filled with `stashRef`. */
+  onStashAction: (id: StashActionId, stashRef: string) => void;
 }
 
-type SectionId = 'branches' | 'remotes' | 'tags' | 'stashes';
+type SectionId = 'branches' | 'remotes' | 'tags';
 
 const SECTIONS: Array<{ id: SectionId; title: string; kind: RefEntry['kind'] }> = [
   { id: 'branches', title: 'Branches', kind: 'localBranch' },
   { id: 'remotes', title: 'Remotes', kind: 'remoteBranch' },
   { id: 'tags', title: 'Tags', kind: 'tag' },
-  { id: 'stashes', title: 'Stashes', kind: 'stash' },
 ];
 
 /**
@@ -35,10 +39,12 @@ export function ObjectSidebar({
   selectedRef,
   onSelect,
   onCheckout,
+  onSelectStash,
+  onStashAction,
 }: ObjectSidebarProps): React.JSX.Element {
   const [refs, setRefs] = useState<RefEntry[]>([]);
   const [query, setQuery] = useState('');
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set(['remotes', 'tags', 'stashes']));
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set(['remotes', 'tags']));
 
   useEffect(() => {
     let cancelled = false;
@@ -159,6 +165,17 @@ export function ObjectSidebar({
           No refs match “{query}”.
         </p>
       )}
+
+      {/* Stashes are not git refs in the sense the rest of this sidebar walks —
+          `refs/list` only ever surfaces the tip via `refs/stash` — so this is a
+          structurally independent, always-fetched section rather than another
+          SECTIONS entry. Unaffected by the ref filter box above. */}
+      <StashSection
+        repoId={repoId}
+        revision={revision}
+        onSelect={onSelectStash}
+        onAction={onStashAction}
+      />
     </nav>
   );
 }

@@ -1530,6 +1530,29 @@
   gap: var(--gt-space-3);
 }
 
+.gt-text-input {
+  min-width: 0;
+  border: 1px solid var(--gt-control-border);
+  background: var(--gt-control-bg);
+  border-radius: var(--gt-radius-control);
+  padding: 3px var(--gt-space-3);
+  font-size: var(--gt-text-callout);
+  color: var(--gt-label);
+}
+
+.gt-cmd-option-text {
+  display: flex;
+  flex: 1 1 100%;
+  align-items: center;
+  gap: var(--gt-space-2);
+  font-size: var(--gt-text-callout);
+  color: var(--gt-label-secondary);
+}
+
+.gt-cmd-option-text .gt-text-input {
+  flex: 1 1 auto;
+}
+
 .gt-cmd-result {
   border-radius: var(--gt-radius-control);
   border: 1px solid var(--gt-separator);

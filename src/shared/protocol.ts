@@ -19,6 +19,7 @@ import type {
   RepoNode,
   RepoSettings,
   RepoState,
+  StashEntry,
   StatusResult,
 } from './model';
 
@@ -126,6 +127,9 @@ export interface Api {
 
   /* Refs */
   'refs/list': { params: { repoId: RepoId }; result: { refs: RefEntry[] } };
+
+  /* Stashes */
+  'stash/list': { params: { repoId: RepoId }; result: { stashes: StashEntry[] } };
 
   /* Settings */
   'settings/get': { params: { repoId: RepoId }; result: RepoSettings };

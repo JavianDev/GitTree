@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { COMMANDS, type CommandId, type CommandSpec, renderCommand, tokenize } from '@shared/commands';
-import type { Commit, RefEntry } from '@shared/model';
+import {
+  COMMANDS,
+  type CommandContext,
+  type CommandId,
+  type CommandSpec,
+  renderCommand,
+  tokenize,
+} from '@shared/commands';
+import type { Commit, RefEntry, StashEntry } from '@shared/model';
 import { CommandLog } from '../features/commands/CommandLog';
 import { type CommandOption, CommandSheet } from '../features/commands/CommandSheet';
 import { TeachingCard } from '../features/commands/TeachingCard';
@@ -8,6 +15,7 @@ import { HistoryView } from '../features/history/HistoryView';
 import { ReviewPane } from '../features/review/ReviewPane';
 import { SettingsSheet } from '../features/settings/SettingsSheet';
 import { ObjectSidebar } from '../features/sidebar/ObjectSidebar';
+import type { StashActionId } from '../features/sidebar/StashSection';
 import { RpcRequestError, rpc } from '../rpc/client';
 import { BottomRibbon } from './BottomRibbon';
 import { ContextBar, type HistoryOptions, type SearchOptions, type ViewMode } from './ContextBar';
@@ -49,6 +57,7 @@ const SHEET_OPTIONS: Partial<Record<CommandId, CommandOption[]>> = {
     { key: 'squash', label: 'Squash', hint: 'Stage the result without recording the merge' },
   ],
   'stash.push': [
+    { key: 'message', label: 'Message', kind: 'text', placeholder: 'Optional description' },
     { key: 'includeUntracked', label: 'Include untracked', hint: 'New files are skipped otherwise' },
     { key: 'keepIndex', label: 'Keep index', hint: 'Leave the staged version in the working tree' },
     { key: 'stagedOnly', label: 'Staged only', hint: 'Stash just what is staged' },
@@ -105,7 +114,12 @@ export function AppShell(): React.JSX.Element {
   const [error, setError] = useState<string | undefined>();
   const [logOpen, setLogOpen] = useState(false);
   const [teaching, setTeaching] = useState<CommandSpec | undefined>();
-  const [pending, setPending] = useState<CommandId | undefined>();
+  /**
+   * `context` holds per-invocation overrides merged on top of the toolbar's
+   * base context (see `runAction`) — a stash row's Apply/Pop/Drop each need a
+   * different `stashRef`, which the toolbar's fixed `actions` map cannot express.
+   */
+  const [pending, setPending] = useState<{ id: CommandId; context: Partial<CommandContext> } | undefined>();
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -159,6 +173,33 @@ export function AppShell(): React.JSX.Element {
     if (next) setMode('history');
   }, []);
 
+  /**
+   * A stash's diff reuses the commit-diff pipeline verbatim: its oid is a real
+   * git object, just one not reachable from any branch, so `diff/get({ kind:
+   * 'commit', hash })` works on it exactly as it does on any other commit.
+   * `parents`/`refs`/`signature`/`body` are never read by that path — only
+   * `hash` is — so a minimal synthetic `Commit` is enough to drive it.
+   */
+  const selectStash = useCallback(
+    (stash: StashEntry) => {
+      setSelectedRef(stash.ref);
+      selectCommit({
+        hash: stash.oid,
+        shortHash: stash.shortOid,
+        parents: [],
+        author: stash.author,
+        authorDate: stash.createdAt,
+        committer: stash.author,
+        commitDate: stash.createdAt,
+        refs: [],
+        signature: 'none',
+        subject: stash.message,
+        body: '',
+      });
+    },
+    [selectCommit],
+  );
+
   const selectUncommitted = useCallback(() => {
     setCommit(undefined);
     setMode('changes');
@@ -196,17 +237,6 @@ export function AppShell(): React.JSX.Element {
       if (!active) return;
       if (ref.kind === 'localBranch') {
         const commandText = renderCommand(COMMANDS['branch.checkout'], { branch: ref.name }).replace(
-          /^git /,
-          '',
-        );
-        const argv = tokenize(commandText);
-        void rpc
-          .request('commands/run', { repoId: active.id, argv })
-          .then(() => repositories.refresh())
-          .catch(() => undefined);
-      } else if (ref.kind === 'stash') {
-        // Stash pop for now — TODO: add UI to choose pop/apply
-        const commandText = renderCommand(COMMANDS['stash.pop'], { stashRef: ref.name }).replace(
           /^git /,
           '',
         );
@@ -258,13 +288,18 @@ export function AppShell(): React.JSX.Element {
     };
   }, [activeState, pendingCount, selectedPaths]);
 
-  const runAction = useCallback((id: CommandId) => {
+  const runAction = useCallback((id: CommandId, extra?: Partial<CommandContext>) => {
     // Committing needs a message, which belongs with the files it describes.
     if (id === 'commit') {
       setMode('changes');
     }
-    setPending(id);
+    setPending({ id, context: extra ?? {} });
   }, []);
+
+  const stashAction = useCallback(
+    (id: StashActionId, stashRef: string) => runAction(id, { stashRef }),
+    [runAction],
+  );
 
   /**
    * `Escape` unwinds one layer at a time.
@@ -303,12 +338,16 @@ export function AppShell(): React.JSX.Element {
     ...Object.fromEntries(
       Object.entries(SHORTCUT_ACTIONS).map(([shortcut, action]) => [
         shortcut,
-        () => setPending(action),
+        () => runAction(action),
       ]),
     ),
   });
 
-  const pendingAction = pending ? actions[pending] : undefined;
+  // Falls back to the bare command spec for actions with no toolbar button
+  // (stash apply/pop/drop, reached only from the sidebar's context menu).
+  const pendingAction = pending
+    ? (actions[pending.id] ?? { spec: COMMANDS[pending.id], context: {} })
+    : undefined;
 
   return (
     <div className="gt-shell">
@@ -368,6 +407,8 @@ export function AppShell(): React.JSX.Element {
             selectedRef={selectedRef}
             onSelect={selectRef}
             onCheckout={checkoutRef}
+            onSelectStash={selectStash}
+            onStashAction={stashAction}
           />
         ) : (
           <nav className="gt-sidebar" aria-label="Repository objects" />
@@ -423,11 +464,11 @@ export function AppShell(): React.JSX.Element {
 
       {pending && pendingAction && active && (
         <CommandSheet
-          key={pending}
+          key={pending.id}
           spec={pendingAction.spec}
-          context={pendingAction.context}
+          context={{ ...pendingAction.context, ...pending.context }}
           repoId={active.id}
-          options={SHEET_OPTIONS[pending] ?? []}
+          options={SHEET_OPTIONS[pending.id] ?? []}
           onExplain={setTeaching}
           onClose={() => setPending(undefined)}
           onApplied={() => repositories.refresh()}
