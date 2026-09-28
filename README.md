@@ -12,7 +12,7 @@
 
 Unlike VS Code's flat file list, Git Tree shows your branches, commit graph, and changes side-by-side. No modal dialogs, no context switching.
 
-![Three-pane layout with branches, commit graph, and file diffs](https://raw.githubusercontent.com/JavianDev/GitTree/main/media/screenshots/01-three-pane-layout.png)
+![Three-pane layout with branches, commit graph, and file diffs](./media/screenshots/01-three-pane-layout.png)
 
 - **Left pane:** Branches, tags, remotes, and stashes organized hierarchically with fuzzy-search filtering (180px default)
 - **Middle pane:** The full commit graph with correct lane assignment, real-time updates as you work (250px default, collapsible)
@@ -23,7 +23,7 @@ Unlike VS Code's flat file list, Git Tree shows your branches, commit graph, and
 
 Real lane assignment across merges, decorations for HEAD/tags/upstream, author and date columns, and instant navigation. Virtualised so a 50,000-commit repository scrolls at full speed.
 
-![Commit graph showing lanes, merges, and decorations](https://raw.githubusercontent.com/JavianDev/GitTree/main/media/screenshots/02-commit-graph.png)
+![Commit graph showing lanes, merges, and decorations](./media/screenshots/02-commit-graph.png)
 
 **Key features:**
 - Click a commit to see its full diff side-by-side
@@ -35,7 +35,7 @@ Real lane assignment across merges, decorations for HEAD/tags/upstream, author a
 
 Pick individual lines, hunks, or whole files. The interface shows **which state each file is in** using a two-cell pill: `◧` (staged), `◨` (unstaged), or `◧◨` (both).
 
-![File staging interface with two-cell pills showing file state](https://raw.githubusercontent.com/JavianDev/GitTree/main/media/screenshots/03-line-level-staging.png)
+![File staging interface with two-cell pills showing file state](./media/screenshots/03-line-level-staging.png)
 
 - Stage by file, hunk, or individual line
 - Drag files between Staged and Unstaged groups
@@ -48,7 +48,7 @@ Pick individual lines, hunks, or whole files. The interface shows **which state 
 
 Amend, sign-off, GPG/SSH signing, co-authors, and commit templates — all editable before you press Enter.
 
-![Commit dialog with message, amend, signoff, and signing options](https://raw.githubusercontent.com/JavianDev/GitTree/main/media/screenshots/04-commit-sheet.png)
+![Commit dialog with message, amend, signoff, and signing options](./media/screenshots/04-commit-sheet.png)
 
 - **Pre-commit hooks** show their output verbatim, never replaced with "commit failed"
 - **Co-authors** via trailer syntax (recognized by GitHub, GitLab, etc.)
@@ -59,7 +59,7 @@ Amend, sign-off, GPG/SSH signing, co-authors, and commit templates — all edita
 
 Every action opens a modal showing the exact command, **editable in real-time**. Toggle options and the command rewrites itself. Hover to see a plain-English explanation of each flag.
 
-![Command sheet with editable command field and toggleable options](https://raw.githubusercontent.com/JavianDev/GitTree/main/media/screenshots/05-command-sheet.png)
+![Command sheet with editable command field and toggleable options](./media/screenshots/05-command-sheet.png)
 
 **Why this matters:**
 - Mistyped? See the dialog **before anything runs**
@@ -71,7 +71,7 @@ Every action opens a modal showing the exact command, **editable in real-time**.
 
 A live console of every git invocation, exit code, runtime, and output. Copy any command and paste it into your terminal. Or send it unsigned so you can read and edit it first.
 
-![Command log showing all git commands, exit codes, and durations](https://raw.githubusercontent.com/JavianDev/GitTree/main/media/screenshots/06-command-log.png)
+![Command log showing all git commands, exit codes, and durations](./media/screenshots/06-command-log.png)
 
 - Scroll through your session history
 - Copy any command verbatim (including pipes/redirects)
@@ -82,7 +82,7 @@ A live console of every git invocation, exit code, runtime, and output. Copy any
 
 With forty-seven branches, a flat list is useless. GitTree nests branches by `/`, collapses folders, and lets you fuzzy-search the full path.
 
-![Branch sidebar with collapsible folders and Current/Recent pinned](https://raw.githubusercontent.com/JavianDev/GitTree/main/media/screenshots/07-branch-sidebar.png)
+![Branch sidebar with collapsible folders and Current/Recent pinned](./media/screenshots/07-branch-sidebar.png)
 
 - **Current** and **Recent** branches pinned above the tree
 - Type to filter — matches the whole path, not just the prefix
@@ -93,7 +93,7 @@ With forty-seven branches, a flat list is useless. GitTree nests branches by `/`
 
 One-click toolbar buttons for the most common operations. Each opens the command sheet for a second to review. Keyboard shortcuts available (press `?` to see them all).
 
-![Toolbar with Commit, Pull, Push, Branch, Merge, Stash buttons](https://raw.githubusercontent.com/JavianDev/GitTree/main/media/screenshots/08-toolbar.png)
+![Toolbar with Commit, Pull, Push, Branch, Merge, Stash buttons](./media/screenshots/08-toolbar.png)
 
 | Action | Keyboard | Notes |
 |--------|----------|-------|
@@ -108,7 +108,7 @@ One-click toolbar buttons for the most common operations. Each opens the command
 
 Open a folder and GitTree finds every repository inside it — at any depth. Understands the difference between nested repos, submodules, and worktrees.
 
-![Repository tabs showing multiple open repos with quick-add button](https://raw.githubusercontent.com/JavianDev/GitTree/main/media/screenshots/09-multi-repo.png)
+![Repository tabs showing multiple open repos with quick-add button](./media/screenshots/09-multi-repo.png)
 
 - **Tabs** for each open repository
 - Scroll position, selection, and filters remembered per-repo
@@ -120,7 +120,7 @@ Open a folder and GitTree finds every repository inside it — at any depth. Und
 
 Follows your VS Code theme by default. Also offers curated system-class alternatives.
 
-![Theme selector dropdown showing multiple theme options](https://raw.githubusercontent.com/JavianDev/GitTree/main/media/screenshots/10-themes.png)
+![Theme selector dropdown showing multiple theme options](./media/screenshots/10-themes.png)
 
 - Cycle themes with `Ctrl+Alt+T` (macOS: `⌘+⌥+T`)
 - High-contrast mode fully supported
