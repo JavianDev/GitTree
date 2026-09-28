@@ -2,7 +2,7 @@
   "name": "git-tree",
   "displayName": "Git Tree",
   "description": "A SourceTree- and GitLens-class Git client for VS Code with first-class multi-repo support.",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "publisher": "javian-picardo-group-inc",
   "author": "Javian Picardo Group Inc",
   "license": "MIT",
