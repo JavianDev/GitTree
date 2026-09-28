@@ -4,6 +4,8 @@
 
 > Every button shows the exact Git command it runs. Every action is editable before execution. The GUI makes you better at the command line instead of hiding it.
 
+> 📸 **View with screenshots**: Read this README on [GitHub](https://github.com/JavianDev/GitTree) for full feature walkthroughs with images. The marketplace version shows text descriptions only.
+
 ---
 
 ## ✨ What Makes Git Tree Different
