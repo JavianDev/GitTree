@@ -12,7 +12,7 @@
 
 Unlike VS Code's flat file list, Git Tree shows your branches, commit graph, and changes side-by-side. No modal dialogs, no context switching.
 
-![Three-pane layout with branches, commit graph, and file diffs](https://github.com/JavianDev/GitTree/raw/HEAD/media/screenshots/01-three-pane-layout.png)- **Left pane:** Branches, tags, remotes, and stashes organized hierarchically with fuzzy-search filtering (180px default)
+![Three-pane layout with branches, commit graph, and file diffs](./media/screenshots/01-three-pane-layout.png)- **Left pane:** Branches, tags, remotes, and stashes organized hierarchically with fuzzy-search filtering (180px default)
 - **Middle pane:** The full commit graph with correct lane assignment, real-time updates as you work (250px default, collapsible)
 - **Right pane:** File-level diff, line-level staging, and conflict resolution — all visible at once (890px default)
 - **Fully draggable:** Resize any pane by dragging the divider; layout persists across sessions
@@ -21,7 +21,7 @@ Unlike VS Code's flat file list, Git Tree shows your branches, commit graph, and
 
 Real lane assignment across merges, decorations for HEAD/tags/upstream, author and date columns, and instant navigation. Virtualised so a 50,000-commit repository scrolls at full speed.
 
-![Commit graph showing lanes, merges, and decorations](https://github.com/JavianDev/GitTree/raw/HEAD/media/screenshots/02-commit-graph.png)**Key features:**
+![Commit graph showing lanes, merges, and decorations](./media/screenshots/02-commit-graph.png)**Key features:**
 
 - Click a commit to see its full diff side-by-side
 - Navigate by keyboard: `j`/`k` to move, `Space` to select
@@ -32,7 +32,7 @@ Real lane assignment across merges, decorations for HEAD/tags/upstream, author a
 
 Pick individual lines, hunks, or whole files. The interface shows **which state each file is in** using a two-cell pill: `◧` (staged), `◨` (unstaged), or `◧◨` (both).
 
-![File staging interface with two-cell pills showing file state](https://github.com/JavianDev/GitTree/raw/HEAD/media/screenshots/03-line-level-staging.png)- Stage by file, hunk, or individual line
+![File staging interface with two-cell pills showing file state](./media/screenshots/03-line-level-staging.png)- Stage by file, hunk, or individual line
 - Drag files between Staged and Unstaged groups
 - **Drag the divider** between file list and diff to resize (persists across sessions)
 - Use `→` and `←` keyboard shortcuts
@@ -43,7 +43,7 @@ Pick individual lines, hunks, or whole files. The interface shows **which state 
 
 Amend, sign-off, GPG/SSH signing, co-authors, and commit templates — all editable before you press Enter.
 
-![Commit dialog with message, amend, signoff, and signing options](https://github.com/JavianDev/GitTree/raw/HEAD/media/screenshots/04-commit-sheet.png)- **Pre-commit hooks** show their output verbatim, never replaced with "commit failed"
+![Commit dialog with message, amend, signoff, and signing options](./media/screenshots/04-commit-sheet.png)- **Pre-commit hooks** show their output verbatim, never replaced with "commit failed"
 - **Co-authors** via trailer syntax (recognized by GitHub, GitLab, etc.)
 - **Signing** — GPG or SSH (git handles the credential, GitTree just enables the flag)
 - **Templates** — `.gitmessage` support
@@ -52,7 +52,7 @@ Amend, sign-off, GPG/SSH signing, co-authors, and commit templates — all edita
 
 Every action opens a modal showing the exact command, **editable in real-time**. Toggle options and the command rewrites itself. Hover to see a plain-English explanation of each flag.
 
-![Command sheet with editable command field and toggleable options](https://github.com/JavianDev/GitTree/raw/HEAD/media/screenshots/05-command-sheet.png)**Why this matters:**
+![Command sheet with editable command field and toggleable options](./media/screenshots/05-command-sheet.png)**Why this matters:**
 
 - Mistyped? See the dialog **before anything runs**
 - Want to add a flag? Edit the command directly
@@ -63,7 +63,7 @@ Every action opens a modal showing the exact command, **editable in real-time**.
 
 A live console of every git invocation, exit code, runtime, and output. Copy any command and paste it into your terminal. Or send it unsigned so you can read and edit it first.
 
-![Command log showing all git commands, exit codes, and durations](https://github.com/JavianDev/GitTree/raw/HEAD/media/screenshots/06-command-log.png)- Scroll through your session history
+![Command log showing all git commands, exit codes, and durations](./media/screenshots/06-command-log.png)- Scroll through your session history
 - Copy any command verbatim (including pipes/redirects)
 - "Send to Terminal" types it in the integrated terminal without running it
 - Filter by command, repo, or date
@@ -72,7 +72,7 @@ A live console of every git invocation, exit code, runtime, and output. Copy any
 
 With forty-seven branches, a flat list is useless. GitTree nests branches by `/`, collapses folders, and lets you fuzzy-search the full path.
 
-![Branch sidebar with collapsible folders and Current/Recent pinned](https://github.com/JavianDev/GitTree/raw/HEAD/media/screenshots/07-branch-sidebar.png)- **Current** and **Recent** branches pinned above the tree
+![Branch sidebar with collapsible folders and Current/Recent pinned](./media/screenshots/07-branch-sidebar.png)- **Current** and **Recent** branches pinned above the tree
 - Type to filter — matches the whole path, not just the prefix
 - `Enter` checks out the best match (or double-click)
 - Shows ahead/behind counts and whether upstream exists
@@ -81,7 +81,7 @@ With forty-seven branches, a flat list is useless. GitTree nests branches by `/`
 
 One-click toolbar buttons for the most common operations. Each opens the command sheet for a second to review. Keyboard shortcuts available (press `?` to see them all).
 
-![Toolbar with Commit, Pull, Push, Branch, Merge, Stash buttons](https://github.com/JavianDev/GitTree/raw/HEAD/media/screenshots/08-toolbar.png)| Action | Keyboard | Notes |
+![Toolbar with Commit, Pull, Push, Branch, Merge, Stash buttons](./media/screenshots/08-toolbar.png)| Action | Keyboard | Notes |
 | --- | --- | --- |
 | Fetch | `f` | `--all` and `--prune` by default |
 | Pull | `p` | `--rebase --autostash` by default |
@@ -94,7 +94,7 @@ One-click toolbar buttons for the most common operations. Each opens the command
 
 Open a folder and GitTree finds every repository inside it — at any depth. Understands the difference between nested repos, submodules, and worktrees.
 
-![Repository tabs showing multiple open repos with quick-add button](https://github.com/JavianDev/GitTree/raw/HEAD/media/screenshots/09-multi-repo.png)- **Tabs** for each open repository
+![Repository tabs showing multiple open repos with quick-add button](./media/screenshots/09-multi-repo.png)- **Tabs** for each open repository
 - Scroll position, selection, and filters remembered per-repo
 - Detects and explains submodules vs. nested repos (prevents accidents)
 - Worktrees never presented as independent clones
@@ -104,7 +104,7 @@ Open a folder and GitTree finds every repository inside it — at any depth. Und
 
 Follows your VS Code theme by default. Also offers curated system-class alternatives.
 
-![Theme selector dropdown showing multiple theme options](https://github.com/JavianDev/GitTree/raw/HEAD/media/screenshots/10-themes.png)- Cycle themes with `Ctrl+Alt+T` (macOS: `⌘+⌥+T`)
+![Theme selector dropdown showing multiple theme options](./media/screenshots/10-themes.png)- Cycle themes with `Ctrl+Alt+T` (macOS: `⌘+⌥+T`)
 - High-contrast mode fully supported
 - Animations respect `prefers-reduced-motion`
 
