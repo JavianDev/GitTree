@@ -769,6 +769,8 @@
 .gt-graph-gutter {
   flex: none;
   position: relative;
+  width: 120px;
+  overflow: hidden;
 }
 
 .gt-commit-list {
