@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import type { RepoId, RepoNode } from '@shared/model';
 import { GitTreePanel } from './panel/GitTreePanel';
+import { deliverUriCallback } from './pullRequests/oauth';
 import { RepositoryManager } from './repo/RepositoryManager';
 import { RepositoryTreeProvider } from './views/RepositoryTreeProvider';
 
@@ -14,6 +15,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     showCollapseAll: true,
   });
   context.subscriptions.push(treeView);
+
+  // Browser sign-in returns here: GitLab redirects to
+  // `vscode://javian-picardo-group-inc.git-tree/oauth/gitlab?code=…&state=…`.
+  context.subscriptions.push(
+    vscode.window.registerUriHandler({
+      handleUri: (uri) => {
+        if (uri.path.startsWith('/oauth/')) deliverUriCallback(uri.query);
+      },
+    }),
+  );
 
   context.subscriptions.push(
     vscode.commands.registerCommand('gitTree.open', () => GitTreePanel.show(context, manager)),

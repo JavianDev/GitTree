@@ -146,11 +146,14 @@ Follows your VS Code theme by default. Also offers curated system-class alternat
 
 The sidebar's Pull Requests section appears automatically the moment your repo's remote points at
 GitHub, Azure DevOps, GitLab, or Bitbucket (cloud) — no settings screen, no org/project to type in,
-nothing to configure. Sign in with VS Code's own built-in GitHub/Microsoft accounts; GitLab asks for
-a personal access token once, and Bitbucket for your Atlassian account email plus an
-[API token](https://id.atlassian.com/manage-profile/security/api-tokens) (scopes: `read:repository`,
-`read:pullrequest`, `write:pullrequest`). Credentials are stored in VS Code's secret storage, and a
-rejected one is forgotten so you're simply asked to sign in again.
+nothing to configure. GitHub and Azure DevOps sign in through VS Code's own GitHub/Microsoft
+accounts. Bitbucket and GitLab support the same kind of **browser sign-in** — approve Git Tree on
+bitbucket.org / gitlab.com and you're returned to VS Code, no token to create or paste — whenever a
+Git Tree app registration is available (built in, or your own in Settings; see
+[docs/oauth-setup.md](docs/oauth-setup.md)). Otherwise, and for workspaces that block third-party
+apps, Bitbucket takes an [API token](https://id.atlassian.com/manage-profile/security/api-tokens)
+created *with scopes* for Bitbucket and GitLab a personal access token. Logins live in VS Code's
+secret storage and refresh automatically; a rejected one is forgotten so you're simply asked again.
 
 - List open, completed, or abandoned pull requests with a status filter
 - Create a PR against any branch, mark it draft, write the description

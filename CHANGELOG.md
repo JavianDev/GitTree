@@ -6,6 +6,27 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — browser sign-in for every pull request provider
+
+- **Bitbucket and GitLab now sign in through the browser**, like GitHub and Azure DevOps already did
+  through VS Code's accounts: *Sign in with your browser* opens bitbucket.org or gitlab.com, you
+  approve Git Tree, and you're returned to VS Code. No token to create or paste. Logins are kept in
+  VS Code's secret storage and refreshed automatically; a refresh the provider refuses clears the
+  login so sign-in is simply offered again.
+- Built on one shared OAuth 2.0 authorization-code engine: a random `state` on every sign-in guards
+  against forged callbacks; GitLab uses PKCE as a public client (no secret); Bitbucket, which only
+  supports confidential clients, returns to a one-shot local page on `127.0.0.1:47231`, as Git
+  Credential Manager does. GitLab returns through VS Code's own `vscode://` link handler.
+- The app registrations are built in from a git-ignored `oauth-clients.json` at release time, and can
+  be overridden per user in Settings. API tokens / personal access tokens remain available for
+  workspaces that block third-party apps. See `docs/oauth-setup.md`.
+
+### Fixed — "Bitbucket rejected the saved credentials" said nothing about why
+
+- A rejected sign-in now passes on the provider's own reason (for example "Token is invalid or
+  expired"), and the API-token prompt spells out the most common cause: a plain Atlassian API
+  token, rather than one created *with scopes* for Bitbucket, is always rejected by Bitbucket.
+
 ### Fixed — the graph stopping part-way down the pane
 
 - **On any pane taller than 600px, the graph stopped painting 600px down** and the commit rows

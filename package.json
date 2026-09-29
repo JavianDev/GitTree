@@ -32,7 +32,8 @@
   ],
   "main": "./dist/extension.js",
   "activationEvents": [
-    "onStartupFinished"
+    "onStartupFinished",
+    "onUri"
   ],
   "contributes": {
     "viewsContainers": {
@@ -139,6 +140,21 @@
           },
           "default": [],
           "description": "Additional directory names to skip while scanning for repositories."
+        },
+        "gitTree.bitbucket.oauthConsumerKey": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Key of your own Bitbucket OAuth consumer, for browser sign-in. Leave empty to use the one built into Git Tree. Callback URL to register: `http://127.0.0.1:47231/oauth/bitbucket`."
+        },
+        "gitTree.bitbucket.oauthConsumerSecret": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Secret of your own Bitbucket OAuth consumer (used together with the key above). Stored in plain text in settings — prefer the built-in consumer unless your workspace requires its own."
+        },
+        "gitTree.gitlab.oauthApplicationId": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Application ID of your own GitLab.com application, for browser sign-in. Leave empty to use the one built into Git Tree. Register it as non-confidential with scope `api` and redirect URI `vscode://javian-picardo-group-inc.git-tree/oauth/gitlab`."
         },
         "gitTree.followActiveEditor": {
           "type": "boolean",

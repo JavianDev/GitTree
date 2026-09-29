@@ -7,3 +7,5 @@ out/
 .vscode-test/
 coverage/
 *.log
+# OAuth app registrations (Bitbucket consumer secret). Baked into the build, never committed.
+oauth-clients.json

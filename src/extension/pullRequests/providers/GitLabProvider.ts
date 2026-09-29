@@ -9,13 +9,16 @@ import type {
 } from '@shared/model';
 import type { GitService } from '../../git/GitService';
 import type { ProviderRepoRef } from '../detectProvider';
-import { requestJson } from '../httpJson';
-import type {
-  AddCommentInput,
-  CompleteOptions,
-  CreatePrInput,
-  EnsureFetchedResult,
-  PullRequestProvider,
+import { type JsonRequest, requestJson } from '../httpJson';
+import type { OAuthSession } from '../oauth';
+import { chooseSignInMethod, gitlabClient, gitlabSession, providerReason, signInWithBrowser } from '../oauthClients';
+import {
+  type AddCommentInput,
+  type CompleteOptions,
+  type CreatePrInput,
+  type EnsureFetchedResult,
+  PullRequestApiError,
+  type PullRequestProvider,
 } from '../PullRequestProvider';
 import {
   type GitLabApprovals,
@@ -34,21 +37,51 @@ import {
 const API_BASE = 'https://gitlab.com/api/v4';
 const SECRET_KEY = 'gitTree.gitlab.pat.gitlab.com';
 
+/** Marks a `token` as an OAuth access token rather than a personal access token. */
+const BEARER = 'bearer:';
+
 /**
- * GitLab.com only. VS Code has no built-in GitLab authentication provider,
- * so this is the one place in the whole PR feature that asks for a manually
- * entered credential: a personal access token, requested once and cached in
- * `vscode.SecretStorage`.
+ * GitLab.com only. VS Code has no built-in GitLab account, so this signs in
+ * one of two ways:
+ *
+ *  - **Browser sign-in (OAuth + PKCE)**, when an application is configured:
+ *    GitLab asks you to authorize Git Tree and sends the browser back through
+ *    VS Code's URI handler. A public client — no secret — and the token is
+ *    refreshed automatically.
+ *  - **A personal access token** (scope `api`), for groups that block
+ *    third-party applications.
+ *
+ * The two travel differently: OAuth tokens as `Authorization: Bearer`, personal
+ * tokens as `PRIVATE-TOKEN`, so the `token` string carries a `bearer:` prefix
+ * for the first.
  */
 export class GitLabProvider implements PullRequestProvider {
   readonly id = 'gitlab' as const;
 
   constructor(private readonly secrets: vscode.SecretStorage) {}
 
+  private oauth(): OAuthSession | undefined {
+    const client = gitlabClient();
+    return client ? gitlabSession(client, this.secrets) : undefined;
+  }
+
   async session(interactive: boolean): Promise<string | undefined> {
+    const oauth = this.oauth();
+    const oauthToken = await oauth?.accessToken();
+    if (oauthToken) return BEARER + oauthToken;
+
     const stored = await this.secrets.get(SECRET_KEY);
     if (stored) return stored;
     if (!interactive) return undefined;
+
+    if (oauth) {
+      const method = await chooseSignInMethod('GitLab', 'a personal access token');
+      if (!method) return undefined;
+      if (method === 'browser') {
+        const token = await signInWithBrowser(oauth, 'GitLab');
+        return token ? BEARER + token : undefined;
+      }
+    }
 
     const token = await vscode.window.showInputBox({
       prompt: 'GitLab.com personal access token (scope: api)',
@@ -58,8 +91,30 @@ export class GitLabProvider implements PullRequestProvider {
     });
     if (!token) return undefined;
 
-    await this.secrets.store(SECRET_KEY, token);
-    return token;
+    await this.secrets.store(SECRET_KEY, token.trim());
+    return token.trim();
+  }
+
+  /** Every request goes through here; a 401 forgets the credential so sign-in is offered again. */
+  private async call<T>(request: Omit<JsonRequest, 'authHeader'>): Promise<T> {
+    const oauth = request.token.startsWith(BEARER);
+    try {
+      return await requestJson<T>(
+        oauth
+          ? { ...request, token: request.token.slice(BEARER.length), authHeader: 'Authorization' }
+          : { ...request, authHeader: 'PRIVATE-TOKEN' },
+      );
+    } catch (error) {
+      if (error instanceof PullRequestApiError && error.status === 401) {
+        if (oauth) await this.oauth()?.forget();
+        else await this.secrets.delete(SECRET_KEY);
+        const reason = providerReason(error);
+        throw new Error(
+          `GitLab rejected the saved sign-in. Sign in again.${reason ? ` GitLab said: “${reason}”` : ''}`,
+        );
+      }
+      throw error;
+    }
   }
 
   private projectPath(ref: ProviderRepoRef): string {
@@ -73,10 +128,9 @@ export class GitLabProvider implements PullRequestProvider {
     signal?: AbortSignal,
   ): Promise<PullRequestEntry[]> {
     const state = statusToGitLabState(status);
-    const mrs = await requestJson<GitLabMergeRequest[]>({
+    const mrs = await this.call<GitLabMergeRequest[]>({
       url: `${API_BASE}/projects/${this.projectPath(ref)}/merge_requests?state=${state}&per_page=50`,
       token,
-      authHeader: 'PRIVATE-TOKEN',
       ...(signal ? { signal } : {}),
     });
     return mrs.map((mr) => mapPullRequestEntry(mr));
@@ -84,24 +138,21 @@ export class GitLabProvider implements PullRequestProvider {
 
   async get(ref: ProviderRepoRef, id: number, token: string, signal?: AbortSignal): Promise<PullRequestDetail> {
     const base = `${API_BASE}/projects/${this.projectPath(ref)}`;
-    const mr = await requestJson<GitLabMergeRequest>({
+    const mr = await this.call<GitLabMergeRequest>({
       url: `${base}/merge_requests/${id}`,
       token,
-      authHeader: 'PRIVATE-TOKEN',
       ...(signal ? { signal } : {}),
     });
 
     const [approvals, pipelines] = await Promise.all([
-      requestJson<GitLabApprovals>({
+      this.call<GitLabApprovals>({
         url: `${base}/merge_requests/${id}/approvals`,
         token,
-        authHeader: 'PRIVATE-TOKEN',
         ...(signal ? { signal } : {}),
       }).catch(() => ({ approved_by: [] }) as GitLabApprovals),
-      requestJson<GitLabPipeline[]>({
+      this.call<GitLabPipeline[]>({
         url: `${base}/merge_requests/${id}/pipelines`,
         token,
-        authHeader: 'PRIVATE-TOKEN',
         ...(signal ? { signal } : {}),
       }).catch(() => []),
     ]);
@@ -121,10 +172,9 @@ export class GitLabProvider implements PullRequestProvider {
     token: string,
     signal?: AbortSignal,
   ): Promise<PullRequestCommit[]> {
-    const commits = await requestJson<GitLabCommit[]>({
+    const commits = await this.call<GitLabCommit[]>({
       url: `${API_BASE}/projects/${this.projectPath(ref)}/merge_requests/${id}/commits`,
       token,
-      authHeader: 'PRIVATE-TOKEN',
       ...(signal ? { signal } : {}),
     });
     return mapCommits(commits);
@@ -136,11 +186,10 @@ export class GitLabProvider implements PullRequestProvider {
     token: string,
     signal?: AbortSignal,
   ): Promise<{ id: number }> {
-    const mr = await requestJson<GitLabMergeRequest>({
+    const mr = await this.call<GitLabMergeRequest>({
       url: `${API_BASE}/projects/${this.projectPath(ref)}/merge_requests`,
       method: 'POST',
       token,
-      authHeader: 'PRIVATE-TOKEN',
       body: {
         title: input.title,
         description: input.description,
@@ -160,11 +209,10 @@ export class GitLabProvider implements PullRequestProvider {
     token: string,
     signal?: AbortSignal,
   ): Promise<void> {
-    await requestJson({
+    await this.call({
       url: `${API_BASE}/projects/${this.projectPath(ref)}/merge_requests/${id}/${voteToApproval(vote)}`,
       method: 'POST',
       token,
-      authHeader: 'PRIVATE-TOKEN',
       ...(signal ? { signal } : {}),
     });
   }
@@ -176,11 +224,10 @@ export class GitLabProvider implements PullRequestProvider {
     token: string,
     signal?: AbortSignal,
   ): Promise<void> {
-    await requestJson({
+    await this.call({
       url: `${API_BASE}/projects/${this.projectPath(ref)}/merge_requests/${id}/merge`,
       method: 'PUT',
       token,
-      authHeader: 'PRIVATE-TOKEN',
       body: {
         squash: options.squashMerge,
         should_remove_source_branch: options.deleteSourceBranch,
@@ -191,11 +238,10 @@ export class GitLabProvider implements PullRequestProvider {
   }
 
   async abandon(ref: ProviderRepoRef, id: number, token: string, signal?: AbortSignal): Promise<void> {
-    await requestJson({
+    await this.call({
       url: `${API_BASE}/projects/${this.projectPath(ref)}/merge_requests/${id}`,
       method: 'PUT',
       token,
-      authHeader: 'PRIVATE-TOKEN',
       body: { state_event: 'close' },
       ...(signal ? { signal } : {}),
     });
@@ -207,10 +253,9 @@ export class GitLabProvider implements PullRequestProvider {
     token: string,
     signal?: AbortSignal,
   ): Promise<PullRequestCommentThread[]> {
-    const notes = await requestJson<GitLabNote[]>({
+    const notes = await this.call<GitLabNote[]>({
       url: `${API_BASE}/projects/${this.projectPath(ref)}/merge_requests/${id}/notes?per_page=100`,
       token,
-      authHeader: 'PRIVATE-TOKEN',
       ...(signal ? { signal } : {}),
     });
     return mapCommentThreads(notes);
@@ -223,11 +268,10 @@ export class GitLabProvider implements PullRequestProvider {
     token: string,
     signal?: AbortSignal,
   ): Promise<{ threadId: number }> {
-    await requestJson<GitLabNote>({
+    await this.call<GitLabNote>({
       url: `${API_BASE}/projects/${this.projectPath(ref)}/merge_requests/${id}/notes`,
       method: 'POST',
       token,
-      authHeader: 'PRIVATE-TOKEN',
       body: { body: input.content },
       ...(signal ? { signal } : {}),
     });

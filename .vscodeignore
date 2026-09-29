@@ -1,0 +1,2 @@
+# Baked into dist/extension.js at build time; never ship the raw file.
+oauth-clients.json

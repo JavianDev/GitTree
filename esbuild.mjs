@@ -1,4 +1,5 @@
 import * as esbuild from 'esbuild';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -32,6 +33,33 @@ const reporter = {
   },
 };
 
+/**
+ * OAuth app registrations for browser sign-in (Bitbucket consumer, GitLab
+ * application), read from the git-ignored `oauth-clients.json` or from
+ * environment variables, and baked into the bundle — so no key or secret is
+ * ever committed. Missing is fine: sign-in then falls back to tokens.
+ */
+function oauthClients() {
+  const file = path.join(here, 'oauth-clients.json');
+  const fromFile = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {};
+  const env = process.env;
+  return {
+    bitbucket: {
+      key: env.GITTREE_BITBUCKET_OAUTH_KEY ?? fromFile.bitbucket?.key ?? '',
+      secret: env.GITTREE_BITBUCKET_OAUTH_SECRET ?? fromFile.bitbucket?.secret ?? '',
+    },
+    gitlab: {
+      applicationId: env.GITTREE_GITLAB_OAUTH_APP_ID ?? fromFile.gitlab?.applicationId ?? '',
+    },
+  };
+}
+
+const clients = oauthClients();
+console.log(
+  `  browser sign-in: Bitbucket ${clients.bitbucket.key && clients.bitbucket.secret ? 'configured' : 'not configured'}, ` +
+    `GitLab ${clients.gitlab.applicationId ? 'configured' : 'not configured'}`,
+);
+
 /** @type {import('esbuild').BuildOptions} */
 const options = {
   entryPoints: ['src/extension/extension.ts'],
@@ -46,6 +74,7 @@ const options = {
   minify: production,
   logLevel: 'silent',
   plugins: [sharedAlias, reporter],
+  define: { __GITTREE_OAUTH__: JSON.stringify(clients) },
 };
 
 if (watch) {

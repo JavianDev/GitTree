@@ -18,6 +18,14 @@ import {
   PullRequestApiError,
   type PullRequestProvider,
 } from '../PullRequestProvider';
+import type { OAuthSession } from '../oauth';
+import {
+  bitbucketClient,
+  bitbucketSession,
+  chooseSignInMethod,
+  providerReason,
+  signInWithBrowser,
+} from '../oauthClients';
 import {
   type BitbucketBuildStatus,
   type BitbucketComment,
@@ -34,28 +42,59 @@ import {
 const API_BASE = 'https://api.bitbucket.org/2.0';
 const SECRET_KEY = 'gitTree.bitbucket.apiToken.bitbucket.org';
 
+/** Marks a `token` as an OAuth access token rather than a base64 `email:api_token` pair. */
+const BEARER = 'bearer:';
+
 /**
- * Bitbucket Cloud only. VS Code has no built-in Bitbucket authentication
- * provider, so — like GitLab — this asks for a credential once and caches it
- * in SecretStorage: the Atlassian account email plus an API token, sent as
- * HTTP Basic. (Atlassian retired App Passwords in 2026; API tokens replace
- * them and authenticate the REST API with the account *email*, not the
- * Bitbucket username.) `token` here is the base64 `email:api_token` pair,
- * encoded once at sign-in rather than on every request.
+ * Bitbucket Cloud only. VS Code has no built-in Bitbucket account, so this
+ * signs in one of two ways:
+ *
+ *  - **Browser sign-in (OAuth)**, when a consumer is configured: Bitbucket asks
+ *    you to approve Git Tree, and the resulting token is stored and refreshed
+ *    automatically. Nothing to create or paste.
+ *  - **An API token**, for workspaces that block third-party apps: the
+ *    Atlassian account email plus a Bitbucket-scoped API token, sent as HTTP
+ *    Basic. (Atlassian retired App Passwords in 2026; API tokens authenticate
+ *    the REST API with the account *email*, not the Bitbucket username.)
+ *
+ * The `token` string handed back to every method is `bearer:<oauth token>` for
+ * the first and the base64 `email:api_token` pair for the second.
  */
 export class BitbucketProvider implements PullRequestProvider {
   readonly id = 'bitbucket' as const;
 
   constructor(private readonly secrets: vscode.SecretStorage) {}
 
+  private oauth(): OAuthSession | undefined {
+    const client = bitbucketClient();
+    return client ? bitbucketSession(client, this.secrets) : undefined;
+  }
+
   async session(interactive: boolean): Promise<string | undefined> {
+    const oauth = this.oauth();
+    const oauthToken = await oauth?.accessToken();
+    if (oauthToken) return BEARER + oauthToken;
+
     const stored = await this.secrets.get(SECRET_KEY);
     if (stored) return stored;
     if (!interactive) return undefined;
 
+    if (oauth) {
+      const method = await chooseSignInMethod('Bitbucket', 'an API token');
+      if (!method) return undefined;
+      if (method === 'browser') {
+        const token = await signInWithBrowser(oauth, 'Bitbucket');
+        return token ? BEARER + token : undefined;
+      }
+    }
+
+    return this.promptApiToken();
+  }
+
+  private async promptApiToken(): Promise<string | undefined> {
     const email = await vscode.window.showInputBox({
       title: 'Sign in to Bitbucket (1/2)',
-      prompt: 'Atlassian account email',
+      prompt: 'Atlassian account email — the one you sign in to bitbucket.org with',
       placeHolder: 'you@example.com',
       ignoreFocusOut: true,
     });
@@ -64,8 +103,8 @@ export class BitbucketProvider implements PullRequestProvider {
     const apiToken = await vscode.window.showInputBox({
       title: 'Sign in to Bitbucket (2/2)',
       prompt:
-        'Bitbucket API token — create one at id.atlassian.com → Security → API tokens → "Create API token with scopes", ' +
-        'choose Bitbucket, and grant read:repository, read:pullrequest and write:pullrequest',
+        'Bitbucket API token — id.atlassian.com → Security → API tokens → "Create API token with scopes" → Bitbucket, ' +
+        'with read:repository, read:pullrequest and write:pullrequest. (A plain "Create API token" is rejected by Bitbucket.)',
       password: true,
       ignoreFocusOut: true,
     });
@@ -78,20 +117,36 @@ export class BitbucketProvider implements PullRequestProvider {
 
   /**
    * Every request goes through here. A 401 means the saved credential is
-   * wrong or has been revoked, so it is forgotten — the next connection check
+   * wrong, expired, or revoked, so it is forgotten — the next connection check
    * then reports "not signed in" and the sidebar offers sign-in again, instead
-   * of failing on every request with no way to re-enter it.
+   * of failing on every request with no way to re-enter it. Bitbucket's own
+   * reason is passed on, since "rejected" alone does not say what to fix.
    */
   private async call<T>(request: Omit<JsonRequest, 'authHeader'>): Promise<T> {
+    const oauth = request.token.startsWith(BEARER);
     try {
-      return await requestJson<T>({ ...request, authHeader: 'Basic' });
+      return await requestJson<T>(
+        oauth
+          ? { ...request, token: request.token.slice(BEARER.length), authHeader: 'Authorization' }
+          : { ...request, authHeader: 'Basic' },
+      );
     } catch (error) {
+      const reason = providerReason(error);
+      const because = reason ? ` Bitbucket said: “${reason}”` : '';
+
       if (error instanceof PullRequestApiError && error.status === 401) {
-        await this.secrets.delete(SECRET_KEY);
-        throw new Error('Bitbucket rejected the saved credentials. Sign in again with your Atlassian account email and an API token.');
+        if (oauth) await this.oauth()?.forget();
+        else await this.secrets.delete(SECRET_KEY);
+        throw new Error(
+          oauth
+            ? `Your Bitbucket sign-in has expired or was revoked. Sign in again.${because}`
+            : `Bitbucket rejected the saved API token. Check it is a Bitbucket-scoped API token and that the email is your Atlassian account email, then sign in again.${because}`,
+        );
       }
       if (error instanceof PullRequestApiError && error.status === 403) {
-        throw new Error('Bitbucket denied access. The API token may be missing the read:pullrequest / write:pullrequest scopes.');
+        throw new Error(
+          `Bitbucket denied access — the sign-in is missing pull request permission for this repository.${because}`,
+        );
       }
       throw error;
     }
