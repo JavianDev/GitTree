@@ -6,6 +6,33 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed — the graph stopping part-way down the pane
+
+- **On any pane taller than 600px, the graph stopped painting 600px down** and the commit rows
+  below were never rendered until you scrolled. The history view measured its list once, on first
+  render — but the first render is always the empty "Reading history…" state, before the list
+  exists, so the measurement found nothing, never ran again, and the viewport stayed at its 600px
+  default for good. It now re-measures whenever the list mounts, follows resizes, and re-syncs on
+  scroll as a safety net. This is the cut-off behind several earlier reports; the lane and
+  convergence fixes in 0.8.x were real but sat on top of it.
+
+### Fixed — stashes and merge commits showing "This commit changed nothing"
+
+- **Selecting a stash, or any merge commit, now shows its changes.** Commit diffs asked git for
+  `<hash>^!`, which for a commit with more than one parent — every merge, and every stash, which git
+  stores as a merge of HEAD and the index — produces a *combined* diff (`diff --cc`, `@@@` hunks)
+  that the parser drops. They now diff against the first parent (`git show -m --first-parent`):
+  what a merge brought to its branch, and for a stash exactly what `git stash show -p` prints. Root
+  commits still diff against the empty tree.
+
+### Fixed — a narrow Git Tree pane hiding commit subjects
+
+- The subject was the only part of a row that could shrink, so in a narrow pane it reached zero
+  while author, date, hash, and ref pills kept their width. Now the subject keeps a minimum, pills
+  shrink with an ellipsis, and the list drops secondary columns as it narrows (hash, then author,
+  then date). The graph's width budget is 40% of the pane (lanes compress to fit), the Git Tree
+  pane's default and minimum widths are larger, and the list no longer scrolls sideways.
+
 ### Added — a fourth pane: Files and Code side by side
 
 - **The review pane is now two panes, Files and Code**, each resizable and collapsible like

@@ -20,6 +20,18 @@ const OVERSCAN = 12;
  */
 const PAGE_LIMIT = 2000;
 
+/**
+ * How wide the graph may grow within a pane of `paneWidth`.
+ *
+ * A fixed ceiling let a busy graph take most of a narrow Git Tree pane and
+ * leave the commit subjects a few pixels to show in. The graph gets at most
+ * 40% of the pane — lanes compress to fit — and the list keeps the rest.
+ */
+export function gutterBudget(paneWidth: number): number {
+  if (!(paneWidth > 0)) return 240;
+  return Math.max(48, Math.min(240, Math.round(paneWidth * 0.4)));
+}
+
 const EMPTY_DATA: { commits: readonly Commit[]; rows: readonly GraphRow[] } = {
   commits: [],
   rows: [],
@@ -82,9 +94,25 @@ export function HistoryView({
   const [data, setData] = useState<{ commits: readonly Commit[]; rows: readonly GraphRow[] }>(EMPTY_DATA);
   const [scrollTop, setScrollTop] = useState(0);
   const [viewport, setViewport] = useState(600);
+  /** Width of the graph and list together; bounds how wide the graph may grow. */
+  const [paneWidth, setPaneWidth] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  /**
+   * The list element as state, so measuring re-attaches whenever it mounts.
+   *
+   * The first render is always the empty "Reading history…" state — the list
+   * does not exist yet — so a measure-once-on-mount effect found nothing and
+   * never ran again. The viewport then stayed at its 600px default for good,
+   * and on any pane taller than that the graph stopped painting 600px down
+   * and the rows below were never rendered: the history "cut off" part-way.
+   */
+  const [listElement, setListElement] = useState<HTMLDivElement | null>(null);
+  const attachList = useCallback((node: HTMLDivElement | null) => {
+    scrollRef.current = node;
+    setListElement(node);
+  }, []);
   const commits = data.commits;
   const rows = data.rows;
 
@@ -168,23 +196,28 @@ export function HistoryView({
 
   // Track the viewport so the window size follows a resized panel.
   useLayoutEffect(() => {
-    const element = scrollRef.current;
+    const element = listElement;
     if (!element) return;
+    const pane = element.parentElement;
 
-    // Only publish a genuinely new height. Calling setState on every
+    // Only publish a genuinely new value. Calling setState on every
     // observation feeds a resize back into the same frame the observer is
     // delivering, which the browser reports as "ResizeObserver loop completed
     // with undelivered notifications" — a console error with no visible symptom.
-    const observer = new ResizeObserver(() => {
-      const next = element.clientHeight;
-      setViewport((current) => (current === next ? current : next));
-    });
+    const measure = () => {
+      const height = element.clientHeight;
+      const width = pane?.clientWidth ?? 0;
+      setViewport((current) => (current === height ? current : height));
+      setPaneWidth((current) => (current === width ? current : width));
+    };
 
+    const observer = new ResizeObserver(measure);
     observer.observe(element);
-    setViewport(element.clientHeight);
+    if (pane) observer.observe(pane);
+    measure();
 
     return () => observer.disconnect();
-  }, []);
+  }, [listElement]);
 
   /**
    * Rendered synchronously. The list scrolls natively, before any script runs,
@@ -195,7 +228,14 @@ export function HistoryView({
    */
   const onScroll = useCallback(() => {
     const element = scrollRef.current;
-    if (element) flushSync(() => setScrollTop(element.scrollTop));
+    if (!element) return;
+    // The height is re-read here too, as a safety net under the observer: if a
+    // resize notification is ever missed, the first scroll puts it right.
+    const height = element.clientHeight;
+    flushSync(() => {
+      setScrollTop(element.scrollTop);
+      setViewport((current) => (current === height ? current : height));
+    });
   }, []);
 
   /**
@@ -345,13 +385,14 @@ export function HistoryView({
             height={viewport}
             width={gutterWidth}
             rowCount={rows.length}
+            maxWidth={gutterBudget(paneWidth)}
             {...(selectedIndex >= 0 ? { selectedRow: selectedIndex } : {})}
           />
         </div>
 
         <div
           className="gt-commit-list"
-          ref={scrollRef}
+          ref={attachList}
           onScroll={onScroll}
           role="listbox"
           aria-label="Commits"
@@ -470,7 +511,9 @@ function RefPill({ decoration }: { decoration: RefDecoration }): React.JSX.Eleme
       <span className="gt-ref-glyph" aria-hidden="true">
         {REF_GLYPH[decoration.kind]}
       </span>
-      {label}
+      {/* Its own element so it can ellipsize: a bare text node in a flex
+          container only clips. */}
+      <span className="gt-ref-label">{label}</span>
     </span>
   );
 }

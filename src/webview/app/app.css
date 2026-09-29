@@ -815,6 +815,10 @@
   flex: 1 1 auto;
   min-width: 0;
   overflow-y: auto;
+  /* Rows fit the width (see the container queries below) rather than
+     scrolling sideways out from under the graph beside them. */
+  overflow-x: hidden;
+  container: commit-list / inline-size;
 }
 
 .gt-commit-row {
@@ -867,9 +871,14 @@
 
 .gt-commit-subject {
   flex: 1 1 auto;
+  /* Without a floor the subject is the only thing in the row that shrinks, so
+     in a narrow pane it reached zero while author, date, hash, and pills kept
+     their width — a row of avatars and clipped pills with no message at all. */
+  min-width: 5em;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 
 .gt-commit-author,
 .gt-commit-date {
@@ -891,7 +900,9 @@
    may carry four of them. */
 
 .gt-ref-pill {
-  flex: none;
+  /* Shrinks (its label ellipsizing) before the commit subject has to. */
+  flex: 0 1 auto;
+  min-width: 0;
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -909,9 +920,45 @@
 }
 
 .gt-ref-glyph {
+  flex: none;
   font-size: 9px;
   opacity: 0.85;
   line-height: 1;
+}
+
+.gt-ref-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Narrow Git Tree pane: drop the secondary columns, least useful first, and
+   let the ref pills shrink, so the subject always keeps room to be read. */
+@container commit-list (max-width: 480px) {
+  .gt-commit-hash {
+    display: none;
+  }
+}
+
+@container commit-list (max-width: 400px) {
+  .gt-commit-author {
+    display: none;
+  }
+
+  .gt-ref-pill {
+    max-width: 110px;
+  }
+}
+
+@container commit-list (max-width: 280px) {
+  .gt-commit-date {
+    display: none;
+  }
+
+  .gt-ref-pill {
+    max-width: 72px;
+  }
 }
 
 .gt-ref-pill[data-kind='localBranch'] {

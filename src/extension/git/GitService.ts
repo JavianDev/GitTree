@@ -545,9 +545,25 @@ function diffArgs(target: Exclude<DiffTarget, { kind: 'untracked' }>): string[] 
     case 'index':
       return [...base, '--cached', '--', target.path];
     case 'commit':
-      // `<hash>^!` is shorthand for "this commit against its first parent",
-      // and works on a root commit where `<hash>~1` does not exist.
-      return [...base, `${target.hash}^!`, ...(target.path ? ['--', target.path] : [])];
+      // `show -m --first-parent`, not `diff <hash>^!`: on a commit with more
+      // than one parent — every merge, and every stash, which git stores as a
+      // merge of HEAD and the index — `^!` produces a *combined* diff (`diff
+      // --cc`, `@@@` hunks) that reads as "changed nothing" here. Against the
+      // first parent is what the commit brought to its branch (for a stash:
+      // exactly what `git stash show -p` prints), and a root commit still
+      // diffs against the empty tree.
+      return [
+        'show',
+        '--no-color',
+        '--no-ext-diff',
+        '--find-renames',
+        '-U3',
+        '--format=',
+        '-m',
+        '--first-parent',
+        target.hash,
+        ...(target.path ? ['--', target.path] : []),
+      ];
     case 'range':
       return [...base, `${target.from}..${target.to}`, ...(target.path ? ['--', target.path] : [])];
   }

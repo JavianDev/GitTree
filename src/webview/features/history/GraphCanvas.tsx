@@ -4,11 +4,11 @@ import { railSegments } from './railSegments';
 
 const LANE_WIDTH = 16;
 /**
- * The widest the gutter grows. Past this, lanes are drawn closer together
- * rather than off the canvas edge — a busy history gets a denser graph, never
- * a cut-off one.
+ * The widest the gutter grows unless the caller says otherwise. Past it, lanes
+ * are drawn closer together rather than off the canvas edge — a busy history
+ * gets a denser graph, never a cut-off one.
  */
-const MAX_GUTTER_WIDTH = 240;
+const DEFAULT_MAX_WIDTH = 240;
 /** Densest a lane gets before rails would visually merge into one another. */
 const MIN_LANE_WIDTH = 6;
 const RAIL_WIDTH = 2.1;
@@ -47,6 +47,8 @@ export interface GraphCanvasProps {
    * what tells the paint effect that there is something new to draw.
    */
   rowCount: number;
+  /** Width budget in px; lanes compress to fit it. */
+  maxWidth?: number;
   /** Row index of the selected commit, emphasised in the drawing. */
   selectedRow?: number;
 }
@@ -74,6 +76,7 @@ export function GraphCanvas({
   height,
   width,
   rowCount,
+  maxWidth = DEFAULT_MAX_WIDTH,
   selectedRow,
 }: GraphCanvasProps): React.JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -88,7 +91,7 @@ export function GraphCanvas({
 
     const ratio = window.devicePixelRatio || 1;
     const lanes = Math.max(1, width);
-    const laneWidth = Math.max(MIN_LANE_WIDTH, Math.min(LANE_WIDTH, (MAX_GUTTER_WIDTH - LANE_WIDTH / 2) / lanes));
+    const laneWidth = Math.max(MIN_LANE_WIDTH, Math.min(LANE_WIDTH, (maxWidth - LANE_WIDTH / 2) / lanes));
     const cssWidth = Math.ceil(lanes * laneWidth + LANE_WIDTH / 2);
     // Nodes shrink with their lane so neighbours never overlap.
     const nodeRadius = Math.min(NODE_RADIUS, laneWidth * 0.3);
@@ -197,7 +200,7 @@ export function GraphCanvas({
 
       context.lineWidth = RAIL_WIDTH;
     }
-  }, [rows, rowCount, start, end, scrollTop, rowHeight, height, width, selectedRow]);
+  }, [rows, rowCount, start, end, scrollTop, rowHeight, height, width, maxWidth, selectedRow]);
 
   return <canvas ref={canvasRef} className="gt-graph-gutter" aria-hidden="true" />;
 }

@@ -68,6 +68,17 @@ describe.skipIf(!gitAvailable)('GitService against a real repository', () => {
     writeFileSync(path.join(dir, 'a.txt'), 'three\n');
     git('stash', 'push', '-m', 'second stash');
 
+    // A real merge: `feature` adds b.txt, main adds c.txt, merged with --no-ff.
+    git('checkout', '-b', 'feature');
+    writeFileSync(path.join(dir, 'b.txt'), 'from feature\n');
+    git('add', '.');
+    git('commit', '-m', 'feature work');
+    git('checkout', 'main');
+    writeFileSync(path.join(dir, 'c.txt'), 'from main\n');
+    git('add', '.');
+    git('commit', '-m', 'main work');
+    git('merge', '--no-ff', '-m', 'merge feature', 'feature');
+
     const node: RepoNode = {
       id: 'test',
       root: dir,
@@ -92,6 +103,35 @@ describe.skipIf(!gitAvailable)('GitService against a real repository', () => {
     expect(stashes[0]?.message).toContain('second stash');
     expect(stashes[1]?.message).toContain('first stash');
     expect(stashes[0]?.branch).toBe('main');
+  });
+
+  const rev = (spec: string) => execFileSync('git', ['rev-parse', spec], { cwd: dir, encoding: 'utf8' }).trim();
+
+  it('diffs a stash against the commit it was taken from, not as "changed nothing"', async () => {
+    // A stash is a merge of HEAD and the index; `diff <stash>^!` produced a
+    // combined diff the parser drops, so selecting a stash showed nothing.
+    const files = await service.diff({ kind: 'commit', repoId: 'test', hash: rev('stash@{0}') });
+
+    expect(files.map((file) => file.path)).toEqual(['a.txt']);
+    const lines = files[0]?.hunks.flatMap((hunk) => hunk.lines) ?? [];
+    expect(lines.some((line) => line.kind === 'add' && line.text === 'three')).toBe(true);
+  });
+
+  it('diffs a merge commit against its first parent', async () => {
+    const files = await service.diff({ kind: 'commit', repoId: 'test', hash: rev('HEAD') });
+    // What the merge brought into main: the feature branch's file.
+    expect(files.map((file) => file.path)).toEqual(['b.txt']);
+  });
+
+  it('diffs a root commit against the empty tree', async () => {
+    const root = execFileSync('git', ['rev-list', '--max-parents=0', 'HEAD'], { cwd: dir, encoding: 'utf8' }).trim();
+    const files = await service.diff({ kind: 'commit', repoId: 'test', hash: root });
+    expect(files.map((file) => [file.path, file.status])).toEqual([['a.txt', 'added']]);
+  });
+
+  it('narrows a commit diff to one path', async () => {
+    const files = await service.diff({ kind: 'commit', repoId: 'test', hash: rev('main~1'), path: 'c.txt' });
+    expect(files.map((file) => file.path)).toEqual(['c.txt']);
   });
 
   it('lists refs, including the stash ref', async () => {

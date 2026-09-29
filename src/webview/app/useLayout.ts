@@ -76,8 +76,9 @@ export interface LayoutState {
  *
  * Code gets the lion's share: it is what the other three panes exist to point at.
  */
-export const DEFAULT_SIZES: readonly number[] = [180, 250, 280, 610];
-export const DEFAULT_MINS: readonly number[] = [120, 150, 160, 260];
+export const DEFAULT_SIZES: readonly number[] = [180, 330, 260, 550];
+// The Git Tree floor leaves room for the graph and a readable subject beside it.
+export const DEFAULT_MINS: readonly number[] = [120, 220, 160, 260];
 
 /** Share of the old review pane the file list takes when a three-pane layout is migrated. */
 const FILES_SHARE = 0.32;
