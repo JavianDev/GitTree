@@ -326,6 +326,7 @@ export function HistoryView({
             rows={rows}
             start={start}
             end={end}
+            scrollTop={scrollTop}
             rowHeight={ROW_HEIGHT}
             height={viewport}
             width={gutterWidth}

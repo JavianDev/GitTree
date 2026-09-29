@@ -6,6 +6,17 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **The commit graph drifted out of sync with the commit list while scrolling.** The canvas drew
+  each rail/node at `(rowIndex - start) * rowHeight`, which only lines up with the list's actual
+  on-screen position the instant `scrollTop` happens to be an exact multiple of the row height —
+  `start` itself only advances in whole-row jumps, while the list scrolls pixel-smoothly. Between
+  those instants the graph and the rows beneath it were offset by up to a full row, reading as the
+  graph cutting off or misaligning as you scrolled. The canvas now positions every row from the
+  same continuous `scrollTop` the list uses (`rowIndex * rowHeight - scrollTop`), so it tracks the
+  list exactly rather than snapping into place once per row.
+
 ### Added — multi-provider Pull Requests (GitHub, Azure DevOps, GitLab)
 
 - **Zero-configuration detection.** The sidebar's Pull Requests section appears automatically

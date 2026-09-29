@@ -15,6 +15,18 @@ export interface GraphCanvasProps {
   start: number;
   /** One past the last rendered row index. */
   end: number;
+  /**
+   * The list's continuous scroll offset, in pixels.
+   *
+   * `start` alone is not enough to position rows: it only changes in whole-row
+   * jumps (`floor(scrollTop / rowHeight)`), while the list itself scrolls
+   * pixel-smoothly via the browser's native scroll. Drawing at `(index -
+   * start) * rowHeight` assumed `start`'s row sat exactly at the canvas's top
+   * edge, which is only true the instant `scrollTop` is a multiple of
+   * `rowHeight` — every other frame the rails drifted out of register with
+   * the commit rows beneath them, worsening until the next whole-row snap.
+   */
+  scrollTop: number;
   rowHeight: number;
   /** Pixel height of the viewport. */
   height: number;
@@ -42,6 +54,7 @@ export function GraphCanvas({
   rows,
   start,
   end,
+  scrollTop,
   rowHeight,
   height,
   width,
@@ -66,7 +79,11 @@ export function GraphCanvas({
 
     const { palette, ring } = readPalette();
     const laneX = (lane: number) => LANE_WIDTH / 2 + lane * LANE_WIDTH;
-    const rowY = (index: number) => (index - start) * rowHeight + rowHeight / 2;
+    // Positioned from the same scroll offset the list itself uses, not from
+    // `start`, so a row's rail lines up with its DOM row at every scroll
+    // position — not just the ones where `scrollTop` happens to land exactly
+    // on a row boundary.
+    const rowY = (index: number) => index * rowHeight - scrollTop + rowHeight / 2;
     const colorOf = (index: number) => palette[index % PALETTE_SIZE] ?? palette[0] ?? '#888';
 
     const last = Math.min(end, rows.length);
@@ -183,7 +200,7 @@ export function GraphCanvas({
 
       context.lineWidth = RAIL_WIDTH;
     }
-  }, [rows, start, end, rowHeight, height, width, selectedRow]);
+  }, [rows, start, end, scrollTop, rowHeight, height, width, selectedRow]);
 
   return <canvas ref={canvasRef} className="gt-graph-gutter" aria-hidden="true" />;
 }
