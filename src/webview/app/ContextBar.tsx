@@ -5,7 +5,7 @@ import { forwardRef } from 'react';
  * filters the commit tree, which is a different pane, so making it a mode would
  * mean one control silently meaning two unrelated things.
  */
-export type ViewMode = 'changes' | 'history';
+export type ViewMode = 'changes' | 'history' | 'pullRequest';
 
 export type SearchField = 'message' | 'author' | 'sha';
 
@@ -27,6 +27,9 @@ export interface ContextBarProps {
   onHistory: (next: HistoryOptions) => void;
   search: SearchOptions;
   onSearch: (next: SearchOptions) => void;
+  /** Shows a third "Pull Request" tab, only while one is selected — never a
+   * mode you switch into manually, since there is nothing to show without one. */
+  showPrTab?: boolean;
 }
 
 /** History first: it is what the middle pane shows, so it is the default reading. */
@@ -34,6 +37,8 @@ const MODES: Array<{ id: ViewMode; label: string; hint: string }> = [
   { id: 'history', label: 'History', hint: 'Review the selected commit' },
   { id: 'changes', label: 'Changes', hint: 'Review the working tree' },
 ];
+
+const PR_MODE = { id: 'pullRequest' as const, label: 'Pull Request', hint: 'Review the selected pull request' };
 
 /**
  * Mode switcher, commit search, and the commit tree's scope.
@@ -50,13 +55,15 @@ const MODES: Array<{ id: ViewMode; label: string; hint: string }> = [
  * every screen. `HistoryOptions` still carries them; only their editor moved.
  */
 export const ContextBar = forwardRef<HTMLInputElement, ContextBarProps>(function ContextBar(
-  { mode, onMode, history, onHistory, search, onSearch },
+  { mode, onMode, history, onHistory, search, onSearch, showPrTab },
   searchRef,
 ) {
+  const tabs = showPrTab ? [...MODES, PR_MODE] : MODES;
+
   return (
     <div className="gt-context">
       <div className="gt-segmented" role="tablist" aria-label="Review pane">
-        {MODES.map((entry) => (
+        {tabs.map((entry) => (
           <button
             key={entry.id}
             type="button"

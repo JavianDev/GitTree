@@ -6,6 +6,31 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — multi-provider Pull Requests (GitHub, Azure DevOps, GitLab)
+
+- **Zero-configuration detection.** The sidebar's Pull Requests section appears automatically
+  when a repo's remote points at `github.com`, `dev.azure.com` (or the legacy
+  `*.visualstudio.com` form), or `gitlab.com` — no settings screen, no manual org/project entry.
+  `origin` is tried first, then every other remote in listed order.
+- **Sign-in uses VS Code's own built-in authentication providers** for GitHub and Azure DevOps
+  (native "Sign in to GitHub" / "Sign in to Microsoft" popups, via
+  `vscode.authentication.getSession`) — no new dependency, no custom UI. GitLab has no built-in
+  VS Code auth provider, so it is the one place in the feature that asks for a manually entered
+  credential: a personal access token, requested once and cached in `vscode.SecretStorage`.
+- **Full workflow**: list (with an Active/Completed/Abandoned filter), create, vote (approve /
+  approve with suggestions / wait for author / reject, where the provider supports it),
+  complete/merge with squash and delete-source-branch options, abandon, and comment threads.
+  Azure DevOps additionally supports a policy-bypass override on completion; GitHub and GitLab
+  hide that control entirely rather than showing a no-op, since neither has the concept.
+- **No new diff-rendering code.** A PR's overall diff and its per-commit diffs reuse the existing
+  `diff/get` RPC and `DiffViewer` verbatim — a PR's commits are real git objects once fetched
+  locally, so the same pipeline that renders a regular commit's diff renders these too. GitHub
+  PRs stay diffable even after their source branch is deleted, via GitHub's own synthetic
+  `refs/pull/{id}/head`; Azure DevOps and GitLab fall back to fetching the raw commit SHA.
+- Policy/check-run/pipeline status and linked work items/issues render per PR when the provider
+  exposes them; GitHub's linked issues are a best-effort `#123` scan of the title/body rather
+  than a GraphQL query, kept deliberately simple.
+
 ### Added — full stash management
 
 - **Every stash is now visible, not just the tip.** The sidebar's Stashes section calls a new

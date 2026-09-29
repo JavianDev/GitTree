@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { RefEntry, StashEntry } from '@shared/model';
+import type { PullRequestEntry, RefEntry, StashEntry } from '@shared/model';
 import { rpc } from '../../rpc/client';
 import { type RefNode, buildRefTree, folderPaths, recentRefs } from './BranchTree';
+import { PullRequestSection } from './PullRequestSection';
 import { filterRefs, highlightSegments } from './RefFilter';
 import { type StashActionId, StashSection } from './StashSection';
 
@@ -15,6 +16,9 @@ export interface ObjectSidebarProps {
   onSelectStash: (stash: StashEntry) => void;
   /** Opens the review-before-run command sheet, pre-filled with `stashRef`. */
   onStashAction: (id: StashActionId, stashRef: string) => void;
+  selectedPrId?: number;
+  onSelectPr: (pr: PullRequestEntry) => void;
+  onCreatePr: () => void;
 }
 
 type SectionId = 'branches' | 'remotes' | 'tags';
@@ -41,6 +45,9 @@ export function ObjectSidebar({
   onCheckout,
   onSelectStash,
   onStashAction,
+  selectedPrId,
+  onSelectPr,
+  onCreatePr,
 }: ObjectSidebarProps): React.JSX.Element {
   const [refs, setRefs] = useState<RefEntry[]>([]);
   const [query, setQuery] = useState('');
@@ -175,6 +182,17 @@ export function ObjectSidebar({
         revision={revision}
         onSelect={onSelectStash}
         onAction={onStashAction}
+      />
+
+      {/* Also structurally independent: presence depends on the remote URL,
+          not on anything `refs/list` returns, and fetches over the network
+          rather than reading local git state. */}
+      <PullRequestSection
+        repoId={repoId}
+        revision={revision}
+        {...(selectedPrId !== undefined ? { selectedId: selectedPrId } : {})}
+        onSelect={onSelectPr}
+        onCreate={onCreatePr}
       />
     </nav>
   );

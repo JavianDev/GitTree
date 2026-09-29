@@ -7,11 +7,14 @@ import {
   renderCommand,
   tokenize,
 } from '@shared/commands';
-import type { Commit, RefEntry, StashEntry } from '@shared/model';
+import type { Commit, PullRequestEntry, RefEntry, StashEntry } from '@shared/model';
 import { CommandLog } from '../features/commands/CommandLog';
 import { type CommandOption, CommandSheet } from '../features/commands/CommandSheet';
 import { TeachingCard } from '../features/commands/TeachingCard';
 import { HistoryView } from '../features/history/HistoryView';
+import { CreatePullRequestSheet } from '../features/pullRequests/CreatePullRequestSheet';
+import { PullRequestDiffPane } from '../features/pullRequests/PullRequestDiffPane';
+import { PullRequestMaster } from '../features/pullRequests/PullRequestMaster';
 import { ReviewPane } from '../features/review/ReviewPane';
 import { SettingsSheet } from '../features/settings/SettingsSheet';
 import { ObjectSidebar } from '../features/sidebar/ObjectSidebar';
@@ -122,6 +125,9 @@ export function AppShell(): React.JSX.Element {
   const [pending, setPending] = useState<{ id: CommandId; context: Partial<CommandContext> } | undefined>();
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [pullRequestId, setPullRequestId] = useState<number | undefined>();
+  const [prCommitHash, setPrCommitHash] = useState<string | undefined>();
+  const [createPrOpen, setCreatePrOpen] = useState(false);
 
   const [history, setHistory] = useState<HistoryOptions>({
     scope: 'all',
@@ -170,7 +176,22 @@ export function AppShell(): React.JSX.Element {
    */
   const selectCommit = useCallback((next: Commit | undefined) => {
     setCommit(next);
-    if (next) setMode('history');
+    if (next) {
+      setMode('history');
+      setPullRequestId(undefined);
+    }
+  }, []);
+
+  const selectPr = useCallback((pr: PullRequestEntry) => {
+    setPullRequestId(pr.id);
+    setPrCommitHash(undefined);
+    setMode('pullRequest');
+  }, []);
+
+  /** Switching to History or Changes leaves whatever PR was selected behind. */
+  const changeMode = useCallback((next: ViewMode) => {
+    setMode(next);
+    if (next !== 'pullRequest') setPullRequestId(undefined);
   }, []);
 
   /**
@@ -203,6 +224,7 @@ export function AppShell(): React.JSX.Element {
   const selectUncommitted = useCallback(() => {
     setCommit(undefined);
     setMode('changes');
+    setPullRequestId(undefined);
   }, []);
 
   const openTerminal = useCallback(() => {
@@ -372,7 +394,8 @@ export function AppShell(): React.JSX.Element {
       <ContextBar
         ref={searchRef}
         mode={mode}
-        onMode={setMode}
+        onMode={changeMode}
+        showPrTab={pullRequestId !== undefined}
         history={history}
         onHistory={setHistory}
         search={search}
@@ -409,12 +432,24 @@ export function AppShell(): React.JSX.Element {
             onCheckout={checkoutRef}
             onSelectStash={selectStash}
             onStashAction={stashAction}
+            selectedPrId={pullRequestId}
+            onSelectPr={selectPr}
+            onCreatePr={() => setCreatePrOpen(true)}
           />
         ) : (
           <nav className="gt-sidebar" aria-label="Repository objects" />
         )}
 
-        {active ? (
+        {active && mode === 'pullRequest' && pullRequestId !== undefined ? (
+          <PullRequestMaster
+            key={`${active.id}:${pullRequestId}`}
+            repoId={active.id}
+            prId={pullRequestId}
+            selectedCommit={prCommitHash}
+            onSelectCommit={setPrCommitHash}
+            onChanged={() => repositories.refresh()}
+          />
+        ) : active ? (
           <HistoryView
             key={active.id}
             repoIds={repoIds}
@@ -438,11 +473,22 @@ export function AppShell(): React.JSX.Element {
           </div>
         )}
 
-        {active ? (
+        {active && mode === 'pullRequest' && pullRequestId !== undefined ? (
+          <PullRequestDiffPane
+            key={`${active.id}:${pullRequestId}:${prCommitHash ?? 'overall'}`}
+            repoId={active.id}
+            prId={pullRequestId}
+            {...(prCommitHash ? { commitHash: prCommitHash } : {})}
+          />
+        ) : active ? (
           <ReviewPane
             key={`${active.id}:${mode}`}
             repoId={active.id}
-            mode={mode}
+            // `mode` can be `'pullRequest'` while `pullRequestId` is briefly
+            // unset (e.g. right after closing a PR); the PR pane above already
+            // takes over whenever both are set, so this fallback never
+            // actually renders history-as-changes in practice.
+            mode={mode === 'changes' ? 'changes' : 'history'}
             {...(commit ? { commitHash: commit.hash } : {})}
             revision={repositories.revision}
             onError={setError}
@@ -489,6 +535,19 @@ export function AppShell(): React.JSX.Element {
 
       {teaching && <TeachingCard spec={teaching} onClose={() => setTeaching(undefined)} />}
       {shortcutsOpen && <ShortcutsSheet onClose={() => setShortcutsOpen(false)} />}
+
+      {createPrOpen && active && (
+        <CreatePullRequestSheet
+          repoId={active.id}
+          currentBranch={activeState?.branch?.head}
+          onClose={() => setCreatePrOpen(false)}
+          onCreated={(id) => {
+            setPullRequestId(id);
+            setPrCommitHash(undefined);
+            setMode('pullRequest');
+          }}
+        />
+      )}
     </div>
   );
 }

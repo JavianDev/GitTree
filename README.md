@@ -158,7 +158,9 @@ Press `f` for fetch, review incoming changes in the graph, press `Shift+P` to pu
 - ✓ History search (by message or author)
 - ✓ Fetch, Pull, Push, Branch, Merge, Stash, Tag operations
 - ✓ Branch checkout and delete via sidebar
-- ✓ Stash pop/drop operations
+- ✓ Full stash management (view every stash, preview its diff, apply / pop / drop)
+- ✓ Pull Requests — GitHub, Azure DevOps, and GitLab, auto-detected with zero configuration
+  (list, create, vote, complete/merge, abandon, comment threads)
 - ✓ Command log and editable command sheet
 - ✓ Remote management (add / remove / setUrl)
 - ✓ Settings panel (identity, appearance, repository details)

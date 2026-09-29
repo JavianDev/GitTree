@@ -14,6 +14,12 @@ import type {
   GitRemote,
   GraphRow,
   JournalEntry,
+  PullRequestCommentThread,
+  PullRequestConnection,
+  PullRequestDetail,
+  PullRequestEntry,
+  PullRequestStatus,
+  PullRequestVote,
   RefEntry,
   RepoId,
   RepoNode,
@@ -22,6 +28,7 @@ import type {
   StashEntry,
   StatusResult,
 } from './model';
+import type { CommandContext, CommandId } from './commands';
 
 /* ------------------------------------------------------------------------ */
 /* Request/response surface                                                 */
@@ -130,6 +137,59 @@ export interface Api {
 
   /* Stashes */
   'stash/list': { params: { repoId: RepoId }; result: { stashes: StashEntry[] } };
+
+  /* Pull Requests */
+  /** Silent detection + session check only — never prompts, never persists anything. */
+  'pullRequests/connection': { params: { repoId: RepoId }; result: PullRequestConnection };
+  /** Triggers the provider's native interactive sign-in popup (or, for GitLab, the PAT prompt). */
+  'pullRequests/signIn': { params: { repoId: RepoId }; result: { signedIn: boolean } };
+  'pullRequests/list': {
+    params: { repoId: RepoId; status: PullRequestStatus };
+    result: { pullRequests: PullRequestEntry[] };
+  };
+  'pullRequests/get': { params: { repoId: RepoId; id: number }; result: PullRequestDetail };
+  'pullRequests/create': {
+    params: {
+      repoId: RepoId;
+      title: string;
+      description: string;
+      sourceBranch: string;
+      targetBranch: string;
+      isDraft: boolean;
+    };
+    result: { id: number };
+  };
+  'pullRequests/vote': { params: { repoId: RepoId; id: number; vote: PullRequestVote }; result: void };
+  'pullRequests/complete': {
+    params: {
+      repoId: RepoId;
+      id: number;
+      squashMerge: boolean;
+      deleteSourceBranch: boolean;
+      bypassPolicy: boolean;
+      mergeCommitMessage?: string;
+    };
+    result: void;
+  };
+  'pullRequests/abandon': { params: { repoId: RepoId; id: number }; result: void };
+  'pullRequests/commentThreads': {
+    params: { repoId: RepoId; id: number };
+    result: { threads: PullRequestCommentThread[] };
+  };
+  'pullRequests/addComment': {
+    params: { repoId: RepoId; id: number; threadId?: number; content: string; filePath?: string; line?: number };
+    result: { threadId: number };
+  };
+  /**
+   * Fetches the PR's source/target branches locally so `diff/get` has the
+   * objects it needs. Each provider gets there differently — see
+   * `extension/pullRequests/providers/*`.
+   */
+  'pullRequests/ensureFetched': {
+    params: { repoId: RepoId; id: number };
+    result: { sourceOid: string; targetOid: string; mergeBaseOid: string };
+  };
+  'pullRequests/openExternal': { params: { url: string }; result: void };
 
   /* Settings */
   'settings/get': { params: { repoId: RepoId }; result: RepoSettings };

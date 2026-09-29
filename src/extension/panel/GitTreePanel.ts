@@ -12,6 +12,11 @@ import type {
 } from '@shared/protocol';
 import { CancelledError, GitError } from '../git/GitProcess';
 import { remoteAddArgs, remoteRemoveArgs, remoteSetUrlArgs } from '../git/parsers/remote';
+import { PullRequestService } from '../pullRequests/PullRequestService';
+import type { PullRequestProvider } from '../pullRequests/PullRequestProvider';
+import { AzureDevOpsProvider } from '../pullRequests/providers/AzureDevOpsProvider';
+import { GitHubProvider } from '../pullRequests/providers/GitHubProvider';
+import { GitLabProvider } from '../pullRequests/providers/GitLabProvider';
 import type { RepositoryManager } from '../repo/RepositoryManager';
 import { relativeTo } from '../repo/identity';
 import { TerminalBridge } from '../terminal/TerminalBridge';
@@ -33,6 +38,8 @@ export class GitTreePanel {
   private readonly disposables: vscode.Disposable[] = [];
   private readonly logStreams = new Map<string, AbortController>();
   private readonly terminals = new TerminalBridge();
+  private readonly prServices = new Map<RepoId, PullRequestService>();
+  private readonly prProviders: PullRequestProvider[];
   private disposed = false;
 
   static show(context: vscode.ExtensionContext, manager: RepositoryManager): void {
@@ -61,6 +68,11 @@ export class GitTreePanel {
   ) {
     panel.iconPath = vscode.Uri.joinPath(context.extensionUri, 'media', 'gittree.svg');
     panel.webview.html = this.render(panel.webview);
+
+    // One shared instance per provider (not per repo): each caches its own
+    // session/profile lookups, and there is exactly one signed-in identity
+    // per provider regardless of how many repos on that host are open.
+    this.prProviders = [new GitHubProvider(), new AzureDevOpsProvider(), new GitLabProvider(context.secrets)];
 
     this.disposables.push(
       panel.webview.onDidReceiveMessage((message: WebviewMessage) => void this.receive(message)),
@@ -148,6 +160,15 @@ export class GitTreePanel {
   private requireService(repoId: RepoId) {
     const service = this.manager.service(repoId);
     if (!service) throw new RpcFailure('not-found', `Unknown repository: ${repoId}`);
+    return service;
+  }
+
+  private requirePrService(repoId: RepoId): PullRequestService {
+    const existing = this.prServices.get(repoId);
+    if (existing) return existing;
+
+    const service = new PullRequestService(this.requireService(repoId), this.prProviders);
+    this.prServices.set(repoId, service);
     return service;
   }
 
@@ -254,6 +275,38 @@ export class GitTreePanel {
     'stash/list': async ({ repoId }) => ({
       stashes: await this.requireService(repoId).stashes({ priority: 'visible' }),
     }),
+
+    'pullRequests/connection': async ({ repoId }) => this.requirePrService(repoId).connection(),
+
+    'pullRequests/signIn': async ({ repoId }) => this.requirePrService(repoId).signIn(),
+
+    'pullRequests/list': async ({ repoId, status }) => ({
+      pullRequests: await this.requirePrService(repoId).list(status),
+    }),
+
+    'pullRequests/get': async ({ repoId, id }) => this.requirePrService(repoId).get(id),
+
+    'pullRequests/create': async ({ repoId, ...input }) => this.requirePrService(repoId).create(input),
+
+    'pullRequests/vote': async ({ repoId, id, vote }) => this.requirePrService(repoId).vote(id, vote),
+
+    'pullRequests/complete': async ({ repoId, id, ...options }) =>
+      this.requirePrService(repoId).complete(id, options),
+
+    'pullRequests/abandon': async ({ repoId, id }) => this.requirePrService(repoId).abandon(id),
+
+    'pullRequests/commentThreads': async ({ repoId, id }) => ({
+      threads: await this.requirePrService(repoId).commentThreads(id),
+    }),
+
+    'pullRequests/addComment': async ({ repoId, id, ...input }) =>
+      this.requirePrService(repoId).addComment(id, input),
+
+    'pullRequests/ensureFetched': async ({ repoId, id }) => this.requirePrService(repoId).ensureFetched(id),
+
+    'pullRequests/openExternal': async ({ url }) => {
+      await vscode.env.openExternal(vscode.Uri.parse(url));
+    },
 
     'stats/get': async ({ repoId, staged }) => ({
       stats: await this.requireService(repoId).stats(staged, { priority: 'visible' }),

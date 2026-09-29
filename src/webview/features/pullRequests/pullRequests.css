@@ -1,0 +1,179 @@
+/* -------------------------------------------------------------------------- */
+/* Sidebar: sign-in row and status/create toolbar                             */
+/* -------------------------------------------------------------------------- */
+
+.gt-pr-signin {
+  width: 100%;
+  text-align: left;
+  color: var(--gt-accent);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.gt-pr-signin:disabled {
+  color: var(--gt-label-tertiary);
+  cursor: default;
+}
+
+.gt-pr-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  padding: var(--gt-space-1) var(--gt-space-3);
+}
+
+.gt-pr-status {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 1px solid var(--gt-control-border);
+  background: var(--gt-control-bg);
+  color: var(--gt-label);
+  border-radius: var(--gt-radius-control);
+  padding: 2px var(--gt-space-2);
+  font-size: var(--gt-text-caption);
+}
+
+/* -------------------------------------------------------------------------- */
+/* PR detail view                                                             */
+/* -------------------------------------------------------------------------- */
+
+.gt-pr-master {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.gt-pr-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-2);
+  padding: var(--gt-space-3);
+  border-bottom: 1px solid var(--gt-separator);
+}
+
+.gt-pr-title {
+  margin: 0;
+  font-size: var(--gt-text-title);
+}
+
+.gt-pr-badges,
+.gt-pr-reviewers,
+.gt-pr-policies,
+.gt-pr-work-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gt-space-1);
+}
+
+.gt-pr-meta {
+  margin: 0;
+  color: var(--gt-label-secondary);
+  font-size: var(--gt-text-caption);
+}
+
+.gt-pr-description {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: var(--gt-text-callout);
+  color: var(--gt-label-secondary);
+}
+
+.gt-kind-badge[data-status='rejected'],
+.gt-kind-badge[data-status='broken'] {
+  color: var(--gt-red);
+}
+
+.gt-kind-badge[data-status='approved'] {
+  color: var(--gt-green);
+}
+
+.gt-pr-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--gt-space-2);
+}
+
+.gt-pr-commits {
+  flex: none;
+  max-height: 220px;
+  overflow-y: auto;
+  border-bottom: 1px solid var(--gt-separator);
+}
+
+.gt-pr-branch-pickers {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Comment threads                                                            */
+/* -------------------------------------------------------------------------- */
+
+.gt-pr-threads {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-3);
+  padding: var(--gt-space-3);
+  overflow-y: auto;
+}
+
+.gt-pr-thread {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-1);
+  padding: var(--gt-space-2);
+  border: 1px solid var(--gt-separator);
+  border-radius: var(--gt-radius-control);
+}
+
+.gt-pr-thread[data-status='fixed'],
+.gt-pr-thread[data-status='closed'] {
+  opacity: 0.7;
+}
+
+.gt-pr-thread-context {
+  font-size: var(--gt-text-caption);
+  color: var(--gt-label-tertiary);
+}
+
+.gt-pr-comment {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gt-space-2);
+  align-items: baseline;
+}
+
+.gt-pr-comment-author {
+  font-weight: 600;
+}
+
+.gt-pr-comment-date {
+  font-size: var(--gt-text-caption);
+  color: var(--gt-label-tertiary);
+}
+
+.gt-pr-comment-body {
+  flex-basis: 100%;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.gt-pr-reply,
+.gt-pr-new-thread {
+  display: flex;
+  gap: var(--gt-space-2);
+  align-items: flex-start;
+}
+
+.gt-pr-reply .gt-text-input {
+  flex: 1 1 auto;
+}
+
+.gt-pr-new-thread textarea.gt-text-input {
+  flex: 1 1 auto;
+  resize: vertical;
+}

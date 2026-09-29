@@ -435,3 +435,126 @@ export interface GraphRow {
   /** True when this commit has no parents. */
   isRoot: boolean;
 }
+
+/* ------------------------------------------------------------------------ */
+/* Pull Requests                                                            */
+/* ------------------------------------------------------------------------ */
+
+export type PrProvider = 'github' | 'azureDevOps' | 'gitlab';
+export type PullRequestStatus = 'active' | 'completed' | 'abandoned';
+export type PullRequestVote =
+  | 'approved'
+  | 'approvedWithSuggestions'
+  | 'noVote'
+  | 'waitingForAuthor'
+  | 'rejected';
+export type MergeStatus = 'succeeded' | 'conflicts' | 'queued' | 'notSet' | 'rejectedByPolicy' | 'failure';
+export type PolicyStatus = 'approved' | 'rejected' | 'queued' | 'running' | 'notApplicable' | 'broken' | 'pending';
+export type ThreadStatus = 'active' | 'fixed' | 'wontFix' | 'closed' | 'pending' | 'unknown';
+
+export interface PrIdentity {
+  id: string;
+  displayName: string;
+  uniqueName?: string;
+  imageUrl?: string;
+}
+
+export interface PullRequestReviewer {
+  identity: PrIdentity;
+  vote: PullRequestVote;
+  isRequired: boolean;
+}
+
+/** One row in the PR list — everything the sidebar needs without a detail fetch. */
+export interface PullRequestEntry {
+  provider: PrProvider;
+  id: number;
+  title: string;
+  status: PullRequestStatus;
+  isDraft: boolean;
+  author: PrIdentity;
+  sourceRefName: string;
+  targetRefName: string;
+  sourceBranch: string;
+  targetBranch: string;
+  createdAt: string;
+  reviewers: PullRequestReviewer[];
+  webUrl: string;
+}
+
+export interface PullRequestCommit {
+  commitId: string;
+  author: Identity;
+  date: string;
+  comment: string;
+}
+
+export interface PolicyEvaluation {
+  policyId: string;
+  displayName: string;
+  status: PolicyStatus;
+  isBlocking: boolean;
+  context?: string;
+}
+
+export interface WorkItemRef {
+  id: string;
+  title?: string;
+  workItemType?: string;
+  state?: string;
+  webUrl: string;
+}
+
+/** Which vote/complete/work-item capabilities this provider actually supports. */
+export interface PullRequestCapabilities {
+  waitingForAuthorVote: boolean;
+  bypassPolicy: boolean;
+  workItems: boolean;
+}
+
+export interface PullRequestDetail extends PullRequestEntry {
+  description: string;
+  mergeStatus: MergeStatus;
+  lastMergeSourceCommit?: string;
+  lastMergeTargetCommit?: string;
+  commits: PullRequestCommit[];
+  policies: PolicyEvaluation[];
+  workItems: WorkItemRef[];
+  completionOptions?: { deleteSourceBranch: boolean; squashMerge: boolean; bypassPolicy: boolean };
+  capabilities: PullRequestCapabilities;
+}
+
+export interface CommentThreadContext {
+  filePath?: string;
+  rightFileLine?: number;
+}
+
+export interface PullRequestComment {
+  id: number;
+  author: PrIdentity;
+  content: string;
+  publishedAt: string;
+  commentType: 'text' | 'system' | 'codeChange';
+}
+
+export interface PullRequestCommentThread {
+  id: number;
+  status: ThreadStatus;
+  context?: CommentThreadContext;
+  comments: PullRequestComment[];
+}
+
+/** What the sidebar needs to decide whether/how to show the Pull Requests section. No settings, ever. */
+export interface PullRequestConnection {
+  /** True when a supported remote was found — drives whether the section renders at all. */
+  detected: boolean;
+  provider?: PrProvider;
+  /** GitHub org/user, Azure DevOps organization, or GitLab namespace. */
+  owner?: string;
+  /** Repository name. */
+  repo?: string;
+  /** Azure DevOps project only; undefined for GitHub and GitLab. */
+  project?: string;
+  /** Result of a *silent* session check — no popup was shown to produce this value. */
+  signedIn: boolean;
+}
