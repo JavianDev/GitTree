@@ -91,7 +91,7 @@ const SHORTCUT_ACTIONS: Partial<Record<KeyCommandId, CommandId>> = {
   'git.tag': 'tag.create',
 };
 
-const PANE_LABELS = ['Branches', 'Commit tree', 'Review'] as const;
+const PANE_LABELS = ['Branches', 'Commit tree', 'Files', 'Code'] as const;
 
 /**
  * The application shell.
@@ -198,9 +198,18 @@ export function AppShell(): React.JSX.Element {
   }, []);
 
   /**
-   * Focus-diff mode: opening a file in Changes collapses the Branches and Git
-   * Tree panes to their rails so the diff gets the full width. Only the panes
-   * this collapsed are remembered, so restoring never reopens one the user had
+   * The fourth pane's element. The review pane portals its diff into it, so it
+   * is state rather than a ref: the review pane must re-render once it exists.
+   */
+  const [codePane, setCodePane] = useState<HTMLDivElement | null>(null);
+
+  /** The pull request on screen, if any — Files then shows its details, Code its diff. */
+  const openPrId = mode === 'pullRequest' ? pullRequestId : undefined;
+
+  /**
+   * Focus-diff mode: opening a file collapses the Branches and Git Tree panes
+   * to their rails so Files and Code get the full width. Only the panes this
+   * collapsed are remembered, so restoring never reopens one the user had
    * closed themselves.
    */
   const [focusCollapsed, setFocusCollapsed] = useState<readonly number[]>([]);
@@ -222,10 +231,13 @@ export function AppShell(): React.JSX.Element {
 
   const focusActive = focusCollapsed.some((index) => paneCollapsed[index] === true);
 
-  // Leaving Changes gives the commit tree back: History is read by clicking
-  // commits, which is impossible with that pane folded away.
+  // Switching between History and Changes gives the panes back: the switch is
+  // itself a move to browse, and the commit tree is where browsing starts.
+  const lastMode = useRef(mode);
   useEffect(() => {
-    if (mode !== 'changes' && focusActive) restorePanels();
+    if (lastMode.current === mode) return;
+    lastMode.current = mode;
+    if (focusActive) restorePanels();
   }, [mode, focusActive, restorePanels]);
 
   /**
@@ -474,16 +486,7 @@ export function AppShell(): React.JSX.Element {
           <nav className="gt-sidebar" aria-label="Repository objects" />
         )}
 
-        {active && mode === 'pullRequest' && pullRequestId !== undefined ? (
-          <PullRequestMaster
-            key={`${active.id}:${pullRequestId}`}
-            repoId={active.id}
-            prId={pullRequestId}
-            selectedCommit={prCommitHash}
-            onSelectCommit={setPrCommitHash}
-            onChanged={() => repositories.refresh()}
-          />
-        ) : active ? (
+        {active ? (
           <HistoryView
             key={active.id}
             repoIds={repoIds}
@@ -507,21 +510,24 @@ export function AppShell(): React.JSX.Element {
           </div>
         )}
 
-        {active && mode === 'pullRequest' && pullRequestId !== undefined ? (
-          <PullRequestDiffPane
-            key={`${active.id}:${pullRequestId}:${prCommitHash ?? 'overall'}`}
+        {/* Files: what to look at — a change's or commit's files, or a PR's details and commits. */}
+        {active && openPrId !== undefined ? (
+          <PullRequestMaster
+            key={`${active.id}:${openPrId}`}
             repoId={active.id}
-            prId={pullRequestId}
-            {...(prCommitHash ? { commitHash: prCommitHash } : {})}
+            prId={openPrId}
+            selectedCommit={prCommitHash}
+            onSelectCommit={setPrCommitHash}
+            onChanged={() => repositories.refresh()}
           />
         ) : active ? (
           <ReviewPane
             key={`${active.id}:${mode}`}
             repoId={active.id}
             // `mode` can be `'pullRequest'` while `pullRequestId` is briefly
-            // unset (e.g. right after closing a PR); the PR pane above already
-            // takes over whenever both are set, so this fallback never
-            // actually renders history-as-changes in practice.
+            // unset (e.g. right after closing a PR); the PR panes take over
+            // whenever both are set, so this fallback never actually renders
+            // history-as-changes in practice.
             mode={mode === 'changes' ? 'changes' : 'history'}
             {...(commit ? { commitHash: commit.hash } : {})}
             revision={repositories.revision}
@@ -530,10 +536,24 @@ export function AppShell(): React.JSX.Element {
             onRunCommand={runAction}
             onFileActivated={focusDiff}
             {...(focusActive ? { onRestorePanels: restorePanels } : {})}
+            codeContainer={codePane}
           />
         ) : (
           <div className="gt-empty" />
         )}
+
+        {/* Code. Always mounted, so the review pane's portal target survives a
+            switch into and out of a pull request. */}
+        <div className="gt-code-pane" ref={setCodePane}>
+          {active && openPrId !== undefined && (
+            <PullRequestDiffPane
+              key={`${active.id}:${openPrId}:${prCommitHash ?? 'overall'}`}
+              repoId={active.id}
+              prId={openPrId}
+              {...(prCommitHash ? { commitHash: prCommitHash } : {})}
+            />
+          )}
+        </div>
       </SplitPane>
 
       <CommandLog open={logOpen} repoId={active?.id} onSendToTerminal={sendToTerminal} />

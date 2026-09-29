@@ -214,7 +214,7 @@ describe('togglePin', () => {
   const state = layout([248, 452, 300]);
 
   it('starts every pane pinned', () => {
-    expect(defaultLayout().pinned).toEqual([true, true, true]);
+    expect(defaultLayout().pinned).toEqual([true, true, true, true]);
   });
 
   it('sends a pane to its rail as it is unpinned', () => {
@@ -260,7 +260,10 @@ describe('togglePin', () => {
 });
 
 describe('parseLayout', () => {
-  const fallback = defaultLayout();
+  // A three-pane window, so these pin down parsing itself independently of how
+  // many panes the real window has. The real four-pane window and its
+  // migration from three are covered separately below.
+  const fallback = layout([180, 250, 890], [120, 150, 260]);
 
   it('restores what was written', () => {
     const saved = toggleCollapse(layout([300, 400, 300]), 2);
@@ -280,7 +283,7 @@ describe('parseLayout', () => {
       mins: [900, 900, 900],
     });
 
-    expect(parseLayout(tampered, fallback).mins).toEqual([...DEFAULT_MINS]);
+    expect(parseLayout(tampered, fallback).mins).toEqual([120, 150, 260]);
   });
 
   it('falls back when the pane count changed since the layout was saved', () => {
@@ -391,5 +394,88 @@ describe('parseLayout', () => {
 
     expect(sum(fitted)).toBeCloseTo(1400, 6);
     expectSizes(fitted, [420, 560, 420]);
+  });
+});
+
+describe('the four-pane window', () => {
+  const fallback = defaultLayout();
+
+  it('has branches, commit tree, files, and code', () => {
+    expect(fallback.sizes).toHaveLength(4);
+    expect(fallback.mins).toEqual([...DEFAULT_MINS]);
+    expect(fallback.collapsed).toEqual([false, false, false, false]);
+  });
+
+  it('round-trips a four-pane layout', () => {
+    const saved = toggleCollapse(layout([180, 250, 280, 610], [...DEFAULT_MINS]), 0);
+    const restored = parseLayout(serializeLayout(saved), fallback);
+
+    expectSizes(restored.sizes, saved.sizes);
+    expect(restored.collapsed).toEqual([true, false, false, false]);
+  });
+
+  it('splits a three-pane layout’s review pane into Files and Code, keeping every width', () => {
+    // What every existing install has stored: the review pane dragged to 900px.
+    const v2 = JSON.stringify({
+      version: 2,
+      sizes: [200, 300, 900],
+      preferred: [200, 300, 900],
+      collapsed: [false, false, false],
+      pinned: [false, true, true],
+    });
+
+    const migrated = parseLayout(v2, fallback);
+
+    expect(migrated.sizes).toHaveLength(4);
+    expect(migrated.sizes[0]).toBe(200);
+    expect(migrated.sizes[1]).toBe(300);
+    // The two new panes share exactly the old review pane's width.
+    expect((migrated.sizes[2] ?? 0) + (migrated.sizes[3] ?? 0)).toBeCloseTo(900, 6);
+    expect(migrated.sizes[3]).toBeGreaterThan(migrated.sizes[2] ?? 0);
+    expect(sum(migrated.sizes)).toBeCloseTo(1400, 6);
+    expect(migrated.pinned).toEqual([false, true, true, true]);
+    expect(migrated.collapsed).toEqual([false, false, false, false]);
+    expect(migrated.mins).toEqual([...DEFAULT_MINS]);
+  });
+
+  it('migrates a three-pane layout written before pins existed', () => {
+    const v1 = JSON.stringify({
+      version: 1,
+      sizes: [28, 400, 900],
+      preferred: [200, 400, 900],
+      collapsed: [true, false, false],
+    });
+
+    const migrated = parseLayout(v1, fallback);
+
+    expect(migrated.collapsed).toEqual([true, false, false, false]);
+    expect(migrated.pinned).toEqual([true, true, true, true]);
+    expect(migrated.preferred[0]).toBe(200);
+  });
+
+  it('keeps both halves collapsed when the old review pane was', () => {
+    const v2 = JSON.stringify({
+      version: 2,
+      sizes: [300, 1000, 28],
+      preferred: [300, 400, 700],
+      collapsed: [false, false, true],
+      pinned: [true, true, true],
+    });
+
+    const migrated = parseLayout(v2, fallback);
+    expect(migrated.collapsed).toEqual([false, false, true, true]);
+    expect(sum(migrated.sizes)).toBeCloseTo(1328, 6);
+  });
+
+  it('does not migrate a three-pane payload that claims to be from the four-pane era', () => {
+    const odd = JSON.stringify({
+      version: 3,
+      sizes: [200, 300, 900],
+      preferred: [200, 300, 900],
+      collapsed: [false, false, false],
+      pinned: [true, true, true],
+    });
+
+    expect(parseLayout(odd, fallback)).toBe(fallback);
   });
 });

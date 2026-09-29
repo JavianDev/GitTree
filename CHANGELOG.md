@@ -6,6 +6,30 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — a fourth pane: Files and Code side by side
+
+- **The review pane is now two panes, Files and Code**, each resizable and collapsible like
+  Branches and Git Tree. The code gets its own full-height column instead of sharing one with the
+  file list (and stacking under it whenever the pane was narrower than 900px). Side-by-side diffs
+  are offered once the Code pane alone is 640px wide.
+- **Focus-diff now works from History too.** Clicking a file — in Changes, or in a commit's file
+  list — folds Branches and Git Tree to their rails so Files and Code get the whole width;
+  **⇤ Restore panels**, a rail, or switching between History and Changes brings them back.
+- **Pull requests use the same four panes**: Git Tree stays visible, Files shows the PR's details
+  and commits, and Code shows its diff.
+- **Existing layouts carry over.** A layout saved by the three-pane build is read and its review
+  pane divided into Files and Code, so pane widths you had dragged to are kept rather than reset.
+
+### Fixed — the stash list was always empty
+
+- **`git stash list` failed on every call since stash management shipped.** Its `--format`
+  argument was built with literal NUL characters as field separators, and Node refuses to spawn a
+  process whose arguments contain a NUL byte — so the call threw before git ever ran, and the
+  sidebar's Stashes section had nothing to show. The format now uses git's `%x00` escapes like
+  every other command. The parser tests fed it hand-built output and never spawned git, which is
+  how this shipped; a new test checks every git argument list for characters Node cannot spawn and
+  round-trips `git stash list` through the real `GitService` against a real repository.
+
 ### Fixed — graph rails stopping in mid-air
 
 - **Branches that share a parent now join it.** When several branches start from the same commit,

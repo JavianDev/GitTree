@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { CommandId } from '@shared/commands';
 import type {
   DiffFile,
@@ -45,6 +46,9 @@ import './review.css';
 /** Below this, file list over diff rather than beside it. */
 const WIDE_LAYOUT = 900;
 
+/** In its own Code pane, the diff alone needs far less width to go side by side. */
+const WIDE_CODE_PANE = 640;
+
 const SORTS: ReadonlyArray<{ value: FileSortMode; label: string }> = [
   { value: 'tree', label: 'Tree' },
   { value: 'path', label: 'Path' },
@@ -67,6 +71,16 @@ export interface ReviewPaneProps {
   onFileActivated?: () => void;
   /** Present while focus-diff mode has folded the other panes away. */
   onRestorePanels?: () => void;
+  /**
+   * The shell's Code pane. When given, the diff is rendered there and this pane
+   * becomes just the file list; `null` means the pane exists but has not
+   * mounted yet. Left out, list and diff share this pane as before.
+   *
+   * A portal rather than two components: the list and the diff share every
+   * piece of state here — selection, the active side, the fetched diff — and
+   * splitting that across a component boundary would mean lifting all of it.
+   */
+  codeContainer?: HTMLElement | null;
 }
 
 export function ReviewPane({
@@ -79,7 +93,9 @@ export function ReviewPane({
   onRunCommand,
   onFileActivated,
   onRestorePanels,
+  codeContainer,
 }: ReviewPaneProps): React.JSX.Element {
+  const splitOut = codeContainer !== undefined;
   const [status, setStatus] = useState<StatusResult | undefined>();
   const [stagedStats, setStagedStats] = useState<readonly FileStats[]>([]);
   const [unstagedStats, setUnstagedStats] = useState<readonly FileStats[]>([]);
@@ -238,9 +254,9 @@ export function ReviewPane({
       // The group that was clicked decides which side opens first; the segmented
       // control then switches between them for a file that is in both.
       setSide(row.group === 'staged' ? 'staged' : 'unstaged');
-      if (mode === 'changes') onFileActivated?.();
+      onFileActivated?.();
     },
-    [mode, onFileActivated],
+    [onFileActivated],
   );
 
   useEffect(() => {
@@ -410,8 +426,11 @@ export function ReviewPane({
   /* -- Responsive & Draggable ------------------------------------------- */
 
   useEffect(() => {
-    const node = containerRef.current;
+    // Side by side is a property of the space the *diff* has: this pane when it
+    // holds both halves, the Code pane when the diff lives there.
+    const node = splitOut ? codeContainer : containerRef.current;
     if (!node) return;
+    const threshold = splitOut ? WIDE_CODE_PANE : WIDE_LAYOUT;
 
     const observer = new ResizeObserver((entries) => {
       const width = entries[0]?.contentRect.width;
@@ -420,13 +439,13 @@ export function ReviewPane({
       // Only ever publish a *changed* value. A ResizeObserver callback that
       // sets state on every frame re-enters layout, and the browser reports it
       // as "ResizeObserver loop completed with undelivered notifications".
-      const next = width >= WIDE_LAYOUT;
+      const next = width >= threshold;
       setWide((current) => (current === next ? current : next));
     });
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, []);
+  }, [splitOut, codeContainer]);
 
   /* -- Divider dragging -------------------------------------------------- */
 
@@ -521,8 +540,30 @@ export function ReviewPane({
     [status?.mergeOperation, status?.branch.head],
   );
 
+  const diffView = (
+    <div className="gt-review-diff">
+      <DiffViewer
+        files={shown}
+        layout={wide ? diffLayout : 'unified'}
+        // Side by side in a narrow pane is two columns of forty characters,
+        // so the choice is withdrawn rather than offered and ignored.
+        onLayout={wide ? setDiffLayout : undefined}
+        sides={bothSides ? (['staged', 'unstaged'] as const) : undefined}
+        side={side}
+        onSide={setSide}
+        loading={loadingDiff}
+        error={diffError}
+        empty={emptyDiffText(mode, commitHash, activeRow)}
+      />
+    </div>
+  );
+
   return (
-    <div className="gt-review" ref={containerRef} data-layout={wide ? 'split' : 'stacked'}>
+    <div
+      className="gt-review"
+      ref={containerRef}
+      data-layout={splitOut ? 'files' : wide ? 'split' : 'stacked'}
+    >
       <header className="gt-review-header">
         <div className="gt-review-summary">
           <strong>{total === 1 ? '1 file' : `${total} files`}</strong>
@@ -602,7 +643,11 @@ export function ReviewPane({
       )}
 
       <div className="gt-review-body">
-        <div className="gt-review-list" ref={listRef} style={listWidth ? { flex: `0 0 ${listWidth}px` } : undefined}>
+        <div
+          className="gt-review-list"
+          ref={listRef}
+          style={!splitOut && listWidth ? { flex: `0 0 ${listWidth}px` } : undefined}
+        >
           <FileTree
             groups={groups}
             selection={selection}
@@ -627,25 +672,13 @@ export function ReviewPane({
             {...(theirsLabel ? { theirsLabel } : {})}
             busy={busy}
           />
-          <div className="gt-review-list-handle" title="Drag to resize" />
+          {!splitOut && <div className="gt-review-list-handle" title="Drag to resize" />}
         </div>
 
-        <div className="gt-review-diff">
-          <DiffViewer
-            files={shown}
-            layout={wide ? diffLayout : 'unified'}
-            // Side by side in a stacked pane is two columns of forty characters,
-            // so the choice is withdrawn rather than offered and ignored.
-            onLayout={wide ? setDiffLayout : undefined}
-            sides={bothSides ? (['staged', 'unstaged'] as const) : undefined}
-            side={side}
-            onSide={setSide}
-            loading={loadingDiff}
-            error={diffError}
-            empty={emptyDiffText(mode, commitHash, activeRow)}
-          />
-        </div>
+        {!splitOut && diffView}
       </div>
+
+      {codeContainer && createPortal(diffView, codeContainer)}
 
       {mode === 'changes' && (
         <CommitBox

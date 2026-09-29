@@ -14,7 +14,7 @@ Git Tree is **free and open source**. If you find it useful, [buying a coffee](h
 
 ## ✨ What Makes Git Tree Different
 
-### 1. **Three-Pane Layout** — See Everything At Once
+### 1. **Four-Pane Layout** — See Everything At Once
 
 Unlike VS Code's flat file list, Git Tree shows your branches, commit graph, and changes side-by-side. No modal dialogs, no context switching.
 
@@ -22,10 +22,14 @@ Unlike VS Code's flat file list, Git Tree shows your branches, commit graph, and
 
 - **Left pane:** Branches, tags, remotes, and stashes organized hierarchically with fuzzy-search filtering (180px default)
 - **Middle pane:** The full commit graph with correct lane assignment, real-time updates as you work (250px default, collapsible)
-- **Right pane:** File-level diff, line-level staging, and conflict resolution — all visible at once (890px default)
+- **Files pane:** The changed files, with line-level staging and conflict resolution from the right-click menu
+- **Code pane:** The diff itself, unified or side by side, in its own full-height column
 - **Fully draggable:** Resize any pane by dragging the divider; layout persists across sessions
-- **Focus diff:** Click a changed file and the Branches and Git Tree panes fold to thin rails so the
-  diff gets the full width — **⇤ Restore panels** (or clicking a rail) brings them back
+- **Files and Code panes:** the file list and the diff are separate panes, each resizable and
+  collapsible — four panes in all: Branches | Git Tree | Files | Code
+- **Focus diff:** Click a file (in Changes or in a commit) and the Branches and Git Tree panes fold to
+  thin rails so Files and Code get the full width — **⇤ Restore panels** (or clicking a rail) brings
+  them back
 - **New files show their contents:** an untracked file's whole content appears as added lines,
   not an empty pane
 
@@ -287,7 +291,7 @@ Choose any of these methods:
 2. **Click a repository** in the Repositories view to open it as a tab
 3. Click the **+** button to add more repositories
 
-The panel opens with three panes: **Branches** (left), **Commit Graph** (middle), **File Changes** (right).
+The panel opens with four panes: **Branches**, **Commit Graph**, **Files**, and **Code**.
 
 ---
 

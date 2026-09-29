@@ -180,6 +180,27 @@
   border-bottom: 1px solid var(--gt-separator);
 }
 
+/* The diff has moved out to its own Code pane, so the list is the whole body. */
+.gt-review[data-layout='files'] .gt-review-list {
+  flex: 1 1 auto;
+  border-right: 0;
+}
+
+/* The fourth pane. The review pane portals its diff in here, so the file list
+   and the code can be sized, collapsed, and read independently. */
+.gt-code-pane {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  background: var(--gt-bg-content);
+}
+
+.gt-code-pane > .gt-review-diff {
+  flex: 1 1 auto;
+}
+
 /* -------------------------------------------------------------------------- */
 /* Groups                                                                     */
 /* -------------------------------------------------------------------------- */

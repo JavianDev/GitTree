@@ -5,8 +5,14 @@ import { NUL, RS } from '../separators';
  * Stash record layout — mirrors `log.ts`'s `LIST_FORMAT` convention: NUL between
  * fields, RS terminates each record so a multi-line `-m` message never merges
  * two stashes into one.
+ *
+ * Written as git's `%x00` / `%x1e` escapes, which git expands in its *output*.
+ * The literal characters cannot go in the argument itself: Node refuses to
+ * spawn a process whose argv contains a NUL byte, so a format built from real
+ * NULs made every `git stash list` throw before git ever ran — and the stash
+ * list came back empty with no visible error.
  */
-export const STASH_FORMAT = ['%gd', '%H', '%h', '%an', '%ae', '%aI', '%s'].join('\u0000') + '\u001e';
+export const STASH_FORMAT = ['%gd', '%H', '%h', '%an', '%ae', '%aI', '%s'].join('%x00') + '%x1e';
 
 const FIELD_COUNT = 7;
 

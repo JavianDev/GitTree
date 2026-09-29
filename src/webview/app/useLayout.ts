@@ -18,7 +18,18 @@ import { useCallback, useEffect, useState } from 'react';
 export const RAIL_WIDTH = 28;
 
 const STORAGE_KEY = 'gitTree.layout';
-const STORAGE_VERSION = 2;
+const STORAGE_VERSION = 3;
+
+/**
+ * First version written by the four-pane window.
+ *
+ * Earlier builds had three panes — branches, commit tree, and a review pane
+ * holding both the file list and the code. v3 split that review pane into
+ * Files and Code, so a three-pane payload older than this is still readable:
+ * its last pane is divided in two rather than the whole layout being thrown
+ * away (see `splitReviewPane`).
+ */
+const FOUR_PANE_VERSION = 3;
 
 /**
  * Oldest payload this build still reads.
@@ -58,16 +69,18 @@ export interface LayoutState {
 }
 
 /**
- * Starting geometry: branches, commit tree, review.
+ * Starting geometry: branches, commit tree, files, code.
  *
  * Widths are absolute rather than fractions so a reset means the same thing at
  * any window size; the first `fit` scales them into the real container.
  *
- * Defaults: branches 180px, commit tree 250px, diff pane ~890px.
- * This maximizes diff visibility while keeping navigation and history accessible.
+ * Code gets the lion's share: it is what the other three panes exist to point at.
  */
-export const DEFAULT_SIZES: readonly number[] = [180, 250, 890];
-export const DEFAULT_MINS: readonly number[] = [120, 150, 260];
+export const DEFAULT_SIZES: readonly number[] = [180, 250, 280, 610];
+export const DEFAULT_MINS: readonly number[] = [120, 150, 160, 260];
+
+/** Share of the old review pane the file list takes when a three-pane layout is migrated. */
+const FILES_SHARE = 0.32;
 
 /** A fresh default state. A shared constant would be mutable across callers. */
 export function defaultLayout(): LayoutState {
@@ -262,7 +275,8 @@ export function serializeLayout(state: LayoutState): string {
  * Storage outlives the build that wrote it, so a payload carrying a different
  * number of panes describes a window that no longer exists. There is no sane
  * way to map it onto this one, and a half-applied layout is worse than the
- * default, so it is discarded whole.
+ * default, so it is discarded whole — with one known exception, the three-pane
+ * window that preceded the Files/Code split, which maps onto this one exactly.
  *
  * A field the payload predates is a different case entirely: it is filled from
  * the fallback rather than treated as corruption, which is what stops a version
@@ -288,17 +302,51 @@ export function parseLayout(raw: string | null | undefined, fallback: LayoutStat
   }
 
   const count = fallback.sizes.length;
-  const sizes = numberArray(record['sizes'], count);
-  const preferred = numberArray(record['preferred'], count);
-  const collapsed = booleanArray(record['collapsed'], count);
+
+  // A three-pane payload from before the review pane was split: read it as
+  // three, then divide its last pane into Files and Code.
+  const migrating = version < FOUR_PANE_VERSION && count === 4;
+  const readCount = migrating ? 3 : count;
+
+  const sizes = numberArray(record['sizes'], readCount);
+  const preferred = numberArray(record['preferred'], readCount);
+  const collapsed = booleanArray(record['collapsed'], readCount);
   // Absent since v1, and a pin preference is cheap to lose; the widths are not.
   const pinned =
     record['pinned'] === undefined
-      ? fallback.pinned.slice()
-      : booleanArray(record['pinned'], count);
+      ? fallback.pinned.slice(0, readCount)
+      : booleanArray(record['pinned'], readCount);
   if (!sizes || !preferred || !collapsed || !pinned) return fallback;
 
-  return { sizes, mins: fallback.mins.slice(), preferred, collapsed, pinned };
+  const restored = { sizes, mins: fallback.mins.slice(), preferred, collapsed, pinned };
+  return migrating ? splitReviewPane(restored) : restored;
+}
+
+/**
+ * Divides a three-pane layout's review pane into Files and Code.
+ *
+ * The two new panes share the old one's width, so the row still sums to what it
+ * did and the first `fit` has nothing to correct. A collapsed review pane was
+ * collapsing the code along with the list, so both halves start collapsed; the
+ * old last pane could not be unpinned, so neither can start unpinned.
+ */
+function splitReviewPane(state: LayoutState): LayoutState {
+  const split = (widths: readonly number[]): number[] => {
+    const review = widths[2] ?? 0;
+    return [widths[0] ?? 0, widths[1] ?? 0, review * FILES_SHARE, review * (1 - FILES_SHARE)];
+  };
+
+  const reviewCollapsed = state.collapsed[2] === true;
+
+  return {
+    ...state,
+    sizes: reviewCollapsed
+      ? [state.sizes[0] ?? 0, state.sizes[1] ?? 0, (state.sizes[2] ?? 0) / 2, (state.sizes[2] ?? 0) / 2]
+      : split(state.sizes),
+    preferred: split(state.preferred),
+    collapsed: [state.collapsed[0] === true, state.collapsed[1] === true, reviewCollapsed, reviewCollapsed],
+    pinned: [state.pinned[0] !== false, state.pinned[1] !== false, true, true],
+  };
 }
 
 /* -------------------------------------------------------------------------- */

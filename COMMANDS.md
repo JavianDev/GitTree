@@ -158,10 +158,11 @@ on) or **Abort** (back out entirely, as if the operation never started) buttons.
 
 ## Draggable Panes
 
-All three panes are **fully draggable** for custom layout:
-- **Branches pane** (left): Drag the divider to resize
-- **Commit graph** (middle): Drag to resize
-- **File diff** (right): Drag the divider between filenames and diff code
+All four panes are **fully draggable** for custom layout:
+- **Branches**: Drag the divider to resize
+- **Commit graph**: Drag to resize
+- **Files**: The changed files — drag to resize
+- **Code**: The diff itself, unified or side by side
 
 Your layout preference is **saved automatically**.
 
@@ -220,8 +221,9 @@ APPEARANCE:
 ✅ **Files are always selected by clicking** — No need for Shift+Click or Ctrl+Click  
 ✅ **Hover over toolbar icons** — See keyboard shortcut hints  
 ✅ **Type to filter branches** — Press `/` then start typing  
-✅ **Drag to resize panes** — All three panes + file/diff divider are draggable
-✅ **Clicking a changed file widens the diff** — Branches and Git Tree fold to rails; **⇤ Restore panels** brings them back  
+✅ **Drag to resize panes** — All four panes are draggable and collapsible
+✅ **Four panes: Branches | Git Tree | Files | Code** — drag any divider; the diff has its own Code pane
+✅ **Clicking a file widens Files + Code** — Branches and Git Tree fold to rails; **⇤ Restore panels** brings them back  
 ✅ **Click commits to see diffs** — View any commit's changes side-by-side  
 ✅ **Press `?` anytime** — Full shortcut reference built-in  
 ✅ **Keyboard-only workflow** — Everything works without touching the mouse  
