@@ -95,7 +95,7 @@ With forty-seven branches, a flat list is useless. GitTree nests branches by `/`
 
 One-click toolbar buttons for the most common operations. Each opens the command sheet for a second to review. Keyboard shortcuts available (press `?` to see them all).
 
-![Toolbar with Commit, Pull, Push, Branch, Merge, Stash buttons](./media/screenshots/08-toolbar.png)![Toolbar with Commit, Pull, Push, Branch, Merge, Stash buttons](./media/screenshots/08-toolbar.png)
+![Toolbar with Commit, Pull, Push, Branch, Merge, Stash buttons](./media/screenshots/08-toolbar.png)
 
 | Action | Keyboard | Notes |
 | --- | --- | --- |
