@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { PullRequestVote } from '../src/shared/model';
 import {
+  bitbucketStateToStatus,
+  mapPullRequestEntry as mapBitbucketEntry,
+  statusToBitbucketState,
+  voteToBitbucketAction,
+} from '../src/extension/pullRequests/providers/bitbucketMappers';
+import {
   codeToVote,
   mapPullRequestEntry as mapAdoEntry,
   voteToCode,
@@ -145,6 +151,56 @@ describe('GitLab — state mapping and approval action', () => {
     expect(entry.provider).toBe('gitlab');
     expect(entry.reviewers).toEqual([
       { identity: { id: '4', displayName: 'Rae Viewer', uniqueName: 'reviewer' }, vote: 'approved', isRequired: false },
+    ]);
+  });
+});
+
+describe('Bitbucket — state mapping, votes, and reviewers', () => {
+  it('maps OPEN/MERGED/DECLINED/SUPERSEDED to active/completed/abandoned', () => {
+    expect(bitbucketStateToStatus('OPEN')).toBe('active');
+    expect(bitbucketStateToStatus('MERGED')).toBe('completed');
+    expect(bitbucketStateToStatus('DECLINED')).toBe('abandoned');
+    expect(bitbucketStateToStatus('SUPERSEDED')).toBe('abandoned');
+  });
+
+  it('maps the status filter back to the API state', () => {
+    expect(statusToBitbucketState('active')).toBe('OPEN');
+    expect(statusToBitbucketState('completed')).toBe('MERGED');
+    expect(statusToBitbucketState('abandoned')).toBe('DECLINED');
+  });
+
+  it('maps votes to the approve / request-changes endpoints', () => {
+    expect(voteToBitbucketAction('approved')).toBe('approve');
+    expect(voteToBitbucketAction('approvedWithSuggestions')).toBe('approve');
+    expect(voteToBitbucketAction('rejected')).toBe('requestChanges');
+    expect(voteToBitbucketAction('noVote')).toBe('unapprove');
+  });
+
+  it('maps a pull request with only REVIEWER participants as reviewers', () => {
+    const user = (uuid: string, name: string) => ({ uuid, display_name: name });
+    const entry = mapBitbucketEntry(
+      {
+        id: 17,
+        title: 'Add export button',
+        state: 'OPEN',
+        author: user('{a}', 'Ada'),
+        source: { branch: { name: 'feature/export' } },
+        destination: { branch: { name: 'main' } },
+        created_on: '2024-01-01T00:00:00Z',
+        description: null,
+        links: { html: { href: 'https://bitbucket.org/acme/web-app/pull-requests/17' } },
+      },
+      [
+        { user: user('{g}', 'Grace'), role: 'REVIEWER', approved: true, state: 'approved' },
+        { user: user('{l}', 'Linus'), role: 'REVIEWER', approved: false, state: 'changes_requested' },
+        { user: user('{p}', 'Pat'), role: 'PARTICIPANT', approved: false, state: null },
+      ],
+    );
+
+    expect(entry).toMatchObject({ provider: 'bitbucket', id: 17, sourceBranch: 'feature/export', targetBranch: 'main' });
+    expect(entry.reviewers.map((reviewer) => [reviewer.identity.displayName, reviewer.vote])).toEqual([
+      ['Grace', 'approved'],
+      ['Linus', 'rejected'],
     ]);
   });
 });

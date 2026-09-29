@@ -4,8 +4,13 @@ export interface JsonRequest {
   url: string;
   method?: string;
   token: string;
-  /** How the token is presented. GitLab's PAT auth uses a custom header, not Bearer. */
-  authHeader?: 'Authorization' | 'PRIVATE-TOKEN';
+  /**
+   * How `token` is presented. GitLab's PAT auth uses a custom header, not
+   * Bearer. Bitbucket App Passwords are HTTP Basic — `token` is already the
+   * base64-encoded `username:app_password` pair for that mode, encoded once
+   * at sign-in time rather than on every request.
+   */
+  authHeader?: 'Authorization' | 'PRIVATE-TOKEN' | 'Basic';
   body?: unknown;
   signal?: AbortSignal;
   headers?: Record<string, string>;
@@ -25,6 +30,8 @@ export async function requestJson<T>(request: JsonRequest): Promise<T> {
 
   if (request.authHeader === 'PRIVATE-TOKEN') {
     headers['PRIVATE-TOKEN'] = request.token;
+  } else if (request.authHeader === 'Basic') {
+    headers.Authorization = `Basic ${request.token}`;
   } else {
     headers.Authorization = `Bearer ${request.token}`;
   }

@@ -482,7 +482,7 @@ export interface GraphRow {
 /* Pull Requests                                                            */
 /* ------------------------------------------------------------------------ */
 
-export type PrProvider = 'github' | 'azureDevOps' | 'gitlab';
+export type PrProvider = 'github' | 'azureDevOps' | 'gitlab' | 'bitbucket';
 export type PullRequestStatus = 'active' | 'completed' | 'abandoned';
 export type PullRequestVote =
   | 'approved'

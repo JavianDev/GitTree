@@ -99,9 +99,42 @@ describe('detectProvider — GitLab', () => {
   });
 });
 
+describe('detectProvider — Bitbucket', () => {
+  it('matches the https form', () => {
+    expect(detectProvider([remote('origin', 'https://bitbucket.org/acme/web-app.git')])).toEqual({
+      provider: 'bitbucket',
+      ref: { owner: 'acme', repo: 'web-app' },
+    });
+  });
+
+  it('matches the https form with the username Bitbucket embeds in clone URLs', () => {
+    expect(detectProvider([remote('origin', 'https://jdoe@bitbucket.org/acme/web-app.git')])?.ref).toEqual({
+      owner: 'acme',
+      repo: 'web-app',
+    });
+  });
+
+  it('matches the scp-like ssh form', () => {
+    expect(detectProvider([remote('origin', 'git@bitbucket.org:acme/web-app.git')])).toEqual({
+      provider: 'bitbucket',
+      ref: { owner: 'acme', repo: 'web-app' },
+    });
+  });
+
+  it('matches the ssh:// form', () => {
+    expect(detectProvider([remote('origin', 'ssh://git@bitbucket.org/acme/web-app.git')])?.provider).toBe('bitbucket');
+  });
+
+  it('does not match self-hosted Bitbucket Server / Data Center', () => {
+    expect(
+      detectProvider([remote('origin', 'https://bitbucket.mycompany.internal/scm/proj/web-app.git')]),
+    ).toBeUndefined();
+  });
+});
+
 describe('detectProvider — negatives and precedence', () => {
   it('returns undefined for an unsupported host', () => {
-    expect(detectProvider([remote('origin', 'https://bitbucket.org/group/project.git')])).toBeUndefined();
+    expect(detectProvider([remote('origin', 'https://codeberg.org/group/project.git')])).toBeUndefined();
   });
 
   it('returns undefined for a self-hosted GitLab / on-prem Azure DevOps Server URL', () => {

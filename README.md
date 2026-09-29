@@ -134,12 +134,15 @@ Follows your VS Code theme by default. Also offers curated system-class alternat
 - High-contrast mode fully supported
 - Animations respect `prefers-reduced-motion`
 
-### 11. **Pull Requests — GitHub, Azure DevOps, GitLab**
+### 11. **Pull Requests — GitHub, Azure DevOps, GitLab, Bitbucket**
 
 The sidebar's Pull Requests section appears automatically the moment your repo's remote points at
-GitHub, Azure DevOps, or GitLab — no settings screen, no org/project to type in, nothing to
-configure. Sign in with VS Code's own built-in GitHub/Microsoft accounts; GitLab asks for a personal
-access token once and remembers it.
+GitHub, Azure DevOps, GitLab, or Bitbucket (cloud) — no settings screen, no org/project to type in,
+nothing to configure. Sign in with VS Code's own built-in GitHub/Microsoft accounts; GitLab asks for
+a personal access token once, and Bitbucket for your Atlassian account email plus an
+[API token](https://id.atlassian.com/manage-profile/security/api-tokens) (scopes: `read:repository`,
+`read:pullrequest`, `write:pullrequest`). Credentials are stored in VS Code's secret storage, and a
+rejected one is forgotten so you're simply asked to sign in again.
 
 - List open, completed, or abandoned pull requests with a status filter
 - Create a PR against any branch, mark it draft, write the description
@@ -214,7 +217,7 @@ Press `f` for fetch, review incoming changes in the graph, press `Shift+P` to pu
 - ✓ Fetch, Pull, Push, Branch, Merge, Stash, Tag operations
 - ✓ Branch checkout and delete via sidebar
 - ✓ Full stash management — view every stash, preview its diff, apply / pop / drop (see §12)
-- ✓ Pull Requests — GitHub, Azure DevOps, and GitLab, auto-detected with zero configuration;
+- ✓ Pull Requests — GitHub, Azure DevOps, GitLab, and Bitbucket, auto-detected with zero configuration;
   list, create, vote, complete/merge, abandon, comment threads (see §11)
 - ✓ Merge conflict resolution — one-click Resolve Using Mine/Theirs, or resolve manually with
   VS Code's own editor; a banner explains mine/theirs correctly for merge, rebase, cherry-pick,

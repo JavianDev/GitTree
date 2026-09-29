@@ -15,6 +15,7 @@ import { remoteAddArgs, remoteRemoveArgs, remoteSetUrlArgs } from '../git/parser
 import { PullRequestService } from '../pullRequests/PullRequestService';
 import type { PullRequestProvider } from '../pullRequests/PullRequestProvider';
 import { AzureDevOpsProvider } from '../pullRequests/providers/AzureDevOpsProvider';
+import { BitbucketProvider } from '../pullRequests/providers/BitbucketProvider';
 import { GitHubProvider } from '../pullRequests/providers/GitHubProvider';
 import { GitLabProvider } from '../pullRequests/providers/GitLabProvider';
 import type { RepositoryManager } from '../repo/RepositoryManager';
@@ -72,7 +73,12 @@ export class GitTreePanel {
     // One shared instance per provider (not per repo): each caches its own
     // session/profile lookups, and there is exactly one signed-in identity
     // per provider regardless of how many repos on that host are open.
-    this.prProviders = [new GitHubProvider(), new AzureDevOpsProvider(), new GitLabProvider(context.secrets)];
+    this.prProviders = [
+      new GitHubProvider(),
+      new AzureDevOpsProvider(),
+      new GitLabProvider(context.secrets),
+      new BitbucketProvider(context.secrets),
+    ];
 
     this.disposables.push(
       panel.webview.onDidReceiveMessage((message: WebviewMessage) => void this.receive(message)),

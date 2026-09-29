@@ -2,7 +2,7 @@ import type { GitRemote, PrProvider } from '@shared/model';
 
 /** What a provider needs to address one repository through its REST API. */
 export interface ProviderRepoRef {
-  /** GitHub org/user, Azure DevOps organization, or GitLab namespace. */
+  /** GitHub org/user, Azure DevOps organization, GitLab namespace, or Bitbucket workspace. */
   owner: string;
   repo: string;
   /** Azure DevOps project only. */
@@ -89,19 +89,36 @@ function detectGitLab(rawUrl: string): ProviderRepoRef | undefined {
   return undefined;
 }
 
+function detectBitbucket(rawUrl: string): ProviderRepoRef | undefined {
+  const url = normalize(rawUrl);
+
+  const https = /^https?:\/\/bitbucket\.org\/([^/]+)\/([^/]+)$/i.exec(url);
+  if (https) return { owner: decode(https[1]!), repo: stripDotGit(decode(https[2]!)) };
+
+  const scp = /^git@bitbucket\.org:([^/]+)\/([^/]+)$/i.exec(normalize(rawUrl));
+  if (scp) return { owner: decode(scp[1]!), repo: stripDotGit(decode(scp[2]!)) };
+
+  const sshUrl = /^ssh:\/\/git@bitbucket\.org\/([^/]+)\/([^/]+)$/i.exec(url);
+  if (sshUrl) return { owner: decode(sshUrl[1]!), repo: stripDotGit(decode(sshUrl[2]!)) };
+
+  return undefined;
+}
+
 /**
- * Detection order: Azure DevOps before GitHub before GitLab — arbitrary
- * between the three since their URL hosts are disjoint, but fixed so the
- * "which one wins on an ambiguous repo" question always has one answer.
+ * Detection order: Azure DevOps before GitHub before GitLab before
+ * Bitbucket — arbitrary between them since their URL hosts are disjoint, but
+ * fixed so the "which one wins on an ambiguous repo" question always has one
+ * answer.
  */
 const DETECTORS: ReadonlyArray<{ provider: PrProvider; detect: (url: string) => ProviderRepoRef | undefined }> = [
   { provider: 'azureDevOps', detect: detectAzureDevOps },
   { provider: 'github', detect: detectGitHub },
   { provider: 'gitlab', detect: detectGitLab },
+  { provider: 'bitbucket', detect: detectBitbucket },
 ];
 
 /**
- * Detects which of the three supported providers (if any) a repo's remotes
+ * Detects which of the four supported providers (if any) a repo's remotes
  * point at. `origin` is tried first — matching what every other git tool
  * assumes "the" remote means — then every other remote in listed order.
  *

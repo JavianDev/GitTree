@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { PrProvider, PullRequestConnection, PullRequestEntry, PullRequestStatus } from '@shared/model';
-import { rpc } from '../../rpc/client';
+import { RpcRequestError, rpc } from '../../rpc/client';
 import { ContextMenu, type ContextMenuItem } from '../../shared/ContextMenu';
 
 export interface PullRequestSectionProps {
@@ -15,17 +15,19 @@ const PROVIDER_LABEL: Record<PrProvider, string> = {
   github: 'GitHub',
   azureDevOps: 'Azure DevOps',
   gitlab: 'GitLab',
+  bitbucket: 'Bitbucket',
 };
 
 const PROVIDER_SIGNIN_LABEL: Record<PrProvider, string> = {
   github: 'Sign in to GitHub',
   azureDevOps: 'Sign in to Microsoft',
   gitlab: 'Sign in to GitLab',
+  bitbucket: 'Sign in to Bitbucket',
 };
 
-/** `#123` for GitHub, `!123` for Azure DevOps and GitLab merge requests. */
+/** `#123` for GitHub and Bitbucket, `!123` for Azure DevOps and GitLab merge requests. */
 function formatId(provider: PrProvider, id: number): string {
-  return provider === 'github' ? `#${id}` : `!${id}`;
+  return provider === 'github' || provider === 'bitbucket' ? `#${id}` : `!${id}`;
 }
 
 const VOTE_GLYPH: Record<string, string> = {
@@ -59,6 +61,7 @@ export function PullRequestSection({
   const [pullRequests, setPullRequests] = useState<PullRequestEntry[]>([]);
   const [collapsed, setCollapsed] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
+  const [listError, setListError] = useState<string | undefined>();
   const [contextMenu, setContextMenu] = useState<
     { x: number; y: number; pr: PullRequestEntry } | undefined
   >();
@@ -90,10 +93,24 @@ export function PullRequestSection({
     void rpc
       .request('pullRequests/list', { repoId, status })
       .then((result) => {
-        if (!cancelled) setPullRequests(result.pullRequests);
+        if (cancelled) return;
+        setPullRequests(result.pullRequests);
+        setListError(undefined);
       })
-      .catch(() => {
-        if (!cancelled) setPullRequests([]);
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setPullRequests([]);
+        // Shown rather than swallowed: an empty list after a failure reads
+        // exactly like "no pull requests", which is how a bad credential hid.
+        setListError(error instanceof RpcRequestError ? error.displayText : String(error));
+        // A rejected credential is forgotten host-side, so re-checking the
+        // connection brings the sign-in row back instead of a dead list.
+        void rpc
+          .request('pullRequests/connection', { repoId })
+          .then((result) => {
+            if (!cancelled) setConnection(result);
+          })
+          .catch(() => undefined);
       });
 
     return () => {
@@ -113,7 +130,9 @@ export function PullRequestSection({
       .request('pullRequests/signIn', { repoId })
       .then((result) => {
         setSigningIn(false);
-        if (result.signedIn) setConnection((current) => (current ? { ...current, signedIn: true } : current));
+        if (!result.signedIn) return;
+        setListError(undefined);
+        setConnection((current) => (current ? { ...current, signedIn: true } : current));
       })
       .catch(() => setSigningIn(false));
   };
@@ -144,7 +163,13 @@ export function PullRequestSection({
             >
               {signingIn ? 'Signing in…' : `${connection.provider ? PROVIDER_SIGNIN_LABEL[connection.provider] : 'Sign in'} →`}
             </button>
-          ) : (
+          ) : null}
+          {!connection.signedIn && listError && (
+            <p className="gt-empty-detail" role="alert" style={{ padding: 'var(--gt-space-3)' }}>
+              {listError}
+            </p>
+          )}
+          {connection.signedIn && (
             <>
               <div className="gt-pr-toolbar">
                 <select
@@ -165,7 +190,11 @@ export function PullRequestSection({
                 </button>
               </div>
 
-              {pullRequests.length === 0 ? (
+              {listError ? (
+                <p className="gt-empty-detail" role="alert" style={{ padding: 'var(--gt-space-3)' }}>
+                  {listError}
+                </p>
+              ) : pullRequests.length === 0 ? (
                 <p className="gt-empty-detail" style={{ padding: 'var(--gt-space-3)' }}>
                   No {status} pull requests
                 </p>

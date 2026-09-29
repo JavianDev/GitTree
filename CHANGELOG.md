@@ -6,6 +6,25 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — Bitbucket pull requests
+
+- **Bitbucket Cloud joins GitHub, Azure DevOps, and GitLab.** A remote on `bitbucket.org` (https,
+  `git@bitbucket.org:`, or `ssh://` form, including the `user@bitbucket.org` URLs Bitbucket hands out
+  for cloning) now brings up the sidebar's Pull Requests section automatically, with the full
+  workflow: list by status, create, approve / request changes, merge (merge commit or squash, with
+  close-source-branch), decline, comment threads, build statuses, and per-commit diffs via
+  `refs/pull-requests/{id}/from`. Self-hosted Bitbucket Server / Data Center is not detected.
+- **Sign-in uses an Atlassian API token**, not an App Password — Atlassian retired App Passwords in
+  2026. Git Tree asks once for the Atlassian account email and a scoped API token and keeps them in
+  VS Code's secret storage.
+
+### Fixed
+
+- **A rejected pull request credential no longer leaves the section stuck.** A failed list used to be
+  swallowed into an empty list — indistinguishable from "no pull requests" — and a wrong or revoked
+  token was reused forever with no way to re-enter it. The error is now shown, and for Bitbucket a
+  401 forgets the saved credential so the section offers "Sign in to Bitbucket" again.
+
 ### Added — merge conflict resolution
 
 - **One-click "Resolve Using Mine" / "Resolve Using Theirs"** on any conflicted file, from the

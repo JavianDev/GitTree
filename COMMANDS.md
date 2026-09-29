@@ -111,9 +111,11 @@ stashes stacked up across different branches.
 
 ## Pull Requests
 
-Appears automatically in the sidebar when your repo's remote points at GitHub, Azure DevOps, or
-GitLab — nothing to configure. Sign in with VS Code's own GitHub/Microsoft account; GitLab asks for
-a personal access token once.
+Appears automatically in the sidebar (at the bottom, below Stashes) when your repo's remote points at
+GitHub, Azure DevOps, GitLab, or Bitbucket — nothing to configure. Sign in with VS Code's own
+GitHub/Microsoft account; GitLab asks for a personal access token once; Bitbucket asks for your
+Atlassian account email and an API token (id.atlassian.com → Security → API tokens → "Create API
+token with scopes" → Bitbucket, with `read:repository`, `read:pullrequest`, `write:pullrequest`).
 
 | Action | Where |
 | --- | --- |
