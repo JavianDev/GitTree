@@ -469,6 +469,14 @@ export interface GraphRow {
   color: number;
   /** Rails passing through this row untouched, with their colours. */
   passthrough: GraphPassthrough[];
+  /**
+   * Lanes whose rails end at this commit — one per child that reached it from
+   * the row above. Usually just `lane`, but when several branches share this
+   * commit as their parent they all converge here, from their own lanes into
+   * `lane`. The renderer needs this to bend those rails into the node rather
+   * than stopping them in mid-air beside it.
+   */
+  incoming: number[];
   edges: GraphEdge[];
   /** Total lanes in use at this row; drives gutter width. */
   width: number;

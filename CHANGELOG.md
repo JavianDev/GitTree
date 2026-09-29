@@ -6,6 +6,19 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed — graph rails stopping in mid-air
+
+- **Branches that share a parent now join it.** When several branches start from the same commit,
+  the layout converges them into one lane at that commit — but each branch's rail was drawn as a
+  single stroke in its *own* lane, so it ended beside the parent's node instead of bending into it.
+  On a history like `main` with five branches off it, that left five rails hanging in mid-air.
+- **Rails no longer lose their last stretch when you scroll.** That same single stroke only existed
+  while the branch tip's row was being drawn; once the tip scrolled above the window, the rail into
+  the parent disappeared and the parent looked like a branch tip.
+- Rails are now drawn gap by gap between adjacent rows, and the layout records which lanes converge
+  into each commit, so every rail bends into its node regardless of where its tip is. Covered by a
+  test that replays the exact demo-repository history and asserts no rail ends in mid-air.
+
 ### Added — focus-diff mode and new-file contents
 
 - **Clicking a file in Changes folds the Branches and Git Tree panes to their rails**, so the diff

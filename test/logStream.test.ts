@@ -25,6 +25,7 @@ const row = (hash: string, index: number): GraphRow => ({
   lane: 0,
   color: 0,
   passthrough: [],
+  incoming: [],
   edges: [],
   width: 1,
   isMerge: false,

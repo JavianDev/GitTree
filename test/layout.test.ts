@@ -301,3 +301,27 @@ describe('layoutGraph — edge cases', () => {
     expect(rows.map((r) => r.lane)).toEqual([0, 0, 0, 0]);
   });
 });
+
+describe('layoutGraph — converging branches', () => {
+  it('records every lane that converges into a shared parent', () => {
+    // Three branches off one commit: each tip gets its own lane, and all of
+    // them end at P. The renderer bends those lanes into P's node from this.
+    const rows = layoutGraph([
+      commit('X', ['P']),
+      commit('Y', ['P']),
+      commit('Z', ['P']),
+      commit('P', ['R']),
+      commit('R'),
+    ]);
+
+    expect(rows.slice(0, 3).map((row) => row.lane)).toEqual([0, 1, 2]);
+    expect(rows[3]?.lane).toBe(0);
+    expect(rows[3]?.incoming).toEqual([0, 1, 2]);
+    expect(rows[4]?.incoming).toEqual([0]);
+  });
+
+  it('gives a branch tip no incoming lanes', () => {
+    const rows = layoutGraph([commit('B', ['A']), commit('A')]);
+    expect(rows[0]?.incoming).toEqual([]);
+  });
+});

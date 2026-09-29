@@ -108,6 +108,7 @@ export class GraphLayout {
       lane,
       color,
       passthrough,
+      incoming,
       edges,
       width: Math.max(width, lane + 1),
       isMerge: commit.parents.length > 1,

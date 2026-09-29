@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef } from 'react';
 import type { GraphRow } from '@shared/model';
+import { railSegments } from './railSegments';
 
 const LANE_WIDTH = 16;
 /**
@@ -111,64 +112,37 @@ export function GraphCanvas({
 
     const last = Math.min(end, rows.length);
 
-    const byHash = new Map<string, number>();
-    for (let i = start; i < last; i++) {
-      const row = rows[i];
-      if (row) byHash.set(row.hash, i);
-    }
-
     context.lineWidth = RAIL_WIDTH;
     context.lineCap = 'round';
     context.lineJoin = 'round';
 
     /* --- Rails, painted first so nodes sit on top --------------------- */
 
-    for (let i = start; i < last; i++) {
-      const row = rows[i];
-      if (!row) continue;
+    // Gap by gap — see `railSegments` for why a rail is never one long stroke.
+    // Starting one row above the window draws the gap that enters it.
+    for (const segment of railSegments(rows, start - 1, last - 1)) {
+      const x1 = laneX(segment.fromLane);
+      const x2 = laneX(segment.toLane);
+      const y1 = rowY(segment.row);
+      const y2 = y1 + rowHeight;
+      const dimmed = selectedRow !== undefined && selectedRow !== segment.row;
 
-      const y = rowY(i);
-      const dimmed = selectedRow !== undefined && selectedRow !== i;
+      context.strokeStyle = colorOf(segment.color);
+      context.globalAlpha = dimmed ? 0.42 : 1;
+      context.beginPath();
+      context.moveTo(x1, y1);
 
-      for (const edge of row.edges) {
-        const targetIndex = byHash.get(edge.parent);
-        // A parent outside the rendered window still needs a rail leaving the
-        // viewport, or branches appear to stop at the scroll boundary.
-        const targetY = targetIndex === undefined ? height + rowHeight : rowY(targetIndex);
-
-        context.strokeStyle = colorOf(edge.color);
-        context.globalAlpha = dimmed ? 0.42 : 1;
-        context.beginPath();
-        context.moveTo(laneX(edge.fromLane), y);
-
-        if (edge.fromLane === edge.toLane) {
-          context.lineTo(laneX(edge.toLane), targetY);
-        } else {
-          // Control points pulled most of the way down make the curve leave the
-          // node vertically and arrive vertically, so a branch reads as one
-          // continuous line rather than a diagonal cutting the corner.
-          const span = targetY - y;
-          context.bezierCurveTo(
-            laneX(edge.fromLane),
-            y + span * 0.45,
-            laneX(edge.toLane),
-            targetY - span * 0.45,
-            laneX(edge.toLane),
-            targetY,
-          );
-        }
-
-        context.stroke();
+      if (x1 === x2) {
+        context.lineTo(x2, y2);
+      } else {
+        // Control points half a row in leave the node vertically and arrive
+        // vertically, so a branch reads as one continuous line bending into its
+        // lane rather than a diagonal cutting the corner.
+        const bend = rowHeight * 0.5;
+        context.bezierCurveTo(x1, y1 + bend, x2, y2 - bend, x2, y2);
       }
 
-      for (const rail of row.passthrough) {
-        context.strokeStyle = colorOf(rail.color);
-        context.globalAlpha = dimmed ? 0.42 : 1;
-        context.beginPath();
-        context.moveTo(laneX(rail.lane), y - rowHeight / 2 - 0.5);
-        context.lineTo(laneX(rail.lane), y + rowHeight / 2 + 0.5);
-        context.stroke();
-      }
+      context.stroke();
     }
 
     context.globalAlpha = 1;
