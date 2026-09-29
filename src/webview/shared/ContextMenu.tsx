@@ -6,6 +6,8 @@ export interface ContextMenuItem {
   run: () => void;
   destructive?: boolean;
   separator?: boolean;
+  /** One-line explanation, shown as the item's native tooltip. */
+  hint?: string;
 }
 
 export interface ContextMenuProps {
@@ -76,6 +78,7 @@ export function ContextMenu({
             className="gt-file-menu-item"
             data-destructive={item.destructive ? 'true' : undefined}
             role="menuitem"
+            title={item.hint}
             onClick={() => {
               item.run();
               onClose();

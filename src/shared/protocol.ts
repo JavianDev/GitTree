@@ -119,6 +119,16 @@ export interface Api {
   'stage/files': { params: { repoId: RepoId; paths: string[] }; result: void };
   'unstage/files': { params: { repoId: RepoId; paths: string[] }; result: void };
   'discard/files': { params: { repoId: RepoId; paths: string[] }; result: void };
+  /**
+   * Resolves conflicted paths by taking one side wholesale, then marks them
+   * resolved. Not a `CommandSpec` — the right git invocation differs per path
+   * (a checkout, or a `rm` for the add/delete case), so this is not one flat
+   * argv the way every `commands/run` action is.
+   */
+  'conflicts/resolve': {
+    params: { repoId: RepoId; paths: string[]; resolution: 'ours' | 'theirs' };
+    result: void;
+  };
   'files/remove': { params: { repoId: RepoId; paths: string[] }; result: void };
   'files/stopTracking': { params: { repoId: RepoId; paths: string[] }; result: void };
   'files/ignore': { params: { repoId: RepoId; paths: string[] }; result: void };

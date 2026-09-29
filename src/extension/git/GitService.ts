@@ -15,6 +15,7 @@ import { GraphLayout } from '../graph/layout';
 import type { CommitRequest, DiffTarget, LineSelection, LogRequest } from '@shared/protocol';
 import { GitError, type GitProcess } from './GitProcess';
 import type { GitScheduler, Priority } from './GitScheduler';
+import { detectMergeOperation } from './mergeOperation';
 import { buildHunkPatch, buildLinePatch } from './patch';
 import { LOG_FORMAT, listArgs, parseCommitRecord, parseListRecord } from './parsers/log';
 import { STATUS_ARGS, parseStatus } from './parsers/status';
@@ -87,7 +88,13 @@ export class GitService {
       });
 
       const parsed = parseStatus(records);
-      return { repoId: this.repo.id, branch: parsed.branch, files: parsed.files };
+      const mergeOperation = await detectMergeOperation(this.repo.gitDir);
+      return {
+        repoId: this.repo.id,
+        branch: parsed.branch,
+        files: parsed.files,
+        ...(mergeOperation ? { mergeOperation } : {}),
+      };
     });
   }
 
@@ -312,6 +319,42 @@ export class GitService {
             // File doesn't exist, that's OK
           }
         }
+      }
+    });
+  }
+
+  /**
+   * Resolves conflicted paths by taking one side wholesale: checks each out,
+   * then stages it as resolved. Tries `checkout` first and falls back to `rm`
+   * on failure — rather than pre-branching on the two-letter conflict code —
+   * because a checkout naturally fails when that side has no blob at all (the
+   * add/delete case), and `rm` is the unambiguously correct resolution there
+   * regardless of which side was asked for. This also correctly handles a
+   * both-deleted conflict, where neither side has a blob to check out.
+   */
+  async resolveConflicts(
+    paths: string[],
+    resolution: 'ours' | 'theirs',
+    options?: GitServiceOptions,
+  ): Promise<void> {
+    if (paths.length === 0) return;
+    const flag = resolution === 'ours' ? '--ours' : '--theirs';
+
+    await this.runScheduled(options, async (signal) => {
+      for (const path of paths) {
+        if (signal?.aborted) break;
+
+        try {
+          await this.git.run({ cwd: this.cwd, args: ['checkout', flag, '--', path], signal });
+        } catch {
+          if (signal?.aborted) break;
+          // `rm` already stages the removal, so resolution ends here for this path.
+          await this.git.run({ cwd: this.cwd, args: ['rm', '-f', '--', path], signal });
+          continue;
+        }
+
+        if (signal?.aborted) break;
+        await this.git.run({ cwd: this.cwd, args: ['add', '--', path], signal });
       }
     });
   }

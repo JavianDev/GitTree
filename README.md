@@ -128,6 +128,55 @@ Follows your VS Code theme by default. Also offers curated system-class alternat
 - High-contrast mode fully supported
 - Animations respect `prefers-reduced-motion`
 
+### 11. **Pull Requests — GitHub, Azure DevOps, GitLab**
+
+The sidebar's Pull Requests section appears automatically the moment your repo's remote points at
+GitHub, Azure DevOps, or GitLab — no settings screen, no org/project to type in, nothing to
+configure. Sign in with VS Code's own built-in GitHub/Microsoft accounts; GitLab asks for a personal
+access token once and remembers it.
+
+- List open, completed, or abandoned pull requests with a status filter
+- Create a PR against any branch, mark it draft, write the description
+- Vote — approve, approve with suggestions, reject, or (Azure DevOps only) wait for author
+- Complete with squash and delete-source-branch options; Azure DevOps adds a policy-bypass override
+- Overall diff and per-commit diff, reusing the same diff viewer as everywhere else in Git Tree
+- Comment threads, read and reply to, right from the sidebar
+- Policy/check/pipeline status and linked work items or issues, shown per PR when the provider has them
+
+### 12. **Full Stash Management**
+
+Every stash is listed, not just the most recent one — click any to preview its diff before deciding
+what to do with it.
+
+- View every stash with its message, source branch, and age
+- Click to preview its diff without disturbing your current branch or selection
+- **Apply**, **Pop**, or **Drop** from the right-click menu — Drop requires confirmation
+- Stash with a custom message from the same command sheet used for every other action
+
+### 13. **Resolving Merge Conflicts — Mine, Theirs, or Manual**
+
+A right-click away: keep your side, keep the incoming side, or open the file and resolve it by
+hand with VS Code's own conflict-marker editing tools. A banner explains exactly what "mine" and
+"theirs" mean for what you're doing right now — which matters because **the meaning reverses during
+a rebase**, a detail most git tools leave you to discover the hard way.
+
+- **Resolve Using Mine** or **Resolve Using Theirs**, one click, no confirmation dialog required
+- Works correctly on every conflict shape, including add/delete conflicts where one side has no file at all
+- **Open to Resolve Manually** hands the file to VS Code's built-in editor, where Accept
+  Current/Incoming/Both appear automatically above the conflict markers
+- **Mark as Resolved** after manual edits — the same staging step as everywhere else in Git Tree
+- A persistent banner names the operation (merge, rebase, cherry-pick, or revert), shows how many
+  conflicts remain, and explains mine/theirs correctly for that specific operation:
+
+  | Operation | "Mine" is | "Theirs" is |
+  | --- | --- | --- |
+  | Merge | Your current branch | The branch being merged in |
+  | Rebase | The branch you're rebasing **onto** (git calls this "ours" here — easy to get backwards) | Your own commit being replayed |
+  | Cherry-pick | Your current branch | The commit being cherry-picked |
+  | Revert | Your current branch | The commit being reverted |
+- **Continue** and **Abort** buttons once every conflict is resolved (or if you want to back out
+  entirely) — Continue for a merge simply means committing, prefilled with git's own merge message
+
 ---
 
 ## 🎬 Feature Walkthroughs
@@ -158,9 +207,12 @@ Press `f` for fetch, review incoming changes in the graph, press `Shift+P` to pu
 - ✓ History search (by message or author)
 - ✓ Fetch, Pull, Push, Branch, Merge, Stash, Tag operations
 - ✓ Branch checkout and delete via sidebar
-- ✓ Full stash management (view every stash, preview its diff, apply / pop / drop)
-- ✓ Pull Requests — GitHub, Azure DevOps, and GitLab, auto-detected with zero configuration
-  (list, create, vote, complete/merge, abandon, comment threads)
+- ✓ Full stash management — view every stash, preview its diff, apply / pop / drop (see §12)
+- ✓ Pull Requests — GitHub, Azure DevOps, and GitLab, auto-detected with zero configuration;
+  list, create, vote, complete/merge, abandon, comment threads (see §11)
+- ✓ Merge conflict resolution — one-click Resolve Using Mine/Theirs, or resolve manually with
+  VS Code's own editor; a banner explains mine/theirs correctly for merge, rebase, cherry-pick,
+  and revert (see §13)
 - ✓ Command log and editable command sheet
 - ✓ Remote management (add / remove / setUrl)
 - ✓ Settings panel (identity, appearance, repository details)

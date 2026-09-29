@@ -38,6 +38,17 @@ describe('command fidelity', () => {
     expect(COMMANDS['stash.drop'].destructive).toBe(true);
     expect(COMMANDS.fetch.destructive).toBeFalsy();
   });
+
+  it('marks every abort and rebase.skip as destructive, but no continue', () => {
+    expect(COMMANDS['merge.abort'].destructive).toBe(true);
+    expect(COMMANDS['rebase.abort'].destructive).toBe(true);
+    expect(COMMANDS['rebase.skip'].destructive).toBe(true);
+    expect(COMMANDS['cherryPick.abort'].destructive).toBe(true);
+    expect(COMMANDS['revert.abort'].destructive).toBe(true);
+    expect(COMMANDS['rebase.continue'].destructive).toBeFalsy();
+    expect(COMMANDS['cherryPick.continue'].destructive).toBeFalsy();
+    expect(COMMANDS['revert.continue'].destructive).toBeFalsy();
+  });
 });
 
 describe('build — options change the command', () => {
@@ -108,6 +119,17 @@ describe('build — options change the command', () => {
       '-m',
       'before rebase',
     ]);
+  });
+
+  it('builds every merge/rebase/cherry-pick/revert continue and abort as a fixed argv', () => {
+    expect(COMMANDS['merge.abort'].build({})).toEqual(['merge', '--abort']);
+    expect(COMMANDS['rebase.continue'].build({})).toEqual(['rebase', '--continue']);
+    expect(COMMANDS['rebase.skip'].build({})).toEqual(['rebase', '--skip']);
+    expect(COMMANDS['rebase.abort'].build({})).toEqual(['rebase', '--abort']);
+    expect(COMMANDS['cherryPick.continue'].build({})).toEqual(['cherry-pick', '--continue']);
+    expect(COMMANDS['cherryPick.abort'].build({})).toEqual(['cherry-pick', '--abort']);
+    expect(COMMANDS['revert.continue'].build({})).toEqual(['revert', '--continue']);
+    expect(COMMANDS['revert.abort'].build({})).toEqual(['revert', '--abort']);
   });
 });
 

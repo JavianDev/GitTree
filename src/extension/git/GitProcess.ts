@@ -45,6 +45,14 @@ export const BASE_ENV: Readonly<Record<string, string>> = {
   PAGER: 'cat',
   // Suppress the interactive askpass dialog for the same reason.
   GIT_ASKPASS: 'echo',
+  // Same hang risk, different prompt: `rebase --continue`, `cherry-pick
+  // --continue`, and `revert --continue` can, depending on git version and
+  // `core.editor`, try to open an editor for the resulting commit message.
+  // `true` is a real, near-universal Unix/Windows command that does nothing
+  // and exits 0 immediately, so git sees "the editor succeeded" with an
+  // unedited message rather than hanging on a TTY this process never has.
+  GIT_EDITOR: 'true',
+  GIT_SEQUENCE_EDITOR: 'true',
 };
 
 export class GitError extends Error {

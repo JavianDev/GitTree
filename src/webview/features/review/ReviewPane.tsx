@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { CommandId } from '@shared/commands';
 import type {
   DiffFile,
   FileChangeKind,
   FileDiffStatus,
   FileStats,
   FileStatus,
+  MergeOperation,
   RepoId,
   StatusLetter,
   StatusResult,
@@ -24,6 +26,7 @@ import {
   rowPath,
 } from './FileTreeView';
 import type { FileSortMode, ReviewFile } from './fileTree';
+import { MergeStatusBanner } from './MergeStatusBanner';
 import { useFileSelection } from './useFileSelection';
 import './review.css';
 
@@ -58,6 +61,8 @@ export interface ReviewPaneProps {
   onError: (error: string | undefined) => void;
   /** Called whenever the file selection changes. */
   onSelectionChange?: (paths: readonly string[]) => void;
+  /** Opens the review-before-run command sheet — powers the merge-status banner's Continue/Abort. */
+  onRunCommand?: (id: CommandId) => void;
 }
 
 export function ReviewPane({
@@ -67,6 +72,7 @@ export function ReviewPane({
   revision,
   onError,
   onSelectionChange,
+  onRunCommand,
 }: ReviewPaneProps): React.JSX.Element {
   const [status, setStatus] = useState<StatusResult | undefined>();
   const [stagedStats, setStagedStats] = useState<readonly FileStats[]>([]);
@@ -256,7 +262,13 @@ export function ReviewPane({
 
     // An untracked file is not in the index, so there is nothing for git to
     // diff it against. Asking anyway returns an empty patch and reads as a bug.
-    if (activeRow.file.kind === 'untracked') {
+    //
+    // A conflicted file is worse than empty: `git diff` against an unmerged
+    // path produces combined-diff output (`@@@ ... @@@` headers, multi-char
+    // line prefixes), which the ordinary unified-diff parser was never built
+    // to read — asking anyway renders something garbled rather than nothing.
+    // Resolution happens via the context menu or the native editor, not here.
+    if (activeRow.file.kind === 'untracked' || activeRow.file.kind === 'conflicted') {
       setDiff([]);
       setDiffError(undefined);
       setLoadingDiff(false);
@@ -357,6 +369,29 @@ export function ReviewPane({
   const reveal = useCallback(
     (path: string) => {
       void rpc.request('files/reveal', { repoId, path });
+    },
+    [repoId],
+  );
+
+  const resolveOurs = useCallback(
+    (paths: readonly string[]) => {
+      void mutate(() => rpc.request('conflicts/resolve', { repoId, paths: [...paths], resolution: 'ours' }));
+    },
+    [mutate, repoId],
+  );
+
+  const resolveTheirs = useCallback(
+    (paths: readonly string[]) => {
+      void mutate(() => rpc.request('conflicts/resolve', { repoId, paths: [...paths], resolution: 'theirs' }));
+    },
+    [mutate, repoId],
+  );
+
+  /** Not a mutation — opens a normal editor tab, where VS Code's own built-in
+   * conflict-marker CodeLens takes over. No reload needed. */
+  const openEditor = useCallback(
+    (path: string) => {
+      void rpc.request('editor/open', { repoId, path });
     },
     [repoId],
   );
@@ -470,6 +505,11 @@ export function ReviewPane({
     activeRow.file.unstaged &&
     !activeRow.file.conflicted;
 
+  const { mineLabel, theirsLabel } = useMemo(
+    () => mineTheirsLabels(status?.mergeOperation, status?.branch.head),
+    [status?.mergeOperation, status?.branch.head],
+  );
+
   return (
     <div className="gt-review" ref={containerRef} data-layout={wide ? 'split' : 'stacked'}>
       <header className="gt-review-header">
@@ -529,6 +569,16 @@ export function ReviewPane({
         </div>
       )}
 
+      {mode === 'changes' && status?.mergeOperation && onRunCommand && (
+        <MergeStatusBanner
+          operation={status.mergeOperation}
+          conflictedCount={(status.files ?? []).filter((file) => file.conflicted).length}
+          {...(mineLabel ? { mineLabel } : {})}
+          {...(theirsLabel ? { theirsLabel } : {})}
+          onRunCommand={onRunCommand}
+        />
+      )}
+
       <div className="gt-review-body">
         <div className="gt-review-list" ref={listRef} style={listWidth ? { flex: `0 0 ${listWidth}px` } : undefined}>
           <FileTree
@@ -548,6 +598,11 @@ export function ReviewPane({
             onStopTracking={stopTracking}
             onIgnore={ignore}
             onReveal={reveal}
+            onResolveOurs={resolveOurs}
+            onResolveTheirs={resolveTheirs}
+            onOpenEditor={openEditor}
+            {...(mineLabel ? { mineLabel } : {})}
+            {...(theirsLabel ? { theirsLabel } : {})}
             busy={busy}
           />
           <div className="gt-review-list-handle" title="Drag to resize" />
@@ -579,6 +634,9 @@ export function ReviewPane({
           onBusy={setBusy}
           onCommitted={reload}
           onError={onError}
+          {...(status?.mergeOperation?.kind === 'merge'
+            ? { mergeMessage: status.mergeOperation.mergeMessage }
+            : {})}
         />
       )}
     </div>
@@ -597,6 +655,7 @@ function CommitBox({
   onBusy,
   onCommitted,
   onError,
+  mergeMessage,
 }: {
   repoId: RepoId;
   /** HEAD's oid, for loading the message an amend would otherwise replace. */
@@ -606,11 +665,23 @@ function CommitBox({
   onBusy: (busy: boolean) => void;
   onCommitted: () => void;
   onError: (error: string | undefined) => void;
+  /** `MERGE_MSG`'s content, while a merge is in progress and unresolved. */
+  mergeMessage?: string;
 }): React.JSX.Element {
   const [message, setMessage] = useState('');
   const [amend, setAmend] = useState(false);
   const [signoff, setSignoff] = useState(false);
   const [error, setError] = useState<string | undefined>();
+
+  // Completing a merge has no `--continue` of its own — it is just an
+  // ordinary commit, so it gets the message plain `git commit` would use.
+  // Guarded on an empty box, matching `toggleAmend` below, so this only ever
+  // fills a message in for you once and never overwrites what you typed.
+  useEffect(() => {
+    if (mergeMessage && message.trim().length === 0) setMessage(mergeMessage.trim());
+    // Deliberately omits `message`: this should run once when a merge message
+    // first appears, not on every keystroke that would otherwise re-trigger it.
+  }, [mergeMessage]);
 
   const canCommit = message.trim().length > 0 && (stagedCount > 0 || amend) && !busy;
 
@@ -774,6 +845,35 @@ function asSort(value: string): FileSortMode {
   return match?.value ?? 'tree';
 }
 
+/**
+ * Names "mine"/"theirs" correctly for whatever operation is in progress.
+ *
+ * A rebase reverses what these words mean: git replays your commits on top
+ * of the target, so mid-conflict the target becomes "ours" and your own
+ * commit becomes "theirs" — backwards from every other operation, where
+ * "mine" is simply the current branch. Getting this wrong here would be
+ * worse than not labeling the buttons at all, so the mapping lives in one
+ * place rather than being re-derived wherever it's needed.
+ */
+function mineTheirsLabels(
+  operation: MergeOperation | undefined,
+  currentBranch: string | undefined,
+): { mineLabel?: string; theirsLabel?: string } {
+  if (!operation) return {};
+
+  if (operation.kind === 'rebase') {
+    return {
+      ...(operation.ontoRef ? { mineLabel: operation.ontoRef } : {}),
+      ...(operation.incomingRef ? { theirsLabel: operation.incomingRef } : {}),
+    };
+  }
+
+  return {
+    ...(currentBranch ? { mineLabel: currentBranch } : {}),
+    ...(operation.incomingRef ? { theirsLabel: operation.incomingRef } : {}),
+  };
+}
+
 /** Says why there is no diff, which is more use than saying that there is none. */
 function emptyDiffText(
   mode: 'changes' | 'history',
@@ -786,6 +886,9 @@ function emptyDiffText(
   if (!row) return 'Select a file to read its diff.';
   if (row.file.kind === 'untracked') {
     return 'Untracked — git has nothing to compare this file against until it is staged.';
+  }
+  if (row.file.kind === 'conflicted') {
+    return 'This file has unresolved conflicts. Right-click it to Resolve Using Mine/Theirs, or Open to Resolve Manually.';
   }
   return 'No textual changes on this side.';
 }

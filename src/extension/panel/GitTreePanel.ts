@@ -247,6 +247,9 @@ export class GitTreePanel {
     'discard/files': async ({ repoId, paths }) =>
       this.requireService(repoId).discardFiles(paths, { priority: 'foreground' }),
 
+    'conflicts/resolve': async ({ repoId, paths, resolution }) =>
+      this.requireService(repoId).resolveConflicts(paths, resolution, { priority: 'foreground' }),
+
     'files/remove': async ({ repoId, paths }) =>
       this.requireService(repoId).removeFiles(paths, { priority: 'foreground' }),
 

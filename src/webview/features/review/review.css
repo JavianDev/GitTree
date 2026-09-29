@@ -78,6 +78,60 @@
 }
 
 /* -------------------------------------------------------------------------- */
+/* Merge/rebase/cherry-pick/revert status — the persistent mine/theirs        */
+/* explanation, not a tooltip, since getting it wrong (or not saying it at    */
+/* all) is worse than the extra space it takes.                              */
+/* -------------------------------------------------------------------------- */
+
+.gt-merge-banner {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-1);
+  margin: var(--gt-space-2) var(--gt-space-3) 0;
+  padding: var(--gt-space-2) var(--gt-space-3);
+  border-radius: var(--gt-radius-card);
+  border: 1px solid color-mix(in srgb, var(--gt-blue) 40%, transparent);
+  background: color-mix(in srgb, var(--gt-blue) 10%, transparent);
+  font-size: var(--gt-text-callout);
+}
+
+.gt-merge-banner-head {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+}
+
+.gt-merge-banner-title {
+  font-weight: var(--gt-weight-semibold);
+}
+
+.gt-merge-banner-count {
+  padding: 0 var(--gt-space-2);
+  border-radius: var(--gt-radius-pill);
+  background: var(--gt-orange);
+  color: #fff;
+  font-size: var(--gt-text-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+.gt-merge-banner-explain {
+  margin: 0;
+  color: var(--gt-label-secondary);
+}
+
+.gt-merge-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+}
+
+.gt-merge-banner-hint {
+  color: var(--gt-label-secondary);
+  font-size: var(--gt-text-caption);
+}
+
+/* -------------------------------------------------------------------------- */
 /* Body — side by side above 900px, stacked below                             */
 /* -------------------------------------------------------------------------- */
 

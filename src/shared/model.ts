@@ -103,6 +103,46 @@ export interface ConflictStages {
   theirs?: { mode: string; oid: string };
 }
 
+/**
+ * Which multi-step git operation, if any, is in progress.
+ *
+ * A conflicted `FileStatus` alone cannot say *why* a path is unmerged — a
+ * merge, a rebase, a cherry-pick, and a revert all produce the same `UU`/`AA`/
+ * etc. codes. This matters beyond labeling: what git calls "ours" and
+ * "theirs" during conflict resolution **reverses** during a rebase (git
+ * replays your commits on top of the target, so the target becomes "ours" and
+ * your own commit becomes "theirs") but not during a merge, cherry-pick, or
+ * revert. Presentation layers must compute mine/theirs wording from `kind`,
+ * never assume "mine" always means the current branch.
+ */
+export type MergeOperationKind = 'merge' | 'rebase' | 'cherryPick' | 'revert';
+
+export interface MergeOperation {
+  kind: MergeOperationKind;
+  /**
+   * `merge`: the incoming branch, parsed from `MERGE_MSG`.
+   * `rebase`: the branch being rebased — read from `head-name`, since HEAD
+   * itself is detached for the whole operation and `BranchInfo.head` cannot
+   * supply this.
+   * `cherryPick` / `revert`: short SHA of the commit being applied.
+   */
+  incomingRef?: string;
+  /**
+   * `rebase` only: the target being rebased onto, from `onto` (a raw SHA —
+   * resolving it to a branch name needs a git call and is left as future
+   * polish; showing the short SHA is still unambiguous). Unset for every
+   * other kind, since `BranchInfo.head` already names the current branch
+   * reliably when HEAD is not detached.
+   */
+  ontoRef?: string;
+  /**
+   * `merge` only: `MERGE_MSG`'s full raw content, so the commit box can
+   * prefill it the same way plain `git commit` would — completing a merge has
+   * no `--continue` subcommand of its own, it is just an ordinary commit.
+   */
+  mergeMessage?: string;
+}
+
 export interface FileStatus {
   /** Repo-relative, forward slashes, never quoted or octal-escaped. */
   path: string;
@@ -142,6 +182,8 @@ export interface StatusResult {
   repoId: RepoId;
   branch: BranchInfo;
   files: FileStatus[];
+  /** Set while a merge/rebase/cherry-pick/revert is in progress. */
+  mergeOperation?: MergeOperation;
 }
 
 /* ------------------------------------------------------------------------ */

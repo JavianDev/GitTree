@@ -493,6 +493,7 @@ export function AppShell(): React.JSX.Element {
             revision={repositories.revision}
             onError={setError}
             onSelectionChange={setSelectedPaths}
+            onRunCommand={runAction}
           />
         ) : (
           <div className="gt-empty" />

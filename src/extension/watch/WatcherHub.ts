@@ -5,7 +5,7 @@ import type { RepoId } from '@shared/model';
 import type { RepositoryTree } from '../repo/RepositoryTree';
 
 /** Files inside `.git` whose change means repository state moved. */
-const GIT_FILES = ['HEAD', 'index', 'MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REBASE_HEAD'];
+const GIT_FILES = ['HEAD', 'index', 'MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REBASE_HEAD', 'REVERT_HEAD'];
 
 const DEBOUNCE_MS = 150;
 

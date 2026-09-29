@@ -87,9 +87,70 @@ Click the **Git Tree icon** (branch) in the left sidebar
 
 ### Workflow: Stash & Switch
 
-1. Press `Shift+S` to stash
-2. Press `b` to create or `Ctrl+/` to checkout another branch
-3. Come back and `Shift+S` again to pop stash
+1. Press `Shift+S` to stash (add a message in the command sheet if you like)
+2. Press `b` to create or `/` then `Enter` to checkout another branch
+3. Come back, find your stash in the **Stashes** section of the sidebar
+4. Click it to preview its diff, or right-click for **Apply**, **Pop**, or **Drop**
+
+Every stash is listed here — not just the most recent one — so this works even with several
+stashes stacked up across different branches.
+
+### Workflow: Resolve a Merge Conflict
+
+1. When a merge, rebase, cherry-pick, or revert hits a conflict, a banner appears above the file
+   list explaining what "mine" and "theirs" mean for what's happening — read it once, since the
+   meaning **reverses during a rebase** (see the table in [Resolving Merge Conflicts](#resolving-merge-conflicts) below)
+2. Right-click a conflicted file for **Resolve Using Mine**, **Resolve Using Theirs**, or
+   **Open to Resolve Manually**
+3. If you opened it manually, edit the conflict markers, then right-click → **Mark as Resolved**
+4. Once every conflict is gone, the banner's **Continue** button appears (for a merge, this is just
+   committing — the message box is already prefilled)
+5. Changed your mind? **Abort** at any point returns everything to how it was before
+
+---
+
+## Pull Requests
+
+Appears automatically in the sidebar when your repo's remote points at GitHub, Azure DevOps, or
+GitLab — nothing to configure. Sign in with VS Code's own GitHub/Microsoft account; GitLab asks for
+a personal access token once.
+
+| Action | Where |
+| --- | --- |
+| List / filter by status | Sidebar → **Pull Requests** section, status dropdown |
+| Create | **+ New** button in the Pull Requests section header |
+| View overall or per-commit diff | Click a PR, then a commit row (or **Overall diff**) |
+| Vote | Action buttons in the PR detail header |
+| Complete / merge | **Complete** button — squash and delete-branch options in the sheet |
+| Abandon | **Abandon** button |
+| Comment | Comments panel at the bottom of the PR detail view |
+| Open on the web | Right-click a PR row → **Open in Browser** |
+
+---
+
+## Resolving Merge Conflicts
+
+Right-click any conflicted file (in the **Conflicts** group at the top of the Changes view):
+
+| Menu item | What it does |
+| --- | --- |
+| Resolve Using Mine | Keeps your side, discards the other, marks resolved — one click |
+| Resolve Using Theirs | Keeps the incoming side, discards yours, marks resolved — one click |
+| Open to Resolve Manually | Opens the file in a normal editor tab, where VS Code's own Accept Current/Incoming/Both actions appear above the conflict markers |
+| Mark as Resolved | Stages the file as-is — use this after editing conflict markers by hand |
+
+**"Mine" and "theirs" mean different things depending on what's running** — the banner above the
+file list always names the right one, but here's the full table:
+
+| Operation | "Mine" is | "Theirs" is |
+| --- | --- | --- |
+| Merge | Your current branch | The branch being merged in |
+| Rebase | The branch you're rebasing **onto** (git calls this "ours" here) | Your own commit being replayed |
+| Cherry-pick | Your current branch | The commit being cherry-picked |
+| Revert | Your current branch | The commit being reverted |
+
+Once every conflict in the list is gone, use the banner's **Continue** (recommit/replay and move
+on) or **Abort** (back out entirely, as if the operation never started) buttons.
 
 ---
 

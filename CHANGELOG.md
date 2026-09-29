@@ -6,6 +6,37 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — merge conflict resolution
+
+- **One-click "Resolve Using Mine" / "Resolve Using Theirs"** on any conflicted file, from the
+  right-click menu — no confirmation dialog, since re-resolving the other way (or aborting
+  entirely) is always available right up until the operation is completed. Handles every conflict
+  shape correctly, including add/delete conflicts where one side has no file to check out at all:
+  it tries `checkout --ours`/`--theirs` first and falls back to `git rm` on failure, rather than
+  duplicating git's own conflict-code semantics.
+- **A persistent banner explains what "mine" and "theirs" actually mean** for whatever operation is
+  in progress — merge, rebase, cherry-pick, or revert — detected by reading the same marker files
+  (`MERGE_HEAD`, `rebase-merge`/`rebase-apply`, `CHERRY_PICK_HEAD`, `REVERT_HEAD`) git itself uses.
+  This matters because **the meaning reverses during a rebase**: git replays your commits on top of
+  the target, so mid-conflict the target branch becomes "ours" and your own commit becomes
+  "theirs" — backwards from merge, cherry-pick, and revert, where "mine" is simply the current
+  branch. Getting this right (and saying so explicitly) was the point of the feature.
+- **Continue and Abort buttons** once every conflict is resolved. Continue for a merge is just an
+  ordinary commit — the message box now prefills from git's own `MERGE_MSG`, the same message plain
+  `git commit` would use. Rebase, cherry-pick, and revert get real `--continue` commands.
+  `rebase --continue`/`cherry-pick --continue`/`revert --continue` are now run with `GIT_EDITOR=true`
+  to guarantee they can never hang waiting for an interactive editor this headless process has no
+  way to show.
+- **Manual resolution hands off to VS Code's own editor** rather than building a second conflict UI
+  inside Git Tree: "Open to Resolve Manually" opens the file in a normal tab, where VS Code's
+  built-in Accept Current/Incoming/Both actions already appear above the conflict markers.
+- Fixed a related bug found while building this: selecting a conflicted file previously fell
+  through to the ordinary diff pipeline, which asks git for a plain unified diff — but `git diff`
+  against an unmerged path actually returns *combined-diff* format (`@@@ ... @@@` headers,
+  multi-character line prefixes) that the parser was never built to read, rendering something
+  garbled rather than nothing. Conflicted files now show a direct empty state pointing at the
+  right-click menu instead.
+
 ### Fixed
 
 - **The commit graph drifted out of sync with the commit list while scrolling.** The canvas drew

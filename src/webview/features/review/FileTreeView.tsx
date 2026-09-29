@@ -245,6 +245,17 @@ export interface FileTreeProps {
   onStopTracking?: (paths: readonly string[]) => void;
   onIgnore?: (paths: readonly string[]) => void;
   onReveal?: (path: string) => void;
+  /** Checks out one side of a conflict wholesale, then stages it as resolved. */
+  onResolveOurs?: (paths: readonly string[]) => void;
+  onResolveTheirs?: (paths: readonly string[]) => void;
+  /** Opens a conflicted file in a normal editor tab for manual resolution. */
+  onOpenEditor?: (path: string) => void;
+  /** Short branch/ref names for the conflicted-row menu — see `ReviewPane.tsx`'s
+   * `mineTheirsLabels`, which gets this right even though the meaning of
+   * "mine"/"theirs" reverses during a rebase. Omitted, the menu falls back to
+   * generic "Resolve Using Mine"/"Resolve Using Theirs" with no ref name. */
+  mineLabel?: string;
+  theirsLabel?: string;
   busy?: boolean;
 }
 
@@ -265,6 +276,11 @@ export function FileTree({
   onStopTracking,
   onIgnore,
   onReveal,
+  onResolveOurs,
+  onResolveTheirs,
+  onOpenEditor,
+  mineLabel,
+  theirsLabel,
   busy,
 }: FileTreeProps): React.JSX.Element {
   const treeRef = useRef<HTMLDivElement>(null);
@@ -622,6 +638,11 @@ export function FileTree({
             onStopTracking,
             onIgnore,
             onReveal,
+            onResolveOurs,
+            onResolveTheirs,
+            onOpenEditor,
+            mineLabel,
+            theirsLabel,
           )}
           onClose={() => setContextMenu(undefined)}
         />
@@ -666,6 +687,11 @@ function buildContextMenuItems(
   onStopTracking?: (paths: readonly string[]) => void,
   onIgnore?: (paths: readonly string[]) => void,
   onReveal?: (path: string) => void,
+  onResolveOurs?: (paths: readonly string[]) => void,
+  onResolveTheirs?: (paths: readonly string[]) => void,
+  onOpenEditor?: (path: string) => void,
+  mineLabel?: string,
+  theirsLabel?: string,
 ): ContextMenuItem[] {
   const paths = actOn(key, group);
   const singlePath = paths.length === 1 ? paths[0] : undefined;
@@ -673,17 +699,17 @@ function buildContextMenuItems(
 
   if (files.length === 0) return [];
 
+  if (group === 'conflicted') {
+    return buildConflictMenuItems(paths, singlePath, onStage, onResolveOurs, onResolveTheirs, onOpenEditor, mineLabel, theirsLabel);
+  }
+
   const items: ContextMenuItem[] = [];
 
   // Open (single file only)
-  if (singlePath && onReveal) {
-    const file = files[0];
+  if (singlePath && onOpenEditor) {
     items.push({
       label: 'Open',
-      run: () => {
-        // Find editor/open RPC - for now this is placeholder
-        // Will be wired in ReviewPane
-      },
+      run: () => onOpenEditor(singlePath),
     });
   }
 
@@ -766,6 +792,70 @@ function buildContextMenuItems(
       run: () => onReveal(singlePath),
     });
   }
+
+  return items.filter((item) => item.label !== '' || item.separator);
+}
+
+/**
+ * The conflicted-row menu — deliberately its own item set rather than the
+ * generic one above with a few conditions bolted on. "Discard Changes…"
+ * would error today (git refuses `restore --worktree` on an unmerged path
+ * without `--ours`/`--theirs`/`--merge`) and "Stage" reads oddly for a
+ * conflict even though `git add` is in fact the correct resolve-mark, so
+ * dropping through to the shared branch was actively wrong here, not just
+ * unpolished.
+ */
+function buildConflictMenuItems(
+  paths: readonly string[],
+  singlePath: string | undefined,
+  onStage: ((paths: readonly string[]) => void) | undefined,
+  onResolveOurs: ((paths: readonly string[]) => void) | undefined,
+  onResolveTheirs: ((paths: readonly string[]) => void) | undefined,
+  onOpenEditor: ((path: string) => void) | undefined,
+  mineLabel: string | undefined,
+  theirsLabel: string | undefined,
+): ContextMenuItem[] {
+  const items: ContextMenuItem[] = [];
+
+  if (onResolveOurs) {
+    items.push({
+      label: mineLabel ? `Resolve Using Mine (${mineLabel})` : 'Resolve Using Mine',
+      hint: 'Keeps your side of this conflict and discards the other.',
+      run: () => onResolveOurs(paths),
+    });
+  }
+
+  if (onResolveTheirs) {
+    items.push({
+      label: theirsLabel ? `Resolve Using Theirs (${theirsLabel})` : 'Resolve Using Theirs',
+      hint: 'Keeps the incoming side of this conflict and discards yours.',
+      run: () => onResolveTheirs(paths),
+    });
+  }
+
+  if (singlePath && onOpenEditor) {
+    items.push({ label: '', run: () => undefined, separator: true });
+    items.push({
+      label: 'Open to Resolve Manually',
+      hint: 'Edit the conflict markers yourself — VS Code shows Accept Current/Incoming/Both above them.',
+      run: () => onOpenEditor(singlePath),
+    });
+  }
+
+  if (onStage) {
+    items.push({ label: '', run: () => undefined, separator: true });
+    items.push({
+      label: 'Mark as Resolved',
+      hint: 'Stages this file as-is — use after editing the conflict markers by hand.',
+      run: () => onStage(paths),
+    });
+  }
+
+  items.push({ label: '', run: () => undefined, separator: true });
+  items.push({
+    label: paths.length === 1 ? 'Copy Path' : 'Copy Paths',
+    run: () => navigator.clipboard.writeText(paths.join('\n')),
+  });
 
   return items.filter((item) => item.label !== '' || item.separator);
 }

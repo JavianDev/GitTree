@@ -113,9 +113,8 @@ But if you like the mouse, everything's clickable too.
 
 ## What's Next
 
-We're actively developing:
-- Pull request management (GitHub, Azure DevOps, GitLab)
-- Enhanced stash workflows
+Since this post, we've shipped full Pull Request management (GitHub, Azure DevOps, GitLab),
+complete stash workflows, and one-click merge conflict resolution. We're actively developing:
 - Native VS Code Command Palette integration
 - More theme options
 

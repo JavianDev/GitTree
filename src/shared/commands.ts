@@ -21,6 +21,14 @@ export type CommandId =
   | 'branch.checkout'
   | 'branch.delete'
   | 'merge'
+  | 'merge.abort'
+  | 'rebase.continue'
+  | 'rebase.skip'
+  | 'rebase.abort'
+  | 'cherryPick.continue'
+  | 'cherryPick.abort'
+  | 'revert.continue'
+  | 'revert.abort'
   | 'stash.push'
   | 'stash.apply'
   | 'stash.pop'
@@ -316,6 +324,86 @@ export const COMMANDS: Record<CommandId, CommandSpec> = {
       argv.push(ctx.branch ?? '<branch>');
       return argv;
     },
+  },
+
+  'merge.abort': {
+    id: 'merge.abort',
+    title: 'Abort Merge',
+    group: 'branch',
+    summary: 'Stop the merge and return to how the branch looked before it started.',
+    flags: [],
+    destructive: true,
+    build: () => ['merge', '--abort'],
+  },
+
+  'rebase.continue': {
+    id: 'rebase.continue',
+    title: 'Continue Rebase',
+    group: 'branch',
+    summary: 'Recommit the current step now that its conflicts are resolved, and move to the next one.',
+    flags: [],
+    build: () => ['rebase', '--continue'],
+  },
+
+  'rebase.skip': {
+    id: 'rebase.skip',
+    title: 'Skip Commit',
+    group: 'branch',
+    summary: 'Drop the commit currently being replayed and move to the next one.',
+    concept:
+      'The commit being replayed is left out of the rebase entirely — its changes do not appear on ' +
+      'the branch afterward. Prefer resolving and continuing unless this commit is genuinely redundant.',
+    flags: [],
+    destructive: true,
+    build: () => ['rebase', '--skip'],
+  },
+
+  'rebase.abort': {
+    id: 'rebase.abort',
+    title: 'Abort Rebase',
+    group: 'branch',
+    summary: 'Stop the rebase and return the branch to how it looked before it started.',
+    flags: [],
+    destructive: true,
+    build: () => ['rebase', '--abort'],
+  },
+
+  'cherryPick.continue': {
+    id: 'cherryPick.continue',
+    title: 'Continue Cherry-pick',
+    group: 'branch',
+    summary: 'Commit the cherry-picked change now that its conflicts are resolved.',
+    flags: [],
+    build: () => ['cherry-pick', '--continue'],
+  },
+
+  'cherryPick.abort': {
+    id: 'cherryPick.abort',
+    title: 'Abort Cherry-pick',
+    group: 'branch',
+    summary: 'Stop the cherry-pick and return to how the branch looked before it started.',
+    flags: [],
+    destructive: true,
+    build: () => ['cherry-pick', '--abort'],
+  },
+
+  'revert.continue': {
+    id: 'revert.continue',
+    title: 'Continue Revert',
+    group: 'branch',
+    summary: 'Commit the revert now that its conflicts are resolved.',
+    flags: [],
+    build: () => ['revert', '--continue'],
+  },
+
+  'revert.abort': {
+    id: 'revert.abort',
+    title: 'Abort Revert',
+    group: 'branch',
+    summary: 'Stop the revert and return to how the branch looked before it started.',
+    flags: [],
+    destructive: true,
+    build: () => ['revert', '--abort'],
   },
 
   'stash.push': {
