@@ -24,6 +24,10 @@ Unlike VS Code's flat file list, Git Tree shows your branches, commit graph, and
 - **Middle pane:** The full commit graph with correct lane assignment, real-time updates as you work (250px default, collapsible)
 - **Right pane:** File-level diff, line-level staging, and conflict resolution — all visible at once (890px default)
 - **Fully draggable:** Resize any pane by dragging the divider; layout persists across sessions
+- **Focus diff:** Click a changed file and the Branches and Git Tree panes fold to thin rails so the
+  diff gets the full width — **⇤ Restore panels** (or clicking a rail) brings them back
+- **New files show their contents:** an untracked file's whole content appears as added lines,
+  not an empty pane
 
 ### 2. **Commit Graph That Actually Works**
 

@@ -1,7 +1,15 @@
-import { useEffect, useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import type { GraphRow } from '@shared/model';
 
 const LANE_WIDTH = 16;
+/**
+ * The widest the gutter grows. Past this, lanes are drawn closer together
+ * rather than off the canvas edge — a busy history gets a denser graph, never
+ * a cut-off one.
+ */
+const MAX_GUTTER_WIDTH = 240;
+/** Densest a lane gets before rails would visually merge into one another. */
+const MIN_LANE_WIDTH = 6;
 const RAIL_WIDTH = 2.1;
 const NODE_RADIUS = 4.4;
 /** Gap punched around a node so rails passing behind never touch it. */
@@ -32,6 +40,12 @@ export interface GraphCanvasProps {
   height: number;
   /** Widest lane count across the loaded history; fixes the gutter width. */
   width: number;
+  /**
+   * How many rows are loaded. `rows` is appended to in place by the stream
+   * accumulator, so its identity never changes between batches — this is
+   * what tells the paint effect that there is something new to draw.
+   */
+  rowCount: number;
   /** Row index of the selected commit, emphasised in the drawing. */
   selectedRow?: number;
 }
@@ -58,17 +72,26 @@ export function GraphCanvas({
   rowHeight,
   height,
   width,
+  rowCount,
   selectedRow,
 }: GraphCanvasProps): React.JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  useEffect(() => {
+  // A layout effect, not a plain effect: the list beside this canvas scrolls
+  // natively, so painting after the browser has already painted leaves the
+  // rails a frame behind their rows on every scroll tick.
+  useLayoutEffect(() => {
     const canvas = canvasRef.current;
     const context = canvas?.getContext('2d');
     if (!canvas || !context) return;
 
     const ratio = window.devicePixelRatio || 1;
-    const cssWidth = Math.max(1, width * LANE_WIDTH + LANE_WIDTH);
+    const lanes = Math.max(1, width);
+    const laneWidth = Math.max(MIN_LANE_WIDTH, Math.min(LANE_WIDTH, (MAX_GUTTER_WIDTH - LANE_WIDTH / 2) / lanes));
+    const cssWidth = Math.ceil(lanes * laneWidth + LANE_WIDTH / 2);
+    // Nodes shrink with their lane so neighbours never overlap.
+    const nodeRadius = Math.min(NODE_RADIUS, laneWidth * 0.3);
+    const nodeRing = Math.min(NODE_RING, laneWidth * 0.15);
 
     canvas.width = Math.round(cssWidth * ratio);
     canvas.height = Math.round(height * ratio);
@@ -78,7 +101,7 @@ export function GraphCanvas({
     context.clearRect(0, 0, cssWidth, height);
 
     const { palette, ring } = readPalette();
-    const laneX = (lane: number) => LANE_WIDTH / 2 + lane * LANE_WIDTH;
+    const laneX = (lane: number) => laneWidth / 2 + lane * laneWidth;
     // Positioned from the same scroll offset the list itself uses, not from
     // `start`, so a row's rail lines up with its DOM row at every scroll
     // position — not just the ones where `scrollTop` happens to land exactly
@@ -165,7 +188,7 @@ export function GraphCanvas({
       // rather than being crossed by them.
       context.fillStyle = ring;
       context.beginPath();
-      context.arc(x, y, NODE_RADIUS + NODE_RING, 0, Math.PI * 2);
+      context.arc(x, y, nodeRadius + nodeRing, 0, Math.PI * 2);
       context.fill();
 
       if (selected) {
@@ -174,7 +197,7 @@ export function GraphCanvas({
         context.fillStyle = color;
         context.globalAlpha = 0.22;
         context.beginPath();
-        context.arc(x, y, NODE_RADIUS + 5.5, 0, Math.PI * 2);
+        context.arc(x, y, nodeRadius + 5.5, 0, Math.PI * 2);
         context.fill();
         context.globalAlpha = 1;
       }
@@ -186,21 +209,21 @@ export function GraphCanvas({
       if (row.isMerge) {
         // Hollow: a merge joins histories rather than adding content of its own.
         context.beginPath();
-        context.arc(x, y, NODE_RADIUS - 0.4, 0, Math.PI * 2);
+        context.arc(x, y, nodeRadius - 0.4, 0, Math.PI * 2);
         context.stroke();
       } else if (row.isRoot) {
         // Square: history starts here and nothing continues below.
-        const size = NODE_RADIUS * 1.65;
+        const size = nodeRadius * 1.65;
         context.fillRect(x - size / 2, y - size / 2, size, size);
       } else {
         context.beginPath();
-        context.arc(x, y, NODE_RADIUS, 0, Math.PI * 2);
+        context.arc(x, y, nodeRadius, 0, Math.PI * 2);
         context.fill();
       }
 
       context.lineWidth = RAIL_WIDTH;
     }
-  }, [rows, start, end, scrollTop, rowHeight, height, width, selectedRow]);
+  }, [rows, rowCount, start, end, scrollTop, rowHeight, height, width, selectedRow]);
 
   return <canvas ref={canvasRef} className="gt-graph-gutter" aria-hidden="true" />;
 }

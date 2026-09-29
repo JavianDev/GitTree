@@ -38,6 +38,8 @@ import type { CommandContext, CommandId } from './commands';
 export type DiffTarget =
   | { kind: 'worktree'; repoId: RepoId; path: string }
   | { kind: 'index'; repoId: RepoId; path: string }
+  /** A path git isn't tracking yet: its whole content, shown as added lines. */
+  | { kind: 'untracked'; repoId: RepoId; path: string }
   | { kind: 'commit'; repoId: RepoId; hash: string; path?: string }
   | { kind: 'range'; repoId: RepoId; from: string; to: string; path?: string };
 

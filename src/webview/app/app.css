@@ -710,11 +710,49 @@
  * commits carry on: the "graph is cut off" symptom.
  */
 .gt-history-pane {
+  position: relative;
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
+}
+
+/* A thin sweep along the top edge while history streams in — a refresh is
+   visible without the list flashing to an empty state and back. */
+.gt-history-progress {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 1;
+  height: 2px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.gt-history-progress::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 30%;
+  background: var(--gt-accent);
+  animation: gt-history-sweep 1.1s ease-in-out infinite;
+}
+
+@keyframes gt-history-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(340%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gt-history-progress::after {
+    width: 100%;
+    animation: none;
+    opacity: 0.5;
+  }
 }
 
 .gt-history-empty {
@@ -766,11 +804,11 @@
   text-align: center;
 }
 
+/* Sized by `GraphCanvas` itself (inline width/height match its bitmap), which
+   compresses lanes to fit rather than letting them run off the edge. */
 .gt-graph-gutter {
+  display: block;
   flex: none;
-  position: relative;
-  width: 120px;
-  overflow: hidden;
 }
 
 .gt-commit-list {
@@ -783,6 +821,7 @@
   display: flex;
   align-items: center;
   gap: var(--gt-space-2);
+  font-size: var(--gt-text-callout);
   height: var(--gt-row-list);
   padding: 0 var(--gt-space-4) 0 var(--gt-space-3);
   cursor: default;
@@ -813,12 +852,12 @@
 
 .gt-avatar {
   flex: none;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  font-size: 8.5px;
+  font-size: 7.5px;
   font-weight: var(--gt-weight-semibold);
   letter-spacing: 0.02em;
   /* White on a fixed 46% lightness clears contrast for every generated hue. */
@@ -835,7 +874,7 @@
 .gt-commit-author,
 .gt-commit-date {
   flex: none;
-  font-size: var(--gt-text-callout);
+  font-size: var(--gt-text-caption);
   color: var(--gt-label-secondary);
 }
 

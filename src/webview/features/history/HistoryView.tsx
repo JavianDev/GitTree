@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import type { Commit, GraphRow, RefDecoration, RepoId } from '@shared/model';
 import { RpcRequestError, rpc } from '../../rpc/client';
 import { GraphCanvas } from './GraphCanvas';
 import { LogStream } from './logStream';
 
-const ROW_HEIGHT = 28;
+const ROW_HEIGHT = 24;
 /** Rows rendered beyond the viewport, so fast scrolling does not show gaps. */
 const OVERSCAN = 12;
 
@@ -185,9 +186,16 @@ export function HistoryView({
     return () => observer.disconnect();
   }, []);
 
+  /**
+   * Rendered synchronously. The list scrolls natively, before any script runs,
+   * but a scroll-driven state update is otherwise scheduled for a later task —
+   * after the browser has painted the moved rows next to a graph still drawn
+   * for the old position. Flushing here lets the canvas's layout effect repaint
+   * in the same frame, so the rails never trail their commits mid-scroll.
+   */
   const onScroll = useCallback(() => {
     const element = scrollRef.current;
-    if (element) setScrollTop(element.scrollTop);
+    if (element) flushSync(() => setScrollTop(element.scrollTop));
   }, []);
 
   /**
@@ -254,11 +262,16 @@ export function HistoryView({
     return -1;
   }, [selectedHash, commits, start, end]);
 
+  // Keyed on the row count as well as the array: the stream appends to the
+  // same array in place, so keyed on identity alone this was computed from the
+  // first batch only — lanes that appear further down history then drew past
+  // the canvas edge, which read as the graph cutting off while scrolling.
+  // Deliberately uncapped; `GraphCanvas` compresses lanes to fit instead.
   const gutterWidth = useMemo(() => {
     let max = 1;
     for (const row of rows) max = Math.max(max, row.width);
-    return Math.min(max, 12);
-  }, [rows]);
+    return max;
+  }, [rows, rows.length]);
 
   /**
    * The working tree, pinned above history as a row of its own.
@@ -318,6 +331,7 @@ export function HistoryView({
      * would be one row out of register with its commit.
      */
     <div className="gt-history-pane">
+      {loading && <div className="gt-history-progress" role="progressbar" aria-label="Loading history" />}
       {uncommittedRow}
 
       <div className="gt-history">
@@ -330,6 +344,7 @@ export function HistoryView({
             rowHeight={ROW_HEIGHT}
             height={viewport}
             width={gutterWidth}
+            rowCount={rows.length}
             {...(selectedIndex >= 0 ? { selectedRow: selectedIndex } : {})}
           />
         </div>

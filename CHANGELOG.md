@@ -6,6 +6,32 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — focus-diff mode and new-file contents
+
+- **Clicking a file in Changes folds the Branches and Git Tree panes to their rails**, so the diff
+  gets the full width without a fourth pane. A **⇤ Restore panels** button in the review header
+  (or clicking a rail) brings them back; leaving Changes restores them automatically, since History
+  is read by clicking commits. Only panes this collapsed are restored — one you closed yourself stays
+  closed.
+- **New (untracked) files now show their contents**, as all-added lines, instead of an empty pane.
+  Git has nothing to diff an untracked path against, so the host reads the file and shapes it like
+  `git diff` would show a newly added file: CRLF endings normalized, a missing final newline marked,
+  binary files detected, and files past 5,000 lines truncated with a note.
+
+### Fixed — the commit graph cutting off
+
+- **Lanes further down history were clipped.** The log stream appends each batch to the same `rows`
+  array, so the gutter width — memoized on that array — was computed from the first batch only.
+  Wherever history grew wider than its first page, rails and nodes were drawn past the canvas edge.
+  The width is now recomputed as batches arrive, the 12-lane cap is gone, and lanes are compressed
+  to fit a 240px gutter rather than ever running off it.
+- **The graph trailed the list by a frame while scrolling.** The list scrolls natively, but the
+  canvas repainted in a plain effect scheduled after the browser had already painted the moved rows.
+  It now repaints in a layout effect flushed from the scroll handler — same frame, no tearing.
+- The graph also repaints when new rows stream in inside the visible window.
+- Commit rows are a little more compact (24px, 12px text, smaller author/date), and a thin sweep
+  along the top of the graph shows while history is being (re)loaded. It respects reduced-motion.
+
 ### Added — Bitbucket pull requests
 
 - **Bitbucket Cloud joins GitHub, Azure DevOps, and GitLab.** A remote on `bitbucket.org` (https,

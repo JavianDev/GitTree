@@ -101,6 +101,9 @@ const PANE_LABELS = ['Branches', 'Commit tree', 'Review'] as const;
  * at once, which is the whole reason for three panes rather than a modal middle
  * column.
  */
+/** Branches and Git Tree — the panes focus-diff mode folds away. */
+const FOCUS_PANES: readonly number[] = [0, 1];
+
 export function AppShell(): React.JSX.Element {
   const repositories = useRepositories();
   const layout = useLayout();
@@ -193,6 +196,37 @@ export function AppShell(): React.JSX.Element {
     setMode(next);
     if (next !== 'pullRequest') setPullRequestId(undefined);
   }, []);
+
+  /**
+   * Focus-diff mode: opening a file in Changes collapses the Branches and Git
+   * Tree panes to their rails so the diff gets the full width. Only the panes
+   * this collapsed are remembered, so restoring never reopens one the user had
+   * closed themselves.
+   */
+  const [focusCollapsed, setFocusCollapsed] = useState<readonly number[]>([]);
+  const { collapsed: paneCollapsed, toggle: togglePane } = layout;
+
+  const focusDiff = useCallback(() => {
+    const toCollapse = FOCUS_PANES.filter((index) => paneCollapsed[index] !== true);
+    if (toCollapse.length === 0) return;
+    for (const index of toCollapse) togglePane(index);
+    setFocusCollapsed((current) => [...new Set([...current, ...toCollapse])]);
+  }, [paneCollapsed, togglePane]);
+
+  const restorePanels = useCallback(() => {
+    for (const index of focusCollapsed) {
+      if (paneCollapsed[index] === true) togglePane(index);
+    }
+    setFocusCollapsed([]);
+  }, [focusCollapsed, paneCollapsed, togglePane]);
+
+  const focusActive = focusCollapsed.some((index) => paneCollapsed[index] === true);
+
+  // Leaving Changes gives the commit tree back: History is read by clicking
+  // commits, which is impossible with that pane folded away.
+  useEffect(() => {
+    if (mode !== 'changes' && focusActive) restorePanels();
+  }, [mode, focusActive, restorePanels]);
 
   /**
    * A stash's diff reuses the commit-diff pipeline verbatim: its oid is a real
@@ -494,6 +528,8 @@ export function AppShell(): React.JSX.Element {
             onError={setError}
             onSelectionChange={setSelectedPaths}
             onRunCommand={runAction}
+            onFileActivated={focusDiff}
+            {...(focusActive ? { onRestorePanels: restorePanels } : {})}
           />
         ) : (
           <div className="gt-empty" />

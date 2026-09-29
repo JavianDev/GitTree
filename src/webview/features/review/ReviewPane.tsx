@@ -63,6 +63,10 @@ export interface ReviewPaneProps {
   onSelectionChange?: (paths: readonly string[]) => void;
   /** Opens the review-before-run command sheet — powers the merge-status banner's Continue/Abort. */
   onRunCommand?: (id: CommandId) => void;
+  /** A file row was clicked (or Enter'd) in Changes — the shell widens the diff. */
+  onFileActivated?: () => void;
+  /** Present while focus-diff mode has folded the other panes away. */
+  onRestorePanels?: () => void;
 }
 
 export function ReviewPane({
@@ -73,6 +77,8 @@ export function ReviewPane({
   onError,
   onSelectionChange,
   onRunCommand,
+  onFileActivated,
+  onRestorePanels,
 }: ReviewPaneProps): React.JSX.Element {
   const [status, setStatus] = useState<StatusResult | undefined>();
   const [stagedStats, setStagedStats] = useState<readonly FileStats[]>([]);
@@ -226,12 +232,16 @@ export function ReviewPane({
   const activeRow = useMemo(() => findRow(groups, activeKey), [groups, activeKey]);
   const activePath = activeRow?.file.path;
 
-  const activate = useCallback((row: FileRow) => {
-    setActiveKey(row.key);
-    // The group that was clicked decides which side opens first; the segmented
-    // control then switches between them for a file that is in both.
-    setSide(row.group === 'staged' ? 'staged' : 'unstaged');
-  }, []);
+  const activate = useCallback(
+    (row: FileRow) => {
+      setActiveKey(row.key);
+      // The group that was clicked decides which side opens first; the segmented
+      // control then switches between them for a file that is in both.
+      setSide(row.group === 'staged' ? 'staged' : 'unstaged');
+      if (mode === 'changes') onFileActivated?.();
+    },
+    [mode, onFileActivated],
+  );
 
   useEffect(() => {
     // Lift the selection up to the parent so the toolbar can react to it.
@@ -260,25 +270,26 @@ export function ReviewPane({
       return;
     }
 
-    // An untracked file is not in the index, so there is nothing for git to
-    // diff it against. Asking anyway returns an empty patch and reads as a bug.
-    //
     // A conflicted file is worse than empty: `git diff` against an unmerged
     // path produces combined-diff output (`@@@ ... @@@` headers, multi-char
     // line prefixes), which the ordinary unified-diff parser was never built
     // to read — asking anyway renders something garbled rather than nothing.
     // Resolution happens via the context menu or the native editor, not here.
-    if (activeRow.file.kind === 'untracked' || activeRow.file.kind === 'conflicted') {
+    if (activeRow.file.kind === 'conflicted') {
       setDiff([]);
       setDiffError(undefined);
       setLoadingDiff(false);
       return;
     }
 
+    // Git has nothing to diff an untracked file against, so the host reads
+    // it and shows the whole content as added lines.
     const target: DiffTarget =
-      side === 'staged'
-        ? { kind: 'index', repoId, path: activePath }
-        : { kind: 'worktree', repoId, path: activePath };
+      activeRow.file.kind === 'untracked'
+        ? { kind: 'untracked', repoId, path: activePath }
+        : side === 'staged'
+          ? { kind: 'index', repoId, path: activePath }
+          : { kind: 'worktree', repoId, path: activePath };
 
     let cancelled = false;
     setDiffError(undefined);
@@ -522,6 +533,17 @@ export function ReviewPane({
             </span>
           )}
           <span className="gt-review-spacer" />
+          {onRestorePanels && (
+            <button
+              type="button"
+              className="gt-button"
+              data-size="small"
+              title="Bring back the Branches and Git Tree panels"
+              onClick={onRestorePanels}
+            >
+              ⇤ Restore panels
+            </button>
+          )}
           <span className="gt-review-progress">
             {viewedCount} of {total} viewed
           </span>
@@ -884,9 +906,7 @@ function emptyDiffText(
     return 'Select a commit in the tree to see what it changed.';
   }
   if (!row) return 'Select a file to read its diff.';
-  if (row.file.kind === 'untracked') {
-    return 'Untracked — git has nothing to compare this file against until it is staged.';
-  }
+  if (row.file.kind === 'untracked') return 'This new file is empty, or is a folder.';
   if (row.file.kind === 'conflicted') {
     return 'This file has unresolved conflicts. Right-click it to Resolve Using Mine/Theirs, or Open to Resolve Manually.';
   }

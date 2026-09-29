@@ -220,7 +220,8 @@ APPEARANCE:
 ✅ **Files are always selected by clicking** — No need for Shift+Click or Ctrl+Click  
 ✅ **Hover over toolbar icons** — See keyboard shortcut hints  
 ✅ **Type to filter branches** — Press `/` then start typing  
-✅ **Drag to resize panes** — All three panes + file/diff divider are draggable  
+✅ **Drag to resize panes** — All three panes + file/diff divider are draggable
+✅ **Clicking a changed file widens the diff** — Branches and Git Tree fold to rails; **⇤ Restore panels** brings them back  
 ✅ **Click commits to see diffs** — View any commit's changes side-by-side  
 ✅ **Press `?` anytime** — Full shortcut reference built-in  
 ✅ **Keyboard-only workflow** — Everything works without touching the mouse  

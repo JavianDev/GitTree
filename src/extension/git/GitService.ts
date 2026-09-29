@@ -1,4 +1,5 @@
 ﻿import { promises as fs } from 'node:fs';
+import { resolve as resolvePath, sep as pathSep } from 'node:path';
 import type {
   Commit,
   DiffFile,
@@ -17,6 +18,7 @@ import { GitError, type GitProcess } from './GitProcess';
 import type { GitScheduler, Priority } from './GitScheduler';
 import { detectMergeOperation } from './mergeOperation';
 import { buildHunkPatch, buildLinePatch } from './patch';
+import { synthesizeAddedFile } from './untrackedDiff';
 import { LOG_FORMAT, listArgs, parseCommitRecord, parseListRecord } from './parsers/log';
 import { STATUS_ARGS, parseStatus } from './parsers/status';
 import { parseDiff } from './parsers/diff';
@@ -253,9 +255,24 @@ export class GitService {
   }
 
   async diff(target: DiffTarget, options?: GitServiceOptions): Promise<DiffFile[]> {
+    if (target.kind === 'untracked') return this.untrackedDiff(target.path, options);
+
     return this.runScheduled(options, async (signal) => {
       const result = await this.git.run({ cwd: this.cwd, args: diffArgs(target), signal });
       return parseDiff(result.stdout);
+    });
+  }
+
+  private async untrackedDiff(relativePath: string, options?: GitServiceOptions): Promise<DiffFile[]> {
+    const root = resolvePath(this.cwd);
+    const full = resolvePath(root, relativePath);
+    // The path comes from the webview; never read outside the worktree.
+    if (!full.startsWith(root + pathSep)) return [];
+
+    return this.runScheduled(options, async () => {
+      const stats = await fs.stat(full).catch(() => undefined);
+      if (!stats?.isFile()) return [];
+      return [synthesizeAddedFile(relativePath, await fs.readFile(full))];
     });
   }
 
@@ -519,7 +536,7 @@ export class GitService {
 }
 
 /** Builds the argv for a diff request. */
-function diffArgs(target: DiffTarget): string[] {
+function diffArgs(target: Exclude<DiffTarget, { kind: 'untracked' }>): string[] {
   const base = ['diff', '--no-color', '--no-ext-diff', '--find-renames', '-U3'];
 
   switch (target.kind) {
