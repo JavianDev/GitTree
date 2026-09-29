@@ -4,6 +4,12 @@
 
 > Every button shows the exact Git command it runs. Every action is editable before execution. The GUI makes you better at the command line instead of hiding it.
 
+### 💛 Support Git Tree
+
+[![Buy Me a Coffee](https://img.shields.io/badge/☕_Buy_Me_a_Coffee-Support_Git_Tree-FFDD00?style=for-the-badge)](https://buymeacoffee.com/javian)
+
+Git Tree is **free and open source**. If you find it useful, [buying a coffee](https://buymeacoffee.com/javian) helps keep it maintained — bug fixes, new features, and documentation.
+
 ---
 
 ## ✨ What Makes Git Tree Different
@@ -341,20 +347,6 @@ Future AI features will be **off by default**, require explicit opt-in, show you
 
 ---
 
-## 💙 Support Git Tree
-
-Git Tree is **free and open source**. If you find it useful and want to support development:
-
-[**☕ Buy Me a Coffee**](https://buymeacoffee.com/javian) — Help keep Git Tree maintained and improved.
-
-Your support goes directly towards:
-
-- Bug fixes and stability improvements
-- New features and enhancements
-- Documentation and community support
-
----
-
 ## 📄 License
 
 Copyright (c) 2026 Javian Picardo Group Inc
@@ -370,4 +362,4 @@ Licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ---
 
-**Made with ❤️ by Javian Picardo Group Inc**
+**Made with ❤️ by Javian Picardo**
