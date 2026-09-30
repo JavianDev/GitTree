@@ -134,6 +134,22 @@ describe.skipIf(!gitAvailable)('GitService against a real repository', () => {
     expect(files.map((file) => file.path)).toEqual(['c.txt']);
   });
 
+  it('lists the commits a push would send when the branch has no upstream', async () => {
+    const outgoing = await service.outgoing();
+    expect(outgoing.hasUpstream).toBe(false);
+    // No remote at all, so every commit on main is unpublished: first, main work, feature work, the merge.
+    expect(outgoing.commits.map((commit) => commit.subject).sort()).toEqual(
+      ['feature work', 'first', 'main work', 'merge feature'].sort(),
+    );
+  });
+
+  it('diffs what would be committed, capped for a language model', async () => {
+    const all = await service.diffText(false, 10_000);
+    expect(all.truncated).toBe(false);
+    const capped = await service.diffText(false, 5);
+    expect(capped.text.length).toBeLessThanOrEqual(5);
+  });
+
   it('lists refs, including the stash ref', async () => {
     const refs = await service.refs();
     expect(refs.some((ref) => ref.name === 'main')).toBe(true);

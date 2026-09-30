@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { CommandId } from '@shared/commands';
+import { COMMANDS, type CommandContext, type CommandId } from '@shared/commands';
 import type {
+  BranchInfo,
+  Commit,
   DiffFile,
   FileChangeKind,
   FileDiffStatus,
@@ -10,6 +12,7 @@ import type {
   MergeOperation,
   RepoId,
   StatusLetter,
+  StashEntry,
   StatusResult,
 } from '@shared/model';
 import type { DiffTarget } from '@shared/protocol';
@@ -22,12 +25,14 @@ import {
   FileTree,
   buildGroups,
   findRow,
+  folderKeys,
   firstRow,
   groupKeys,
   rowPath,
 } from './FileTreeView';
 import type { FileSortMode, ReviewFile } from './fileTree';
 import { MergeStatusBanner } from './MergeStatusBanner';
+import { PushPanel, StashPanel } from './WorkPanels';
 import { useFileSelection } from './useFileSelection';
 import './review.css';
 
@@ -66,7 +71,7 @@ export interface ReviewPaneProps {
   /** Called whenever the file selection changes. */
   onSelectionChange?: (paths: readonly string[]) => void;
   /** Opens the review-before-run command sheet — powers the merge-status banner's Continue/Abort. */
-  onRunCommand?: (id: CommandId) => void;
+  onRunCommand?: (id: CommandId, context?: Partial<CommandContext>) => void;
   /** A file row was clicked (or Enter'd) in Changes — the shell widens the diff. */
   onFileActivated?: () => void;
   /** Present while focus-diff mode has folded the other panes away. */
@@ -115,6 +120,13 @@ export function ReviewPane({
   const [listWidth, setListWidth] = useState<number | undefined>(undefined);
 
   const [busy, setBusy] = useState(false);
+  /** Changes view only: what the Files pane is showing. */
+  const [tab, setTab] = useState<'commit' | 'push' | 'stash'>('commit');
+  const [outgoing, setOutgoing] = useState<{ commits: Commit[]; hasUpstream: boolean }>({
+    commits: [],
+    hasUpstream: true,
+  });
+  const [stashes, setStashes] = useState<StashEntry[]>([]);
   /** A refused drop. Not an error from git, so it does not go to `onError`. */
   const [notice, setNotice] = useState<string | undefined>();
 
@@ -169,6 +181,30 @@ export function ReviewPane({
 
     load(true);
     load(false);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [repoId, mode, revision, nonce]);
+
+  // The Push and Stash tabs' contents — loaded with the rest of the working
+  // tree so their counts are right on the tabs before either is opened.
+  useEffect(() => {
+    if (mode !== 'changes') return;
+    let cancelled = false;
+
+    void rpc
+      .request('log/outgoing', { repoId })
+      .then((result) => {
+        if (!cancelled) setOutgoing(result);
+      })
+      .catch(() => undefined);
+    void rpc
+      .request('stash/list', { repoId })
+      .then((result) => {
+        if (!cancelled) setStashes(result.stashes);
+      })
+      .catch(() => undefined);
 
     return () => {
       cancelled = true;
@@ -231,14 +267,23 @@ export function ReviewPane({
 
     inputs.push({
       id: 'staged',
-      title: 'Staged',
+      title: 'Staged Changes',
       files: keep(withStats(all.filter((file) => file.staged && !file.conflicted), stagedStats)),
     });
     inputs.push({
       id: 'unstaged',
-      title: 'Unstaged',
-      files: keep(withStats(all.filter((file) => file.unstaged && !file.conflicted), unstagedStats)),
+      title: 'Changes',
+      files: keep(
+        withStats(
+          all.filter((file) => file.unstaged && !file.conflicted && file.kind !== 'untracked'),
+          unstagedStats,
+        ),
+      ),
     });
+    // New files apart from edits, as in VS Code's own source control view:
+    // staging one is adding a file to the repository, not recording a change.
+    const untracked = keep(all.filter((file) => file.kind === 'untracked'));
+    if (untracked.length > 0) inputs.push({ id: 'untracked', title: 'Untracked Changes', files: untracked });
 
     return buildGroups(inputs, sort);
   }, [mode, commitFiles, status, stagedStats, unstagedStats, query, sort]);
@@ -400,6 +445,17 @@ export function ReviewPane({
     [repoId],
   );
 
+  /** Every change to tracked files, back to the last commit. Untracked files are left alone. */
+  const discardAll = useCallback(() => {
+    const paths = (status?.files ?? [])
+      .filter((file) => file.unstaged && !file.conflicted && file.kind !== 'untracked')
+      .map((file) => file.path);
+    if (paths.length === 0) return;
+    const what = paths.length === 1 ? `"${paths[0]}"` : `${paths.length} files`;
+    if (!window.confirm(`Discard all changes to ${what}? This cannot be undone. Untracked files are kept.`)) return;
+    discard(paths);
+  }, [status, discard]);
+
   const resolveOurs = useCallback(
     (paths: readonly string[]) => {
       void mutate(() => rpc.request('conflicts/resolve', { repoId, paths: [...paths], resolution: 'ours' }));
@@ -558,21 +614,39 @@ export function ReviewPane({
     </div>
   );
 
+  const changedCount = (status?.files ?? []).filter((file) => file.kind !== 'ignored').length;
+  const discardable = (status?.files ?? []).some(
+    (file) => file.unstaged && !file.conflicted && file.kind !== 'untracked',
+  );
+  const showing = mode === 'changes' ? tab : 'commit';
+
   return (
     <div
       className="gt-review"
       ref={containerRef}
       data-layout={splitOut ? 'files' : wide ? 'split' : 'stacked'}
     >
-      <header className="gt-review-header">
-        <div className="gt-review-summary">
-          <strong>{total === 1 ? '1 file' : `${total} files`}</strong>
-          {(additions > 0 || deletions > 0) && (
-            <span className="gt-review-counts">
-              <span className="gt-review-add">+{additions}</span>
-              <span className="gt-review-del">−{deletions}</span>
-            </span>
-          )}
+      {mode === 'changes' && (
+        <nav className="gt-review-tabs" role="tablist" aria-label="Working tree">
+          {(
+            [
+              ['commit', 'Commit', changedCount],
+              ['push', 'Push', outgoing.commits.length],
+              ['stash', 'Stash', stashes.length],
+            ] as const
+          ).map(([id, label, count]) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              className="gt-review-tab"
+              aria-selected={tab === id}
+              onClick={() => setTab(id)}
+            >
+              {label}
+              <span className="gt-review-tab-count">({count})</span>
+            </button>
+          ))}
           <span className="gt-review-spacer" />
           {onRestorePanels && (
             <button
@@ -585,115 +659,202 @@ export function ReviewPane({
               ⇤ Restore panels
             </button>
           )}
-          <span className="gt-review-progress">
-            {viewedCount} of {total} viewed
-          </span>
-        </div>
-
-        <div className="gt-review-controls">
-          <input
-            type="search"
-            className="gt-filter-input"
-            placeholder="Filter files…"
-            aria-label="Filter files"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Escape') setQuery('');
-            }}
-          />
-
-          <select
-            className="gt-context-select"
-            aria-label="Sort files"
-            value={sort}
-            onChange={(event) => setSort(asSort(event.target.value))}
-          >
-            {SORTS.map((entry) => (
-              <option key={entry.value} value={entry.value}>
-                {entry.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </header>
-
-      {notice && (
-        <div className="gt-review-notice" role="status">
-          <span>{notice}</span>
-          <button
-            type="button"
-            className="gt-button"
-            data-size="small"
-            onClick={() => setNotice(undefined)}
-          >
-            Dismiss
-          </button>
-        </div>
+        </nav>
       )}
 
-      {mode === 'changes' && status?.mergeOperation && onRunCommand && (
-        <MergeStatusBanner
-          operation={status.mergeOperation}
-          conflictedCount={(status.files ?? []).filter((file) => file.conflicted).length}
-          {...(mineLabel ? { mineLabel } : {})}
-          {...(theirsLabel ? { theirsLabel } : {})}
-          onRunCommand={onRunCommand}
+      {showing === 'push' && (
+        <PushPanel
+          commits={outgoing.commits}
+          hasUpstream={outgoing.hasUpstream}
+          {...(status?.branch ? { branch: status.branch } : {})}
+          onPush={() => onRunCommand?.('push')}
+          onPull={() => onRunCommand?.('pull')}
         />
       )}
 
-      <div className="gt-review-body">
-        <div
-          className="gt-review-list"
-          ref={listRef}
-          style={!splitOut && listWidth ? { flex: `0 0 ${listWidth}px` } : undefined}
-        >
-          <FileTree
-            groups={groups}
-            selection={selection}
-            activeKey={activeKey}
-            collapsed={collapsed}
-            onToggleFolder={(key) => setCollapsed((current) => toggleKey(current, key))}
-            viewed={viewed}
-            onToggleViewed={(key) => setViewed((current) => toggleKey(current, key))}
-            onActivate={activate}
-            onStage={stage}
-            onUnstage={unstage}
-            onRefuse={setNotice}
-            onDiscard={discard}
-            onRemove={remove}
-            onStopTracking={stopTracking}
-            onIgnore={ignore}
-            onReveal={reveal}
-            onResolveOurs={resolveOurs}
-            onResolveTheirs={resolveTheirs}
-            onOpenEditor={openEditor}
-            {...(mineLabel ? { mineLabel } : {})}
-            {...(theirsLabel ? { theirsLabel } : {})}
-            busy={busy}
-          />
-          {!splitOut && <div className="gt-review-list-handle" title="Drag to resize" />}
-        </div>
+      {showing === 'stash' && (
+        <StashPanel
+          stashes={stashes}
+          canStash={changedCount > 0}
+          onStash={() => onRunCommand?.('stash.push')}
+          onApply={(ref) => onRunCommand?.('stash.apply', { stashRef: ref })}
+          onPop={(ref) => onRunCommand?.('stash.pop', { stashRef: ref })}
+          onDrop={(ref) => onRunCommand?.('stash.drop', { stashRef: ref })}
+        />
+      )}
 
-        {!splitOut && diffView}
-      </div>
+      {showing === 'commit' && (
+        <>
+          <header className="gt-review-header">
+            <div className="gt-review-summary">
+              <strong>{total === 1 ? '1 file' : `${total} files`}</strong>
+              {(additions > 0 || deletions > 0) && (
+                <span className="gt-review-counts">
+                  <span className="gt-review-add">+{additions}</span>
+                  <span className="gt-review-del">−{deletions}</span>
+                </span>
+              )}
+              <span className="gt-review-spacer" />
+              {mode === 'changes' && (
+                <div className="gt-review-toolbar" role="toolbar" aria-label="Changes">
+                  <button
+                    type="button"
+                    className="gt-icon-button"
+                    title="Discard all changes to tracked files"
+                    aria-label="Discard all changes to tracked files"
+                    disabled={busy || !discardable}
+                    onClick={discardAll}
+                  >
+                    ↺
+                  </button>
+                  <button
+                    type="button"
+                    className="gt-icon-button"
+                    title="Expand all folders"
+                    aria-label="Expand all folders"
+                    onClick={() => setCollapsed(new Set())}
+                  >
+                    ⊞
+                  </button>
+                  <button
+                    type="button"
+                    className="gt-icon-button"
+                    title="Collapse all folders"
+                    aria-label="Collapse all folders"
+                    onClick={() => setCollapsed(new Set(folderKeys(groups)))}
+                  >
+                    ⊟
+                  </button>
+                  <button type="button" className="gt-icon-button" title="Refresh" aria-label="Refresh" onClick={reload}>
+                    ⟳
+                  </button>
+                </div>
+              )}
+              {mode === 'history' && onRestorePanels && (
+                <button
+                  type="button"
+                  className="gt-button"
+                  data-size="small"
+                  title="Bring back the Branches and Git Tree panels"
+                  onClick={onRestorePanels}
+                >
+                  ⇤ Restore panels
+                </button>
+              )}
+              {mode === 'history' && (
+                <span className="gt-review-progress">
+                  {viewedCount} of {total} viewed
+                </span>
+              )}
+            </div>
+
+            <div className="gt-review-controls">
+              <input
+                type="search"
+                className="gt-filter-input"
+                placeholder="Filter files…"
+                aria-label="Filter files"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') setQuery('');
+                }}
+              />
+
+              <select
+                className="gt-context-select"
+                aria-label="Sort files"
+                value={sort}
+                onChange={(event) => setSort(asSort(event.target.value))}
+              >
+                {SORTS.map((entry) => (
+                  <option key={entry.value} value={entry.value}>
+                    {entry.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </header>
+
+          {notice && (
+            <div className="gt-review-notice" role="status">
+              <span>{notice}</span>
+              <button
+                type="button"
+                className="gt-button"
+                data-size="small"
+                onClick={() => setNotice(undefined)}
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
+          {mode === 'changes' && status?.mergeOperation && onRunCommand && (
+            <MergeStatusBanner
+              operation={status.mergeOperation}
+              conflictedCount={(status.files ?? []).filter((file) => file.conflicted).length}
+              {...(mineLabel ? { mineLabel } : {})}
+              {...(theirsLabel ? { theirsLabel } : {})}
+              onRunCommand={onRunCommand}
+            />
+          )}
+
+          <div className="gt-review-body">
+            <div
+              className="gt-review-list"
+              ref={listRef}
+              style={!splitOut && listWidth ? { flex: `0 0 ${listWidth}px` } : undefined}
+            >
+              <FileTree
+                groups={groups}
+                selection={selection}
+                activeKey={activeKey}
+                collapsed={collapsed}
+                onToggleFolder={(key) => setCollapsed((current) => toggleKey(current, key))}
+                viewed={viewed}
+                onToggleViewed={(key) => setViewed((current) => toggleKey(current, key))}
+                onActivate={activate}
+                onStage={stage}
+                onUnstage={unstage}
+                onRefuse={setNotice}
+                onDiscard={discard}
+                onRemove={remove}
+                onStopTracking={stopTracking}
+                onIgnore={ignore}
+                onReveal={reveal}
+                onResolveOurs={resolveOurs}
+                onResolveTheirs={resolveTheirs}
+                onOpenEditor={openEditor}
+                {...(mineLabel ? { mineLabel } : {})}
+                {...(theirsLabel ? { theirsLabel } : {})}
+                busy={busy}
+              />
+              {!splitOut && <div className="gt-review-list-handle" title="Drag to resize" />}
+            </div>
+
+            {!splitOut && diffView}
+          </div>
+
+          {mode === 'changes' && (
+            <CommitBox
+              repoId={repoId}
+              head={status?.branch.oid}
+              {...(status?.branch ? { branch: status.branch } : {})}
+              stagedCount={stagedCount}
+              busy={busy}
+              onBusy={setBusy}
+              onCommitted={reload}
+              onError={onError}
+              {...(status?.mergeOperation?.kind === 'merge'
+                ? { mergeMessage: status.mergeOperation.mergeMessage }
+                : {})}
+            />
+          )}
+        </>
+      )}
 
       {codeContainer && createPortal(diffView, codeContainer)}
-
-      {mode === 'changes' && (
-        <CommitBox
-          repoId={repoId}
-          head={status?.branch.oid}
-          stagedCount={stagedCount}
-          busy={busy}
-          onBusy={setBusy}
-          onCommitted={reload}
-          onError={onError}
-          {...(status?.mergeOperation?.kind === 'merge'
-            ? { mergeMessage: status.mergeOperation.mergeMessage }
-            : {})}
-        />
-      )}
     </div>
   );
 }
@@ -705,6 +866,7 @@ export function ReviewPane({
 function CommitBox({
   repoId,
   head,
+  branch,
   stagedCount,
   busy,
   onBusy,
@@ -715,6 +877,8 @@ function CommitBox({
   repoId: RepoId;
   /** HEAD's oid, for loading the message an amend would otherwise replace. */
   head?: string;
+  /** The checked-out branch, for Commit & Push. */
+  branch?: BranchInfo;
   stagedCount: number;
   busy: boolean;
   onBusy: (busy: boolean) => void;
@@ -723,33 +887,57 @@ function CommitBox({
   /** `MERGE_MSG`'s content, while a merge is in progress and unresolved. */
   mergeMessage?: string;
 }): React.JSX.Element {
-  const [message, setMessage] = useState('');
+  const [summary, setSummary] = useState('');
+  const [description, setDescription] = useState('');
   const [amend, setAmend] = useState(false);
   const [signoff, setSignoff] = useState(false);
+  const [runHooks, setRunHooks] = useState(true);
   const [error, setError] = useState<string | undefined>();
+  const [drafting, setDrafting] = useState(false);
+  const [draftNote, setDraftNote] = useState<string | undefined>();
+
+  const fill = (text: string): void => {
+    const [first = '', ...rest] = text.trim().split(/\r?\n/);
+    setSummary(first.trim());
+    setDescription(rest.join('\n').trim());
+  };
 
   // Completing a merge has no `--continue` of its own — it is just an
   // ordinary commit, so it gets the message plain `git commit` would use.
   // Guarded on an empty box, matching `toggleAmend` below, so this only ever
   // fills a message in for you once and never overwrites what you typed.
   useEffect(() => {
-    if (mergeMessage && message.trim().length === 0) setMessage(mergeMessage.trim());
-    // Deliberately omits `message`: this should run once when a merge message
+    if (mergeMessage && summary.trim().length === 0 && description.trim().length === 0) fill(mergeMessage);
+    // Deliberately omits the fields: this should run once when a merge message
     // first appears, not on every keystroke that would otherwise re-trigger it.
   }, [mergeMessage]);
 
-  const canCommit = message.trim().length > 0 && (stagedCount > 0 || amend) && !busy;
+  const message = description.trim() ? `${summary.trim()}\n\n${description.trim()}` : summary.trim();
+  const canCommit = summary.trim().length > 0 && (stagedCount > 0 || amend) && !busy;
+  const canPush = canCommit && branch?.head !== undefined && !branch.detached;
 
-  const commit = (): void => {
+  const commit = (thenPush: boolean): void => {
     onBusy(true);
     setError(undefined);
 
     void rpc
-      .request('commit/create', { repoId, message, amend, signoff })
-      .then(() => {
-        setMessage('');
+      .request('commit/create', { repoId, message, amend, signoff, ...(runHooks ? {} : { noVerify: true }) })
+      .then(async () => {
+        setSummary('');
+        setDescription('');
         setAmend(false);
+        setDraftNote(undefined);
         onError(undefined);
+
+        if (thenPush && branch?.head) {
+          // The same argv the toolbar's Push previews, so what runs here is
+          // exactly what that sheet would have shown.
+          const argv = COMMANDS.push.build({ remote: 'origin', branch: branch.head, setUpstream: !branch.upstream });
+          const result = await rpc.request('commands/run', { repoId, argv });
+          if (result.exitCode !== 0) {
+            setError(`Committed, but the push failed:\n${(result.stderr || result.stdout).trim()}`);
+          }
+        }
         onCommitted();
       })
       .catch((cause: unknown) => {
@@ -761,69 +949,128 @@ function CommitBox({
       .finally(() => onBusy(false));
   };
 
+  const draft = (): void => {
+    setDrafting(true);
+    setDraftNote(undefined);
+    void rpc
+      .request('commit/suggest', { repoId })
+      .then((suggestion) => {
+        if (suggestion.summary) {
+          setSummary(suggestion.summary);
+          setDescription(suggestion.description);
+        }
+        setDraftNote(
+          suggestion.source === 'model'
+            ? `Drafted by ${suggestion.model ?? 'AI'} — review before committing.`
+            : suggestion.note ?? 'Drafted from the changed files.',
+        );
+      })
+      .catch((cause: unknown) => setDraftNote(describeError(cause)))
+      .finally(() => setDrafting(false));
+  };
+
   const toggleAmend = (next: boolean): void => {
     setAmend(next);
-    if (!next || head === undefined || message.trim().length > 0) return;
+    if (!next || head === undefined || summary.trim().length > 0 || description.trim().length > 0) return;
 
     // Amending replaces the message as well as the tree. Without loading the
     // previous one, ticking the box to add a forgotten file and committing
     // silently rewrites the subject to whatever happens to be in the box.
     void rpc
       .request('commit/get', { repoId, hash: head })
-      .then((entry) => setMessage(entry.body ? `${entry.subject}\n\n${entry.body}` : entry.subject))
+      .then((entry) => {
+        setSummary(entry.subject);
+        setDescription(entry.body);
+      })
       .catch(() => undefined);
+  };
+
+  const shortcut = (event: React.KeyboardEvent): void => {
+    if (!(event.ctrlKey || event.metaKey) || event.key !== 'Enter') return;
+    if (event.shiftKey ? !canPush : !canCommit) return;
+    event.preventDefault();
+    commit(event.shiftKey);
   };
 
   return (
     <div className="gt-commit-box">
       {error && (
         <div className="gt-error" role="alert">
-          <strong>The commit was refused</strong>
+          <strong>{error.startsWith('Committed,') ? 'The push was refused' : 'The commit was refused'}</strong>
           <pre>{error}</pre>
         </div>
       )}
 
+      <div className="gt-commit-tools">
+        <button
+          type="button"
+          className="gt-icon-button gt-commit-draft"
+          title="Draft a commit message with AI (uses the AI model you have in VS Code, such as GitHub Copilot)"
+          aria-label="Draft a commit message with AI"
+          disabled={drafting || busy}
+          onClick={draft}
+        >
+          {drafting ? '…' : '✨'}
+        </button>
+        <span className="gt-commit-note" role="status" title={draftNote}>
+          {drafting ? 'Drafting a message…' : draftNote}
+        </span>
+        <span className="gt-review-spacer" />
+        <span className="gt-source-meta">{stagedCount} staged</span>
+      </div>
+
+      <input
+        type="text"
+        className="gt-commit-summary"
+        placeholder={amend ? 'Summary of the amended commit' : 'Summary'}
+        title="The commit's first line, e.g. fix: resolve login issue"
+        aria-label="Commit summary"
+        value={summary}
+        onChange={(event) => setSummary(event.target.value)}
+        onKeyDown={shortcut}
+      />
       <textarea
-        className="gt-commit-input"
-        placeholder={amend ? 'Amend the last commit…' : 'Commit message'}
-        aria-label="Commit message"
-        value={message}
-        onChange={(event) => setMessage(event.target.value)}
-        onKeyDown={(event) => {
-          if ((event.ctrlKey || event.metaKey) && event.key === 'Enter' && canCommit) {
-            event.preventDefault();
-            commit();
-          }
-        }}
+        className="gt-commit-description"
+        placeholder="Detailed description…"
+        aria-label="Commit description"
+        rows={3}
+        value={description}
+        onChange={(event) => setDescription(event.target.value)}
+        onKeyDown={shortcut}
       />
 
-      <div className="gt-commit-actions">
+      <div className="gt-commit-options">
         <label className="gt-checkbox">
-          <input
-            type="checkbox"
-            checked={amend}
-            onChange={(event) => toggleAmend(event.target.checked)}
-          />
+          <input type="checkbox" checked={amend} onChange={(event) => toggleAmend(event.target.checked)} />
           Amend
         </label>
         <label className="gt-checkbox">
-          <input
-            type="checkbox"
-            checked={signoff}
-            onChange={(event) => setSignoff(event.target.checked)}
-          />
+          <input type="checkbox" checked={signoff} onChange={(event) => setSignoff(event.target.checked)} />
           Sign off
         </label>
+        <label className="gt-checkbox" title="Unticked, the commit skips pre-commit and commit-msg hooks (--no-verify)">
+          <input type="checkbox" checked={runHooks} onChange={(event) => setRunHooks(event.target.checked)} />
+          Run git hooks
+        </label>
+      </div>
 
-        <span className="gt-review-spacer" />
-
-        <span className="gt-source-meta">{stagedCount} staged</span>
+      <div className="gt-commit-actions">
+        <button
+          type="button"
+          className="gt-button"
+          disabled={!canPush}
+          title="Commit, then push to origin (Ctrl+Shift+Enter)"
+          onClick={() => commit(true)}
+        >
+          {amend ? 'Amend & Push' : 'Commit & Push'}
+        </button>
         <button
           type="button"
           className="gt-button"
           data-variant="primary"
           disabled={!canCommit}
-          onClick={commit}
+          title="Commit (Ctrl+Enter)"
+          onClick={() => commit(false)}
         >
           {amend ? 'Amend Commit' : 'Commit'}
         </button>

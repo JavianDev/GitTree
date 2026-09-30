@@ -478,7 +478,7 @@ function CommitRow({
         </span>
       )}
 
-      <span className="gt-commit-subject" title={commit.subject}>
+      <span className="gt-commit-subject" title={commit.subject} data-fit>
         {commit.subject}
       </span>
       <span className="gt-commit-byline">

@@ -65,7 +65,7 @@ describe('matchBinding — plain keys', () => {
     expect(matchBinding(press('Enter', { ctrlKey: true }))).toEqual({ kind: 'command', id: 'commit' });
     expect(matchBinding(press('Enter', { ctrlKey: true, shiftKey: true }))).toEqual({
       kind: 'command',
-      id: 'commit.amend',
+      id: 'commit.push',
     });
   });
 

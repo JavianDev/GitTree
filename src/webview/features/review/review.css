@@ -58,6 +58,210 @@
   flex: 1 1 auto;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Tabs and toolbar                                                           */
+/* -------------------------------------------------------------------------- */
+
+/* Commit (N) / Push (N) / Stash (N) — underlined like an editor's tab strip,
+   so the selected tab reads at a glance without a filled chip competing with
+   the buttons beside it. */
+.gt-review-tabs {
+  flex: none;
+  display: flex;
+  align-items: stretch;
+  gap: var(--gt-space-1);
+  min-height: 30px;
+  padding: 0 var(--gt-space-2);
+  border-bottom: 1px solid var(--gt-separator);
+  background: var(--gt-bg-toolbar);
+}
+
+.gt-review-tabs > .gt-button {
+  align-self: center;
+}
+
+.gt-review-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0 var(--gt-space-2);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: none;
+  color: var(--gt-label-secondary);
+  font-size: var(--gt-text-callout);
+  font-weight: var(--gt-weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color var(--gt-duration-hover) var(--gt-ease-standard),
+    border-color var(--gt-duration-hover) var(--gt-ease-standard);
+}
+
+.gt-review-tab:hover {
+  color: var(--gt-label);
+}
+
+.gt-review-tab[aria-selected='true'] {
+  color: var(--gt-label);
+  border-bottom-color: var(--gt-accent);
+}
+
+.gt-review-tab:focus-visible {
+  outline: 2px solid var(--gt-accent);
+  outline-offset: -2px;
+}
+
+.gt-review-tab-count {
+  font-variant-numeric: tabular-nums;
+  color: var(--gt-label-tertiary);
+}
+
+.gt-review-tab[aria-selected='true'] .gt-review-tab-count {
+  color: var(--gt-label-secondary);
+}
+
+/* Discard all / expand / collapse / refresh, at the end of the summary row. */
+.gt-review-toolbar {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+}
+
+/* A square, borderless glyph button — the toolbar's and the commit box's. */
+.gt-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--gt-radius-control);
+  background: none;
+  color: var(--gt-label-secondary);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background var(--gt-duration-hover) var(--gt-ease-standard),
+    color var(--gt-duration-hover) var(--gt-ease-standard);
+}
+
+.gt-icon-button:hover:not(:disabled) {
+  background: var(--gt-fill-hover);
+  color: var(--gt-label);
+}
+
+.gt-icon-button:focus-visible {
+  outline: 2px solid var(--gt-accent);
+  outline-offset: -1px;
+}
+
+.gt-icon-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Push and Stash tabs                                                        */
+/* -------------------------------------------------------------------------- */
+
+.gt-work-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.gt-work-summary {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  padding: var(--gt-space-2) var(--gt-space-3);
+  border-bottom: 1px solid var(--gt-separator);
+}
+
+.gt-work-summary-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--gt-text-callout);
+  color: var(--gt-label-secondary);
+}
+
+.gt-work-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+}
+
+.gt-work-row {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  min-height: 26px;
+  padding: 0 var(--gt-space-3);
+  font-size: var(--gt-text-callout);
+  border-bottom: 1px solid color-mix(in srgb, var(--gt-separator) 50%, transparent);
+}
+
+.gt-work-row:hover {
+  background: var(--gt-fill-hover);
+}
+
+.gt-work-hash {
+  flex: none;
+  font-family: var(--gt-font-mono);
+  font-size: var(--gt-text-caption);
+  color: var(--gt-accent);
+}
+
+.gt-work-subject {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--gt-label);
+}
+
+.gt-work-meta {
+  flex: none;
+  font-size: var(--gt-text-caption);
+  font-variant-numeric: tabular-nums;
+  color: var(--gt-label-tertiary);
+  white-space: nowrap;
+}
+
+/* Row actions appear on hover or focus, so the list reads as a list. */
+.gt-work-actions {
+  flex: none;
+  display: inline-flex;
+  gap: var(--gt-space-1);
+  opacity: 0;
+  transition: opacity var(--gt-duration-hover) var(--gt-ease-standard);
+}
+
+.gt-work-row:hover .gt-work-actions,
+.gt-work-row:focus-within .gt-work-actions {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .gt-work-actions {
+    opacity: 1;
+  }
+}
+
 /* A refused drop is not a git failure, so it is stated here rather than in the
    shell's error banner, and it stays until dismissed or replaced. */
 .gt-review-notice {
@@ -383,62 +587,71 @@
 }
 
 /* -------------------------------------------------------------------------- */
-/* The two-cell state pill                                                    */
+/* Staging checkbox, file-type icon, and change kind                          */
 /* -------------------------------------------------------------------------- */
 
-.gt-pill {
+/* Ticked means staged: the same checkbox stages one file on a row, and every
+   file in a group from its header. */
+.gt-stage-check {
   flex: none;
-  display: inline-flex;
-  gap: 1px;
-  padding: 1px;
-  border-radius: 4px;
-  background: var(--gt-fill);
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  accent-color: var(--gt-accent);
+  cursor: default;
 }
 
-.gt-pill-cell {
-  appearance: none;
-  border: 0;
-  padding: 0;
-  width: 9px;
+.gt-file-icon {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  min-width: 16px;
   height: 14px;
-  border-radius: 2px;
-  cursor: default;
-  /* Off is an outline rather than a paler fill: the difference between lit and
-     unlit has to survive a monochrome screen, and an outline is a shape. */
-  background: transparent;
-  box-shadow: inset 0 0 0 1px var(--gt-label-tertiary);
-  transition: background var(--gt-duration-hover) var(--gt-ease-standard);
+  padding: 0 2px;
+  border-radius: 3px;
+  font-family: var(--gt-font-mono);
+  font-size: 8px;
+  font-weight: var(--gt-weight-semibold);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--icon);
+  background: color-mix(in srgb, var(--icon) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--icon) 30%, transparent);
 }
 
-.gt-pill-cell:hover:not(:disabled) {
-  box-shadow: inset 0 0 0 1px var(--gt-label-secondary);
+/* The name carries the change kind, as VS Code's own source control view does:
+   deleted struck through, new in green, renamed in blue. */
+.gt-review-name[data-kind='deleted'] {
+  color: var(--gt-diff-del-marker);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--gt-diff-del-marker) 70%, transparent);
 }
 
-.gt-pill-cell:disabled {
-  cursor: default;
-  opacity: 0.6;
+.gt-review-name[data-kind='untracked'],
+.gt-review-name[data-kind='added'] {
+  color: var(--gt-diff-add-marker);
 }
 
-.gt-pill-cell[data-state='on'][data-side='index'] {
-  background: var(--gt-green);
-  box-shadow: none;
+.gt-review-name[data-kind='renamed'],
+.gt-review-name[data-kind='copied'] {
+  color: var(--gt-lane-0);
 }
 
-.gt-pill-cell[data-state='on'][data-side='worktree'] {
-  background: var(--gt-orange);
-  box-shadow: none;
+.gt-review-name[data-kind='conflicted'] {
+  color: var(--gt-red);
 }
 
-/* Conflict is hatched, not merely red: it must be distinguishable from a lit
-   cell without relying on hue, and it is neither of the two staging states. */
-.gt-pill-cell[data-state='conflict'] {
-  box-shadow: inset 0 0 0 1px var(--gt-red);
-  background-color: color-mix(in srgb, var(--gt-red) 22%, transparent);
-  background-image: repeating-linear-gradient(
-    45deg,
-    var(--gt-red) 0 1.5px,
-    transparent 1.5px 4px
-  );
+/* On the selection fill the status colours lose their contrast; the strike-through
+   still marks a deletion. */
+.gt-review-row[aria-selected='true'] .gt-review-name {
+  color: inherit;
+}
+
+.gt-review-group-files {
+  flex: none;
+  font-size: var(--gt-text-caption);
+  color: var(--gt-label-tertiary);
+  font-variant-numeric: tabular-nums;
 }
 
 /* -------------------------------------------------------------------------- */

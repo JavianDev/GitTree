@@ -6,6 +6,48 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — a Files pane that does the work
+
+- **Commit / Push / Stash tabs** across the top of the Files pane, each with its count:
+  *Commit (N)* is the changed files and the commit box; *Push (N)* lists exactly the commits a push
+  would send (against the upstream, or every unpublished commit on a new branch) with **↑ Push** and,
+  when you are behind, **↓ Pull N**; *Stash (N)* lists every stash with Apply / Pop / Drop on the row
+  and **Stash changes…**. Each action still opens the review-before-run command sheet.
+- **Changes, Untracked Changes and Staged Changes sections**, each with a tick-all checkbox and a
+  file count. Every file row has a stage checkbox (tick to stage, untick to unstage) and a file-type
+  icon; the name is coloured by what happened to it (added green, deleted struck through, renamed
+  blue). New files get their own section, as in VS Code's Source Control view. These replace the
+  two-cell ◧◨ pill.
+- **A toolbar** on the summary row: discard all changes to tracked files (untracked files are
+  kept), expand all folders, collapse all folders, refresh.
+- **✨ AI commit messages.** One click drafts a summary and description from the staged diff (or
+  from all changes when nothing is staged) using the language model you already have in VS Code,
+  such as GitHub Copilot, through VS Code's own `vscode.lm` API. No API key and no extra account;
+  VS Code asks your permission the first time. With no model available, it drafts one from the
+  changed files instead and says so.
+- **Summary and description** are now separate fields, like GitHub Desktop; the message is the
+  summary, a blank line, then the description. Amend and merge messages are split into both.
+- **Commit & Push** beside Commit (`Ctrl+Shift+Enter`), which commits, then pushes to `origin`,
+  setting the upstream on a branch's first push. A refused push is shown verbatim beside the box,
+  after the commit has landed.
+- **Run git hooks**, on by default. Untick it to commit with `--no-verify`, skipping pre-commit
+  and commit-msg hooks for that commit.
+
+### Changed — crisper panes that size themselves
+
+- **Every pane has a title bar** (Branches, Git Tree, Files, Code) and its pin and collapse buttons
+  now live in it. They used to float over the top-right corner of the pane, on top of whatever that
+  pane put there — the text beside **⇤ Restore panels** was hidden behind them.
+- **Panes fit their text.** When the Branches, Git Tree or Files pane opens — on start, on a
+  repository switch, from its rail, or through Restore panels — it widens or narrows to show its
+  branch names, commit messages or file names in full, with no gap to the next pane. The Git Tree
+  pushes the Files pane along into the Code pane rather than squeezing it. Each pane has a ceiling so
+  one very long name cannot take the row, and a double-click on a divider fits the pane to its left.
+- **The Git Tree's author and date are aligned columns** that start at the same point on every row,
+  instead of wherever each row's message happened to end.
+- Removed ten base64 copies of the README screenshots that nothing used (3.9 MB, over half the
+  extension's download size).
+
 ### Changed — the commit graph, redrawn
 
 - **No gap between the graph and the commit messages.** The graph is now a transparent layer over

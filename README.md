@@ -25,6 +25,10 @@ Unlike VS Code's flat file list, Git Tree shows your branches, commit graph, and
 - **Files pane:** The changed files, with line-level staging and conflict resolution from the right-click menu
 - **Code pane:** The diff itself, unified or side by side, in its own full-height column
 - **Fully draggable:** Resize any pane by dragging the divider; layout persists across sessions
+- **Panes fit their text:** Branches, Git Tree and Files open wide enough to show branch names,
+  commit messages and file names in full, with no gap between panes — no dragging needed.
+  Double-click a divider to fit the pane on its left again
+- **Title bars:** every pane is labelled, with its pin and collapse buttons in the title bar
 - **Files and Code panes:** the file list and the diff are separate panes, each resizable and
   collapsible — four panes in all: Branches | Git Tree | Files | Code
 - **Focus diff:** Click a file (in Changes or in a commit) and the Branches and Git Tree panes fold to
@@ -48,11 +52,14 @@ Real lane assignment across merges, decorations for HEAD/tags/upstream, author a
 
 ### 3. **Line-Level Staging** — Stage Exactly What You Mean
 
-Pick individual lines, hunks, or whole files. The interface shows **which state each file is in** using a two-cell pill: `◧` (staged), `◨` (unstaged), or `◧◨` (both).
+Pick individual lines, hunks, or whole files. The Files pane has **Staged Changes**, **Changes** and **Untracked Changes** sections; every file has a stage checkbox and a file-type icon, and every section a tick-all checkbox and a file count.
 
-![File staging interface with two-cell pills showing file state](./media/screenshots/03-line-level-staging.png)
+![File staging interface with staged and unstaged sections](./media/screenshots/03-line-level-staging.png)
 
-- Stage by file, hunk, or individual line
+- Stage by file (tick its checkbox), hunk, or individual line
+- **Commit / Push / Stash tabs** — see the commits a push would send, or apply / pop / drop a stash,
+  without leaving the pane
+- **Toolbar:** discard all changes, expand or collapse every folder, refresh
 - Drag files between Staged and Unstaged groups
 - **Drag the divider** between file list and diff to resize (persists across sessions)
 - Use `→` and `←` keyboard shortcuts
@@ -65,6 +72,12 @@ Amend, sign-off, GPG/SSH signing, co-authors, and commit templates — all edita
 
 ![Commit dialog with message, amend, signoff, and signing options](./media/screenshots/04-commit-sheet.png)
 
+- **✨ AI commit messages** — one click drafts a summary and description from your staged diff, using
+  the AI model you already have in VS Code (such as GitHub Copilot). No API key; falls back to a
+  message drafted from the changed files when no model is available
+- **Summary + description** fields, and **Commit & Push** (`Ctrl+Shift+Enter`) beside **Commit**
+  (`Ctrl+Enter`)
+- **Run git hooks** — untick to commit with `--no-verify`
 - **Pre-commit hooks** show their output verbatim, never replaced with "commit failed"
 - **Co-authors** via trailer syntax (recognized by GitHub, GitLab, etc.)
 - **Signing** — GPG or SSH (git handles the credential, GitTree just enables the flag)
@@ -222,7 +235,9 @@ Press `f` for fetch, review incoming changes in the graph, press `Shift+P` to pu
 - ✓ Repository discovery (nested, submodules, worktrees, at any workspace depth)
 - ✓ Real commit graph with correct merge lane assignment
 - ✓ Status and staging (file / hunk / individual line)
-- ✓ Commit (amend, sign-off, GPG/SSH signing, co-authors, templates)
+- ✓ Commit (amend, sign-off, GPG/SSH signing, co-authors, templates), Commit & Push, skip hooks
+- ✓ AI-drafted commit messages via VS Code's language models (e.g. GitHub Copilot)
+- ✓ Commit / Push / Stash tabs in the Files pane
 - ✓ Diff (file-level and line-level, side-by-side and inline)
 - ✓ History search (by message or author)
 - ✓ Fetch, Pull, Push, Branch, Merge, Stash, Tag operations
@@ -305,6 +320,9 @@ The panel opens with four panes: **Branches**, **Commit Graph**, **Files**, and 
 **Common in-app actions:**
 
 - **Commit**: Click the **Commit** button in the toolbar, or press `Ctrl+Enter` with a message
+- **Commit & Push**: Press `Ctrl+Shift+Enter` in the message box
+- **Draft a message**: Click **✨** above the message box
+- **Fit a pane to its text**: Double-click the divider to its right
 - **Pull/Push/Fetch**: Click the toolbar buttons or use keyboard shortcuts
 - **Create Branch**: Click **New Branch** or press `b`
 - **Checkout Branch**: Type `/` to filter branches, then press `Enter`
@@ -326,6 +344,7 @@ Press `?` in Git Tree for the full list. Here's the quick reference:
 | Select | `Space` |
 | Stage / Unstage | `s` / `u` |
 | Commit | `Ctrl+Enter` |
+| Commit & Push | `Ctrl+Shift+Enter` |
 | Filter refs | `/` |
 | Fetch / Pull / Push | `f` / `p` / `Shift+P` |
 | Branch / Merge | `b` / `m` |

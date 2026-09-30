@@ -61,6 +61,8 @@ export interface CommitRequest {
   coAuthors?: string[];
   /** Commit even with nothing staged (used for empty merge commits). */
   allowEmpty?: boolean;
+  /** Skip the pre-commit and commit-msg hooks (`--no-verify`). */
+  noVerify?: boolean;
 }
 
 export interface LogRequest {
@@ -245,6 +247,17 @@ export interface Api {
 
   /* Mutations */
   'commit/create': { params: CommitRequest; result: { hash: string } };
+  /**
+   * A drafted commit message for what would be committed. `model` when an AI
+   * model wrote it (via VS Code's language model API), `files` when it was
+   * drafted from the changed files alone; `note` says why, when that matters.
+   */
+  'commit/suggest': {
+    params: { repoId: RepoId };
+    result: { summary: string; description: string; source: 'model' | 'files'; model?: string; note?: string };
+  };
+  /** Commits on the current branch that its upstream (or, without one, any remote) does not have yet. */
+  'log/outgoing': { params: { repoId: RepoId }; result: { commits: Commit[]; hasUpstream: boolean } };
 
   /* Command log */
   'commands/recent': { params: { limit?: number }; result: { entries: JournalEntry[] } };

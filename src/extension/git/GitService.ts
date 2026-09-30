@@ -514,12 +514,58 @@ export class GitService {
    * The message goes in via stdin (`-F -`) rather than `-m`, so a message
    * containing newlines, quotes, or leading dashes cannot be misread.
    */
+  /**
+   * The commits a push would send: ahead of the upstream, or — on a branch that
+   * has never been pushed — every commit no remote has yet.
+   */
+  async outgoing(options?: GitServiceOptions): Promise<{ commits: Commit[]; hasUpstream: boolean }> {
+    return this.runScheduled(options, async (signal) => {
+      const probe = await this.git.run({
+        cwd: this.cwd,
+        args: ['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'],
+        okExitCodes: [128],
+        signal,
+      });
+      const hasUpstream = probe.exitCode === 0 && probe.stdout.trim().length > 0;
+      const range = hasUpstream ? ['@{u}..HEAD'] : ['HEAD', '--not', '--remotes'];
+
+      const result = await this.git.run({
+        cwd: this.cwd,
+        args: listArgs({ refs: range, limit: 500, order: 'topo' }),
+        okExitCodes: [128],
+        signal,
+      });
+      if (result.exitCode !== 0) return { commits: [], hasUpstream };
+
+      const commits: Commit[] = [];
+      for (const record of result.stdout.split(RS)) {
+        const commit = parseListRecord(record, this.repo.id);
+        if (commit) commits.push(commit);
+      }
+      return { commits, hasUpstream };
+    });
+  }
+
+  /** A patch of what would be committed, capped for handing to a language model. */
+  async diffText(staged: boolean, maxChars: number, options?: GitServiceOptions): Promise<{ text: string; truncated: boolean }> {
+    return this.runScheduled(options, async (signal) => {
+      const result = await this.git.run({
+        cwd: this.cwd,
+        args: ['diff', ...(staged ? ['--cached'] : []), '--no-color', '--no-ext-diff', '--find-renames', '-U2'],
+        signal,
+      });
+      const text = result.stdout;
+      return text.length > maxChars ? { text: text.slice(0, maxChars), truncated: true } : { text, truncated: false };
+    });
+  }
+
   async commit(request: CommitRequest, options?: GitServiceOptions): Promise<{ hash: string }> {
     const args = ['commit', '-F', '-'];
     if (request.amend) args.push('--amend');
     if (request.signoff) args.push('--signoff');
     if (request.sign) args.push('-S');
     if (request.allowEmpty) args.push('--allow-empty');
+    if (request.noVerify) args.push('--no-verify');
 
     const message = withCoAuthors(request.message, request.coAuthors);
 

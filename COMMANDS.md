@@ -26,6 +26,7 @@ Click the **Git Tree icon** (branch) in the left sidebar
 | Operation | Keyboard | What It Does |
 |-----------|----------|-------------|
 | **Commit** | `Ctrl+Enter` | Commit staged files (after typing message) |
+| **Commit & Push** | `Ctrl+Shift+Enter` | Commit, then push to `origin` (sets the upstream on first push) |
 | **Fetch** | `f` | Fetch from origin |
 | **Pull** | `p` | Pull (rebase) from origin |
 | **Push** | `Shift+P` | Push to origin (or choose remote) |
@@ -56,7 +57,7 @@ Click the **Git Tree icon** (branch) in the left sidebar
 
 1. In Git Tree, go to **Changes** view (if not already there)
 2. Click files in **UNSTAGED** section to select them
-3. Press `s` to stage (or click the two-cell pill)
+3. Press `s` to stage (or tick the file's checkbox)
 4. Type your commit message at the bottom
 5. Press `Ctrl+Enter` to commit
 6. Press `Shift+P` to push
@@ -203,6 +204,7 @@ EDITING:
   s / u       Stage / Unstage
   Del         Discard (with confirm)
   Ctrl+Enter  Commit (in message box)
+  Ctrl+Shift+Enter  Commit & Push (in message box)
 
 NAVIGATION:
   Ctrl+1/2/3  Focus Pane 1/2/3

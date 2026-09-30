@@ -203,6 +203,59 @@ export function resizeAt(
   return clampSizes(sizes, effectiveMins(state), total);
 }
 
+export interface FitRequest {
+  /** The pane's current size and its right-hand neighbour's. */
+  size: number;
+  neighbour: number;
+  min: number;
+  /** How far a growing pane may take its neighbour down. */
+  neighbourFloor: number;
+  /** The pane after the neighbour, if it is open: lent from once the neighbour is at its floor. */
+  beyond?: number;
+  beyondFloor?: number;
+  /** Measured width at which nothing in the pane is cut off. */
+  wanted: number;
+  /** Ceiling, so one very long name cannot take the whole row. */
+  max: number;
+}
+
+/**
+ * How to move the handles so a pane's text shows in full: the handle after the
+ * pane, and the one after its neighbour.
+ *
+ * Bounded by the pane's own minimum and ceiling. A growing pane takes from its
+ * neighbour only down to the neighbour's floor — fitting one pane's branch
+ * names is no reason to crush the next pane to a sliver — and past that it
+ * pushes the neighbour along, whole, into the pane beyond. That is how the Git
+ * Tree widens beside a Files pane already at its floor: Files keeps its width
+ * and the Code pane, which has the room, gives it.
+ *
+ * Shrinking moves only the first handle; that is the gap the fit exists to close.
+ */
+export function fitMoves(request: FitRequest): [number, number] {
+  const { size, neighbour, wanted } = request;
+  if (![size, neighbour, wanted].every(Number.isFinite)) return [0, 0];
+
+  const min = Math.max(finite(request.min, 0), 0);
+  const max = Math.max(finite(request.max, Number.POSITIVE_INFINITY), min);
+  const delta = Math.max(min, Math.min(Math.ceil(wanted), max)) - size;
+
+  // Sub-pixel differences are measurement noise, and resizing for them would
+  // move a handle on every fit without anything visibly changing.
+  if (Math.abs(delta) <= 2) return [0, 0];
+  if (delta < 0) return [delta, 0];
+
+  const fromNeighbour = Math.min(delta, Math.max(0, neighbour - Math.max(finite(request.neighbourFloor, 0), 0)));
+  const beyond = request.beyond;
+  const fromBeyond =
+    beyond === undefined || !Number.isFinite(beyond)
+      ? 0
+      : Math.min(delta - fromNeighbour, Math.max(0, beyond - Math.max(finite(request.beyondFloor, 0), 0)));
+
+  const grow = fromNeighbour + fromBeyond;
+  return grow <= 2 ? [0, 0] : [grow, fromBeyond];
+}
+
 /** Collapses an expanded pane to its rail, or restores a collapsed one. */
 export function toggleCollapse(state: LayoutState, index: number): LayoutState {
   const size = state.sizes[index];

@@ -257,7 +257,9 @@ function RefTree({
               <span className="gt-disclosure" aria-hidden="true">
                 {isCollapsed ? '▸' : '▾'}
               </span>
-              <span className="gt-source-name">{node.name}</span>
+              <span className="gt-source-name" data-fit>
+                {node.name}
+              </span>
               <span className="gt-source-meta">{node.count}</span>
             </button>
 
@@ -317,7 +319,7 @@ function RefRow({
     >
       <span className="gt-ref-dot" data-head={ref_.isHead} aria-hidden="true" />
 
-      <span className="gt-source-name">
+      <span className="gt-source-name" data-fit>
         {segments.map((segment, index) => (
           <span key={index} className={segment.matched ? 'gt-match' : undefined}>
             {segment.text}

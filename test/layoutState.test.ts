@@ -4,6 +4,7 @@ import {
   RAIL_WIDTH,
   clampSizes,
   defaultLayout,
+  fitMoves,
   parseLayout,
   resizeAt,
   serializeLayout,
@@ -137,6 +138,43 @@ describe('resizeAt', () => {
 
   it('is a no-op for a delta that is not a number', () => {
     expect(resizeAt(state, 0, Number.NaN, TOTAL)).toEqual(state.sizes);
+  });
+});
+
+describe('fitMoves', () => {
+  const base = { size: 180, neighbour: 400, min: 120, neighbourFloor: 330, wanted: 180, max: 360 };
+
+  it('grows a pane whose text is cut off', () => {
+    expect(fitMoves({ ...base, wanted: 240 })).toEqual([60, 0]);
+  });
+
+  it('shrinks a pane that is wider than its text — the gap between panes', () => {
+    expect(fitMoves({ ...base, wanted: 150 })).toEqual([-30, 0]);
+  });
+
+  it('never goes below the minimum or above the ceiling', () => {
+    expect(fitMoves({ ...base, wanted: 40 })).toEqual([-60, 0]);
+    expect(fitMoves({ ...base, wanted: 900, neighbour: 2000 })).toEqual([180, 0]);
+  });
+
+  it('stops at the neighbour floor when there is nothing beyond to take from', () => {
+    // 400 − 330 leaves 70 to take, though the text wants 120 more.
+    expect(fitMoves({ ...base, wanted: 300 })).toEqual([70, 0]);
+    // A neighbour already under its floor gives nothing, but the pane can still shrink.
+    expect(fitMoves({ ...base, neighbour: 300, wanted: 300 })).toEqual([0, 0]);
+    expect(fitMoves({ ...base, neighbour: 300, wanted: 150 })).toEqual([-30, 0]);
+  });
+
+  it('pushes a neighbour at its floor into the pane beyond, which gives the rest', () => {
+    // Neighbour gives 70; the pane beyond (600, floor 550) gives the other 50.
+    expect(fitMoves({ ...base, wanted: 300, beyond: 600, beyondFloor: 550 })).toEqual([120, 50]);
+    // The pane beyond has its own floor too.
+    expect(fitMoves({ ...base, wanted: 360, beyond: 560, beyondFloor: 550 })).toEqual([80, 10]);
+  });
+
+  it('ignores sub-pixel noise and bad measurements', () => {
+    expect(fitMoves({ ...base, wanted: 181.2 })).toEqual([0, 0]);
+    expect(fitMoves({ ...base, wanted: Number.NaN })).toEqual([0, 0]);
   });
 });
 

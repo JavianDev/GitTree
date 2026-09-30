@@ -184,33 +184,59 @@
 /* -------------------------------------------------------------------------- */
 
 /*
- * Pin and collapse, floating over the top-right corner of the pane.
+ * Each pane's title bar: its name, and the pin and collapse controls.
  *
- * Out of the flow because the panes hold arbitrary content: a strip above them
- * would cost every pane a row of height and leave the three of them starting at
- * different points down the window.
+ * The controls used to float over the pane's top-right corner, which put them
+ * on top of whatever that pane had there — the review header's "viewed"
+ * count, for one. A real strip costs every pane the same 26px, so the panes
+ * still start level with each other, and nothing can sit behind the controls.
  */
+.gt-pane-header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-1);
+  height: 26px;
+  padding: 0 var(--gt-space-2) 0 var(--gt-space-3);
+  border-bottom: 1px solid var(--gt-separator);
+  background: var(--gt-bg-toolbar);
+}
+
+.gt-pane-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: var(--gt-weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gt-label-secondary);
+}
+
+/* The pane's own content fills everything under the title bar. */
+.gt-pane-content {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .gt-split-controls {
-  position: absolute;
-  top: var(--gt-space-1);
-  /* Clear of the scrollbar the pane's own list draws. */
-  right: var(--gt-space-3);
-  z-index: 3;
+  flex: none;
   display: flex;
   gap: 1px;
-  padding: 1px;
-  border-radius: var(--gt-radius-control);
-  background: var(--gt-bg-toolbar);
-  backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid var(--gt-separator);
   opacity: 0;
   /* Invisible and untouchable together: a transparent control that still
-     swallows the click meant for the row underneath is worse than no control. */
+     swallows a click is worse than no control. */
   pointer-events: none;
 }
 
-.gt-split-pane:hover > .gt-split-body > .gt-split-controls,
-.gt-split-pane:focus-within > .gt-split-body > .gt-split-controls {
+.gt-split-pane:hover .gt-split-controls,
+.gt-split-pane:focus-within .gt-split-controls {
   opacity: 1;
   pointer-events: auto;
 }

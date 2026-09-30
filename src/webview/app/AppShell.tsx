@@ -91,7 +91,13 @@ const SHORTCUT_ACTIONS: Partial<Record<KeyCommandId, CommandId>> = {
   'git.tag': 'tag.create',
 };
 
-const PANE_LABELS = ['Branches', 'Commit tree', 'Files', 'Code'] as const;
+const PANE_LABELS = ['Branches', 'Git Tree', 'Files', 'Code'] as const;
+
+/**
+ * How wide each pane may grow to show its text in full — branch names, commit
+ * subjects, file names. The Code pane is whatever is left, so it has none.
+ */
+const PANE_FIT_MAX = [360, 720, 420, undefined] as const;
 
 /**
  * The application shell.
@@ -465,6 +471,8 @@ export function AppShell(): React.JSX.Element {
         onResize={layout.resize}
         onToggleCollapse={layout.toggle}
         onMeasure={layout.fit}
+        fitMax={PANE_FIT_MAX}
+        {...(active ? { fitKey: active.id } : {})}
         pinned={layout.pinned}
         onTogglePin={layout.togglePin}
       >

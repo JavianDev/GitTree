@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import type { FileChangeKind } from '@shared/model';
-import { FileStatePill } from './FileStatePill';
+import { FileIcon } from './FileIcon';
 import { ContextMenu, type ContextMenuItem } from '../../shared/ContextMenu';
 import {
   type FileNode,
@@ -42,7 +42,12 @@ const GLYPH: Record<FileChangeKind, string> = {
   untracked: '?',
 };
 
-const GROUP_IDS = ['conflicted', 'staged', 'unstaged', 'commit'] as const;
+const GROUP_IDS = ['conflicted', 'staged', 'unstaged', 'untracked', 'commit'] as const;
+
+/** The working-tree groups a file can be staged into or out of. */
+function isWorkingGroup(group: FileGroupId): boolean {
+  return group === 'staged' || group === 'unstaged' || group === 'untracked';
+}
 
 /**
  * Which list a row belongs to.
@@ -131,6 +136,20 @@ export function buildGroups(
 /** Every row key across every group, flat and in display order. */
 export function groupKeys(groups: readonly FileGroupView[]): string[] {
   return groups.flatMap((group) => group.keys);
+}
+
+/** Every folder row's key, for collapse-all. */
+export function folderKeys(groups: readonly FileGroupView[]): string[] {
+  const keys: string[] = [];
+  const walk = (groupId: FileGroupId, nodes: readonly FileNode[]) => {
+    for (const node of nodes) {
+      if (node.kind !== 'folder') continue;
+      keys.push(rowKey(groupId, node.path));
+      walk(groupId, node.children);
+    }
+  };
+  for (const group of groups) walk(group.id, group.nodes);
+  return keys;
 }
 
 export function findRow(
@@ -328,9 +347,12 @@ export function FileTree({
   };
 
   const acceptsDrop = (group: FileGroupId): boolean =>
-    (group === 'staged' || group === 'unstaged') &&
+    isWorkingGroup(group) &&
     inFlight !== undefined &&
-    inFlight.source !== group;
+    inFlight.source !== group &&
+    // Untracked and Changes are the same side of the index: moving between
+    // them is not a staging change, so neither accepts the other's drop.
+    !(group !== 'staged' && inFlight.source !== 'staged');
 
   const dragOver = (group: FileGroupId) => (event: React.DragEvent<HTMLElement>) => {
     if (!acceptsDrop(group)) return;
@@ -362,7 +384,7 @@ export function FileTree({
     if (!payload || payload.source === group) return;
 
     if (group === 'staged') stage(payload.paths);
-    else if (group === 'unstaged') onUnstage(payload.paths);
+    else if (group === 'unstaged' || group === 'untracked') onUnstage(payload.paths);
   };
 
   /**
@@ -472,7 +494,9 @@ export function FileTree({
               <span className="gt-disclosure" aria-hidden="true">
                 {isCollapsed ? '▸' : '▾'}
               </span>
-              <span className="gt-review-name">{node.name}</span>
+              <span className="gt-review-name" data-fit>
+                {node.name}
+              </span>
               <span className="gt-group-count">{node.count}</span>
               <span className="gt-review-spacer" />
               <LineCounts additions={node.additions} deletions={node.deletions} />
@@ -485,7 +509,7 @@ export function FileTree({
 
       const file = node.file;
       const row: FileRow = { key, group: group.id, file };
-      const staging = group.id === 'staged' || group.id === 'unstaged';
+      const staging = isWorkingGroup(group.id);
       const isViewed = viewed.has(key);
 
       // The cross-reference tag: the same path in the other group is the same
@@ -493,7 +517,7 @@ export function FileTree({
       const also =
         group.id === 'staged' && file.unstaged
           ? 'also unstaged'
-          : group.id === 'unstaged' && file.staged
+          : (group.id === 'unstaged' || group.id === 'untracked') && file.staged
             ? 'also staged'
             : undefined;
 
@@ -540,35 +564,51 @@ export function FileTree({
           }}
           onKeyDown={(event) => rowKeyDown(event, row)}
         >
-          <span className="gt-status-glyph" data-kind={file.kind} title={file.kind} aria-hidden="true">
-            {GLYPH[file.kind]}
-          </span>
-
-          {group.id !== 'commit' && (
-            <FileStatePill
-              file={file}
-              stageBlocked={file.nestedRepoId !== undefined ? NESTED_REASON : undefined}
-              busy={busy}
-              onStage={() => stage([file.path])}
-              onUnstage={() => onUnstage([file.path])}
+          {staging && (
+            <input
+              type="checkbox"
+              className="gt-stage-check"
+              checked={group.id === 'staged'}
+              disabled={busy === true || file.nestedRepoId !== undefined}
+              title={
+                file.nestedRepoId !== undefined
+                  ? NESTED_REASON
+                  : group.id === 'staged'
+                    ? 'Staged — untick to unstage'
+                    : 'Tick to stage'
+              }
+              aria-label={`${group.id === 'staged' ? 'Unstage' : 'Stage'} ${file.path}`}
+              onClick={(event) => event.stopPropagation()}
+              onChange={() => (group.id === 'staged' ? onUnstage([file.path]) : stage([file.path]))}
             />
           )}
 
-          <span className="gt-review-name">{node.name}</span>
+          {group.id === 'conflicted' && (
+            <span className="gt-status-glyph" data-kind="conflicted" title="Conflicted" aria-hidden="true">
+              {GLYPH.conflicted}
+            </span>
+          )}
+
+          <FileIcon path={file.path} />
+          <span className="gt-review-name" data-kind={file.kind} title={`${file.path} — ${file.kind}`} data-fit>
+            {node.name}
+          </span>
           {also && <span className="gt-review-tag">{also}</span>}
 
           <span className="gt-review-spacer" />
           <LineCounts additions={node.additions} deletions={node.deletions} />
 
-          <label className="gt-review-viewed" title="Mark as viewed">
-            <input
-              type="checkbox"
-              checked={isViewed}
-              aria-label={`Mark ${file.path} viewed`}
-              onClick={(event) => event.stopPropagation()}
-              onChange={() => onToggleViewed(key)}
-            />
-          </label>
+          {group.id === 'commit' && (
+            <label className="gt-review-viewed" title="Mark as viewed">
+              <input
+                type="checkbox"
+                checked={isViewed}
+                aria-label={`Mark ${file.path} viewed`}
+                onClick={(event) => event.stopPropagation()}
+                onChange={() => onToggleViewed(key)}
+              />
+            </label>
+          )}
         </div>
       );
     });
@@ -593,22 +633,23 @@ export function FileTree({
             onDrop={drop(group.id)}
           >
             <header className="gt-review-group-header">
+              {bulk && (
+                <input
+                  type="checkbox"
+                  className="gt-stage-check"
+                  checked={group.id === 'staged' && group.files.length > 0}
+                  disabled={busy === true || group.files.length === 0}
+                  title={bulk.label}
+                  aria-label={bulk.label}
+                  onChange={bulk.run}
+                />
+              )}
               <span className="gt-review-group-title">{group.title}</span>
-              <span className="gt-group-count">{group.files.length}</span>
               <LineCounts additions={group.additions} deletions={group.deletions} />
               <span className="gt-review-spacer" />
-
-              {bulk && (
-                <button
-                  type="button"
-                  className="gt-button"
-                  data-size="small"
-                  disabled={busy === true || group.files.length === 0}
-                  onClick={bulk.run}
-                >
-                  {bulk.label}
-                </button>
-              )}
+              <span className="gt-review-group-files">
+                {group.files.length} {group.files.length === 1 ? 'file' : 'files'}
+              </span>
             </header>
 
             {group.nodes.length === 0 ? (
@@ -654,8 +695,9 @@ export function FileTree({
 /** What an empty group says. The staged one doubles as the drop target's label. */
 const EMPTY_TEXT: Record<FileGroupId, string> = {
   conflicted: 'No conflicts.',
-  staged: 'Nothing staged — drop files here, or click a left cell.',
-  unstaged: 'No local changes.',
+  staged: 'Nothing staged — tick a file below, or drag it here.',
+  unstaged: 'No changes to tracked files.',
+  untracked: 'No untracked files.',
   commit: 'This commit changed nothing.',
 };
 
@@ -670,7 +712,7 @@ function bulkAction(
   const all = group.files.map((file) => file.path);
 
   if (group.id === 'staged') return { label: 'Unstage All', run: () => unstage(all) };
-  if (group.id === 'unstaged') return { label: 'Stage All', run: () => stage(all) };
+  if (group.id === 'unstaged' || group.id === 'untracked') return { label: 'Stage All', run: () => stage(all) };
   return undefined;
 }
 

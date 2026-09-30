@@ -13,6 +13,7 @@ import type {
 import { CancelledError, GitError } from '../git/GitProcess';
 import { remoteAddArgs, remoteRemoveArgs, remoteSetUrlArgs } from '../git/parsers/remote';
 import { PullRequestService } from '../pullRequests/PullRequestService';
+import { suggestCommitMessage } from '../commitMessage/suggest';
 import type { PullRequestProvider } from '../pullRequests/PullRequestProvider';
 import { AzureDevOpsProvider } from '../pullRequests/providers/AzureDevOpsProvider';
 import { BitbucketProvider } from '../pullRequests/providers/BitbucketProvider';
@@ -380,6 +381,10 @@ export class GitTreePanel {
     },
 
     'commit/create': async (request) => this.requireService(request.repoId).commit(request),
+
+    'commit/suggest': async ({ repoId }) => suggestCommitMessage(this.requireService(repoId)),
+
+    'log/outgoing': async ({ repoId }) => this.requireService(repoId).outgoing({ priority: 'visible' }),
 
     'log/start': async (request) => {
       // The caller owns the id. Generating it here and returning it would leave

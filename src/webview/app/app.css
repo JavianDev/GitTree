@@ -663,27 +663,82 @@
   gap: var(--gt-space-2);
 }
 
-.gt-commit-input {
-  width: 100%;
-  min-height: 62px;
-  max-height: 220px;
-  resize: vertical;
-  border: 1px solid var(--gt-control-border);
-  border-radius: var(--gt-radius-card);
-  background: var(--gt-control-bg);
-  padding: var(--gt-space-2) var(--gt-space-3);
-  font-size: var(--gt-text-body);
-  line-height: var(--gt-leading-normal);
+.gt-commit-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  min-height: 22px;
 }
 
+.gt-commit-draft {
+  font-size: 14px;
+}
+
+.gt-commit-note {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--gt-text-caption);
+  color: var(--gt-label-tertiary);
+}
+
+.gt-commit-summary,
+.gt-commit-description,
+.gt-commit-input {
+  width: 100%;
+  border: 1px solid var(--gt-control-border);
+  border-radius: var(--gt-radius-control);
+  background: var(--gt-control-bg);
+  padding: 5px var(--gt-space-2);
+  font-size: var(--gt-text-body);
+  line-height: var(--gt-leading-normal);
+  color: var(--gt-label);
+}
+
+.gt-commit-summary {
+  font-weight: var(--gt-weight-medium);
+}
+
+.gt-commit-description,
+.gt-commit-input {
+  min-height: 52px;
+  max-height: 220px;
+  resize: vertical;
+}
+
+.gt-commit-summary:focus,
+.gt-commit-description:focus {
+  outline: 2px solid var(--gt-accent);
+  outline-offset: -1px;
+  border-color: var(--gt-accent);
+}
+
+.gt-commit-summary::placeholder,
+.gt-commit-description::placeholder,
 .gt-commit-input::placeholder {
   color: var(--gt-label-tertiary);
+}
+
+.gt-commit-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gt-space-1) var(--gt-space-3);
 }
 
 .gt-commit-actions {
   display: flex;
   align-items: center;
-  gap: var(--gt-space-3);
+  gap: var(--gt-space-2);
+}
+
+/* Commit & Push beside Commit, sharing the row, so both stay whole at the
+   Files pane's narrowest. */
+.gt-commit-actions > .gt-button {
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: center;
 }
 
 .gt-checkbox {
@@ -903,6 +958,22 @@
   color: var(--gt-label-secondary);
 }
 
+/* Author and date are fixed-width, left-aligned columns: sized to their
+   content, each row's columns started wherever that row's name happened to
+   end, so no two rows lined up. */
+.gt-commit-author {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gt-commit-date {
+  width: 2.6em;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}
+
 .gt-commit-hash {
   flex: none;
   font-family: var(--gt-font-mono);
@@ -1043,6 +1114,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  width: 9.5em;
 }
 
 /* Narrow Git Tree pane (last, so these win over the base rules above): drop the secondary columns, least useful first, and

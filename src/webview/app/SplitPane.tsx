@@ -1,5 +1,5 @@
 import { Children, Fragment, useEffect, useRef, useState } from 'react';
-import { RAIL_WIDTH } from './useLayout';
+import { RAIL_WIDTH, fitMoves } from './useLayout';
 import './splitpane.css';
 
 /**
@@ -26,6 +26,57 @@ const KEYBOARD_STEP = 16;
  */
 const PEEK_WIDTH = 260;
 
+/** Room past the longest text, so a name that just fits is not ellipsized by rounding. */
+const FIT_SLOP = 8;
+
+/** Quiet time after the last DOM change before a newly loaded pane is fitted. */
+const FIT_SETTLE_MS = 250;
+
+/** A pane that keeps changing (a long history streaming in) is fitted by this point anyway. */
+const FIT_DEADLINE_MS = 2500;
+
+/**
+ * Wait between a fit being asked for and its measurement — a few frames, for a
+ * pane that has just opened to lay out and the list inside it to render rows for
+ * its new height. A timer rather than animation frames, which a webview does not
+ * run while it is in the background.
+ */
+const FIT_DELAY_MS = 50;
+
+/**
+ * The width at which every `[data-fit]` text in the pane shows in full.
+ *
+ * Measured as slack rather than as text width: how much room each marked
+ * element has beyond its text, where a negative value is how much it is cut
+ * off by. The pane can move by the smallest slack and every row still fits,
+ * whatever else sits in those rows — pills, counts, indentation — because the
+ * marked element is the one that absorbs a change in the pane's width.
+ */
+function measureFit(pane: HTMLElement): number | undefined {
+  const paneWidth = pane.getBoundingClientRect().width;
+  const range = document.createRange();
+  let slack = Number.POSITIVE_INFINITY;
+
+  for (const element of pane.querySelectorAll<HTMLElement>('[data-fit]')) {
+    const box = element.getBoundingClientRect();
+    // Inside a collapsed folder or a hidden section: not on screen to be cut off.
+    if (box.width === 0) continue;
+
+    const style = getComputedStyle(element);
+    const padding = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+    const inner = element.clientWidth - padding;
+
+    range.selectNodeContents(element);
+    let text = range.getBoundingClientRect().width;
+    // An ellipsized element reports its overflow in `scrollWidth`; trust whichever is larger.
+    if (element.scrollWidth > element.clientWidth + 1) text = Math.max(text, element.scrollWidth - padding);
+
+    slack = Math.min(slack, inner - text);
+  }
+
+  return Number.isFinite(slack) && paneWidth > 0 ? paneWidth - slack + FIT_SLOP : undefined;
+}
+
 interface DragState {
   pointerId: number;
   startX: number;
@@ -50,6 +101,14 @@ export interface SplitPaneProps {
   onTogglePin?: (index: number) => void;
   /** Receives the measured width of the pane area whenever it changes. */
   onMeasure?: (total: number) => void;
+  /**
+   * Per-pane ceiling for fitting to content. A pane with one widens or narrows
+   * to its `[data-fit]` text when it opens, when its content first loads, and
+   * on a double-click of the handle after it; one without keeps its width.
+   */
+  fitMax?: readonly (number | undefined)[];
+  /** Changing it (a different repository) fits the panes to their new content. */
+  fitKey?: string;
 }
 
 /**
@@ -77,6 +136,8 @@ export function SplitPane({
   onToggleCollapse,
   onTogglePin,
   onMeasure,
+  fitMax,
+  fitKey,
 }: SplitPaneProps): React.JSX.Element {
   const panes = Children.toArray(children);
   const count = panes.length;
@@ -86,6 +147,129 @@ export function SplitPane({
   const [dragging, setDragging] = useState(-1);
   const [hovered, setHovered] = useState(-1);
   const [focused, setFocused] = useState(-1);
+
+  const paneRefs = useRef<(HTMLElement | null)[]>([]);
+  /** Read by the deferred fit, which runs frames after the render that asked for it. */
+  const latest = useRef({ sizes, mins, collapsed, defaults, fitMax, onResize });
+  latest.current = { sizes, mins, collapsed, defaults, fitMax, onResize };
+  /** Panes waiting to be fitted, with how many passes each has left. */
+  const fitQueue = useRef(new Map<number, number>());
+  const fitTimer = useRef(0);
+
+  /** Resizes one pane to its content; true when that moved the handle. */
+  const fitNow = (index: number, allowShrink: boolean): boolean => {
+    const { sizes, mins, collapsed, defaults, fitMax, onResize } = latest.current;
+    const pane = paneRefs.current[index];
+    const size = sizes[index];
+    const neighbour = sizes[index + 1];
+    const max = fitMax?.[index];
+    if (!pane || size === undefined || neighbour === undefined || max === undefined) return false;
+    if (collapsed[index] === true || collapsed[index + 1] === true) return false;
+
+    const width = pane.getBoundingClientRect().width;
+    const wanted = measureFit(pane);
+    if (wanted === undefined || width <= 0) return false;
+
+    // Model units per pixel: 1 once the row has settled, but a fit can land
+    // while it is still reflowing.
+    const scale = size / width;
+    const floor = (at: number): number => Math.max(mins[at] ?? 0, defaults?.[at] ?? 0);
+    const beyond = collapsed[index + 2] === true ? undefined : sizes[index + 2];
+    const [move, push] = fitMoves({
+      size,
+      neighbour,
+      min: mins[index] ?? 0,
+      neighbourFloor: floor(index + 1),
+      ...(beyond !== undefined ? { beyond, beyondFloor: floor(index + 2) } : {}),
+      wanted: wanted * scale,
+      max: max * scale,
+    });
+    if (move === 0 || (move < 0 && !allowShrink)) return false;
+
+    // The neighbour moves along first, so the second resize takes back only
+    // what it can spare and it ends no narrower than its floor.
+    if (push > 0) onResize(index + 1, push);
+    onResize(index, move);
+    return true;
+  };
+
+  /*
+   * Fits run one pane at a time, left to right, because fitting a pane moves its
+   * right-hand neighbour, which is the next one to be measured.
+   *
+   * Each pane gets a second, grow-only pass. Widening a pane can bring back a
+   * column its container query had hidden — the Git Tree's author — which takes
+   * room from the text that was just fitted.
+   */
+  const pumpFits = (): void => {
+    window.clearTimeout(fitTimer.current);
+    fitTimer.current = window.setTimeout(() => {
+      const [index] = [...fitQueue.current.keys()].sort((a, b) => a - b);
+      if (index === undefined) return;
+      const passes = fitQueue.current.get(index) ?? 0;
+      fitQueue.current.delete(index);
+
+      const moved = fitNow(index, passes > 1);
+      if (moved && passes > 1) fitQueue.current.set(index, passes - 1);
+      if (fitQueue.current.size > 0) pumpFits();
+    }, FIT_DELAY_MS);
+  };
+
+  const requestFit = (index: number): void => {
+    if (latest.current.fitMax?.[index] === undefined) return;
+    fitQueue.current.set(index, 2);
+    pumpFits();
+  };
+
+  useEffect(() => () => window.clearTimeout(fitTimer.current), []);
+
+  // Opening a pane — its rail, Restore panels, a keyboard toggle — fits it.
+  const wasCollapsed = useRef(collapsed);
+  useEffect(() => {
+    const before = wasCollapsed.current;
+    wasCollapsed.current = collapsed;
+    collapsed.forEach((now, index) => {
+      if (before[index] === true && now !== true) requestFit(index);
+    });
+    // `requestFit` reads everything else through `latest`.
+  }, [collapsed]);
+
+  /*
+   * And so does the pane's content arriving: on first load and whenever the
+   * repository changes. Waited out rather than taken at the first mutation,
+   * because a sidebar renders its current branch well before the rest, and
+   * fitting to that alone would cut off every name that lands after it.
+   */
+  useEffect(() => {
+    const stops: Array<() => void> = [];
+
+    paneRefs.current.forEach((pane, index) => {
+      if (!pane || latest.current.fitMax?.[index] === undefined) return;
+
+      const deadline = performance.now() + FIT_DEADLINE_MS;
+      let timer = 0;
+      const observer = new MutationObserver(() => settle());
+      const done = (): void => {
+        observer.disconnect();
+        window.clearTimeout(timer);
+        if (pane.querySelector('[data-fit]')) requestFit(index);
+      };
+      const settle = (): void => {
+        window.clearTimeout(timer);
+        if (performance.now() >= deadline) done();
+        else timer = window.setTimeout(done, FIT_SETTLE_MS);
+      };
+      observer.observe(pane, { childList: true, subtree: true, characterData: true });
+      settle();
+
+      stops.push(() => {
+        observer.disconnect();
+        window.clearTimeout(timer);
+      });
+    });
+
+    return () => stops.forEach((stop) => stop());
+  }, [fitKey, count]);
 
   useEffect(() => {
     const node = containerRef.current;
@@ -237,7 +421,8 @@ export function SplitPane({
         onPointerMove={moveDrag(index)}
         onPointerUp={endDrag}
         onLostPointerCapture={endDrag}
-        onDoubleClick={() => reset(index)}
+        // Fit to content where the pane has text to fit, otherwise back to its default.
+        onDoubleClick={() => (fitMax?.[index] !== undefined ? requestFit(index) : reset(index))}
         onKeyDown={handleKey(index)}
       />
     );
@@ -260,6 +445,9 @@ export function SplitPane({
             {index > 0 && renderHandle(index - 1)}
 
             <section
+              ref={(node) => {
+                paneRefs.current[index] = node;
+              }}
               className="gt-split-pane"
               aria-label={label}
               data-collapsed={isCollapsed ? 'true' : undefined}
@@ -306,10 +494,13 @@ export function SplitPane({
                 // the whole point of not reflowing the graph on every hover.
                 style={peeking ? { width: peekWidth(index) } : undefined}
               >
+                {/* A title bar per pane, with pin and collapse inside it rather
+                    than floating over the pane's own content — where they sat on
+                    top of whatever that pane put in its top-right corner. First
+                    in the DOM so tabbing into the pane reaches them first. */}
+                <header className="gt-pane-header">
+                  <span className="gt-pane-title">{label}</span>
                 {canPin(index) && (
-                  // First in the DOM so tabbing into the pane reveals the
-                  // controls before anything else; they are invisible until the
-                  // pane is hovered or holds focus.
                   <div className="gt-split-controls">
                     <button
                       type="button"
@@ -341,8 +532,9 @@ export function SplitPane({
                     </button>
                   </div>
                 )}
+                </header>
 
-                {pane}
+                <div className="gt-pane-content">{pane}</div>
               </div>
             </section>
           </Fragment>

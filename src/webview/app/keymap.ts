@@ -56,7 +56,7 @@ export type CommandId =
   | 'unstage'
   | 'discard'
   | 'commit'
-  | 'commit.amend'
+  | 'commit.push'
   | 'review.toggleViewed'
   | 'review.nextFile'
   | 'review.prevFile'
@@ -126,7 +126,7 @@ export const BINDINGS: readonly Binding[] = [
   { id: 'unstage', keys: ['u', 'arrowleft'], label: 'Unstage selection', group: 'Staging' },
   { id: 'discard', keys: ['d'], label: 'Discard selection', group: 'Staging' },
   { id: 'commit', keys: ['ctrl+enter'], label: 'Commit', group: 'Staging', whileTyping: true },
-  { id: 'commit.amend', keys: ['ctrl+shift+enter'], label: 'Amend previous commit', group: 'Staging', whileTyping: true },
+  { id: 'commit.push', keys: ['ctrl+shift+enter'], label: 'Commit & Push', group: 'Staging', whileTyping: true },
 
   /* Review */
   { id: 'review.toggleViewed', keys: ['v'], label: 'Toggle Viewed', group: 'Review' },
