@@ -6,6 +6,24 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed — the commit graph, redrawn
+
+- **No gap between the graph and the commit messages.** The graph is now a transparent layer over
+  the commit list instead of a column beside it, and every row indents its text by exactly its own
+  rails — so a message sits right beside its node, rather than after one wide graph column sized
+  for the busiest row in history. Rails never reach into text; a test checks this row by row
+  against the demo repository's history.
+- **Glassy nodes, each shape with its own meaning.** Commits are glass orbs (a gradient lit from
+  the top left, a darker rim, a specular glint, a soft glow in the rail's colour); merges are
+  lenses with a dark glass core; the root commit is a rounded-square gem. The selected commit gets
+  a ring and a stronger glow. Rails carry a soft glow of their own, drawn as a faint wide stroke
+  rather than a blur filter so scrolling stays smooth. Nodes erase the rails beneath them instead
+  of painting a background-coloured disc, so they sit cleanly on the row's hover or selection band.
+- **Merge commits get an M badge**, and branch pills are tinted in their rail's colour (the
+  checked-out branch as a filled glassy pill), so the eye goes from a label straight to its line.
+- Author and avatar move to the end of the row and drop out first when the pane is narrow, so the
+  message keeps the room.
+
 ### Added — browser sign-in for every pull request provider
 
 - **Bitbucket and GitLab now sign in through the browser**, like GitHub and Azure DevOps already did

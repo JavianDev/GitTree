@@ -3,6 +3,7 @@ import { flushSync } from 'react-dom';
 import type { Commit, GraphRow, RefDecoration, RepoId } from '@shared/model';
 import { RpcRequestError, rpc } from '../../rpc/client';
 import { GraphCanvas } from './GraphCanvas';
+import { laneWidthFor, rowIndent } from './graphGeometry';
 import { LogStream } from './logStream';
 
 const ROW_HEIGHT = 24;
@@ -364,6 +365,9 @@ export function HistoryView({
     );
   }
 
+  const graphBudget = gutterBudget(paneWidth);
+  const laneWidth = laneWidthFor(gutterWidth, graphBudget);
+
   return (
     /*
      * The pinned row sits above the scroll area, not inside it. Inside, it would
@@ -374,22 +378,13 @@ export function HistoryView({
       {loading && <div className="gt-history-progress" role="progressbar" aria-label="Loading history" />}
       {uncommittedRow}
 
+      {/*
+        The graph is a transparent layer over the list rather than a column
+        beside it, and each row indents its text by exactly its own rails —
+        so a commit's message sits right next to its node, with no empty
+        graph column in between on the rows that need only one lane.
+      */}
       <div className="gt-history">
-        <div style={{ position: 'relative', flex: 'none' }}>
-          <GraphCanvas
-            rows={rows}
-            start={start}
-            end={end}
-            scrollTop={scrollTop}
-            rowHeight={ROW_HEIGHT}
-            height={viewport}
-            width={gutterWidth}
-            rowCount={rows.length}
-            maxWidth={gutterBudget(paneWidth)}
-            {...(selectedIndex >= 0 ? { selectedRow: selectedIndex } : {})}
-          />
-        </div>
-
         <div
           className="gt-commit-list"
           ref={attachList}
@@ -399,16 +394,36 @@ export function HistoryView({
         >
           <div style={{ height: commits.length * ROW_HEIGHT, position: 'relative' }}>
             <div style={{ transform: `translateY(${start * ROW_HEIGHT}px)` }}>
-              {visible.map((commit) => (
-                <CommitRow
-                  key={commit.hash}
-                  commit={commit}
-                  selected={commit.hash === selectedHash}
-                  onSelect={onSelect}
-                />
-              ))}
+              {visible.map((commit, offset) => {
+                const row = rows[start + offset];
+                return (
+                  <CommitRow
+                    key={commit.hash}
+                    commit={commit}
+                    indent={rowIndent(row, laneWidth)}
+                    rail={row?.color ?? 0}
+                    selected={commit.hash === selectedHash}
+                    onSelect={onSelect}
+                  />
+                );
+              })}
             </div>
           </div>
+        </div>
+
+        <div className="gt-graph-overlay" aria-hidden="true">
+          <GraphCanvas
+            rows={rows}
+            start={start}
+            end={end}
+            scrollTop={scrollTop}
+            rowHeight={ROW_HEIGHT}
+            height={viewport}
+            width={gutterWidth}
+            rowCount={rows.length}
+            maxWidth={graphBudget}
+            {...(selectedIndex >= 0 ? { selectedRow: selectedIndex } : {})}
+          />
         </div>
       </div>
     </div>
@@ -417,20 +432,34 @@ export function HistoryView({
 
 function CommitRow({
   commit,
+  indent,
+  rail,
   selected,
   onSelect,
 }: {
   commit: Commit;
+  /** Where the text starts: just past this row's own rails. */
+  indent: number;
+  /** Palette index of this commit's rail; tints its branch pills and merge badge. */
+  rail: number;
   selected: boolean;
   onSelect: (commit: Commit) => void;
 }): React.JSX.Element {
+  const isMerge = commit.parents.length > 1;
+
   return (
     <div
       className="gt-commit-row"
       role="option"
       tabIndex={0}
       aria-selected={selected}
-      style={{ height: ROW_HEIGHT }}
+      style={
+        {
+          height: ROW_HEIGHT,
+          paddingLeft: indent,
+          '--row-rail': `var(--gt-lane-${rail % 12})`,
+        } as React.CSSProperties
+      }
       onClick={() => onSelect(commit)}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
@@ -439,16 +468,23 @@ function CommitRow({
         }
       }}
     >
-      <Avatar identity={commit.author} />
-
       {commit.refs.map((ref) => (
         <RefPill key={`${ref.kind}:${ref.name}`} decoration={ref} />
       ))}
 
+      {isMerge && (
+        <span className="gt-merge-badge" title="Merge commit" aria-label="Merge commit">
+          M
+        </span>
+      )}
+
       <span className="gt-commit-subject" title={commit.subject}>
         {commit.subject}
       </span>
-      <span className="gt-commit-author">{commit.author.name}</span>
+      <span className="gt-commit-byline">
+        <Avatar identity={commit.author} />
+        <span className="gt-commit-author">{commit.author.name}</span>
+      </span>
       <span className="gt-commit-date">{relativeDate(commit.commitDate)}</span>
       <span className="gt-commit-hash">{commit.shortHash}</span>
     </div>
