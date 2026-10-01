@@ -12,7 +12,20 @@ Git Tree is **free and open source**. If you find it useful, [buying a coffee](h
 
 ---
 
-## 🆕 New in 0.11 — Worktrees
+## 🆕 New in 0.12 — Act on Any Commit
+
+- **Double-click a commit** to check out its branch. A commit with only a remote branch, or no
+  branch, opens the checkout sheet first, so you read the command before you land on a new branch
+  or a detached HEAD.
+- **Right-click a commit** for its details and every action in one panel: parents, author and date,
+  committer and commit date, and the full message, beside Check Out, Merge, Rebase, New Branch,
+  New Tag, Cherry-pick, Reverse Commit, Reset (soft / mixed / hard), Archive, Create Patch, and
+  Copy SHA. Each action shows its exact git command before it runs.
+- **Click a commit's dot** in the graph to see the same details on their own.
+
+![Right-click a commit: its actions beside its parents, author, committer, dates and message](./media/screenshots/21-commit-menu.png)
+
+## New in 0.11 — Worktrees
 
 - **A WORKTREES section** right after Branches: every working folder of the repository, grouped by
   branch folder, with `main`, `current`, `locked`, `missing` and `detached` badges, change counts,

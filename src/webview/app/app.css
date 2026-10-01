@@ -348,7 +348,8 @@
   color: var(--gt-label);
 }
 
-.gt-segment[aria-selected='true'] {
+.gt-segment[aria-selected='true'],
+.gt-segment[aria-checked='true'] {
   background: var(--gt-bg-elevated);
   color: var(--gt-label);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
@@ -1817,6 +1818,15 @@
 
 .gt-cmd-option-text .gt-text-input {
   flex: 1 1 auto;
+}
+
+.gt-cmd-option-choice {
+  display: flex;
+  flex: 1 1 100%;
+  align-items: center;
+  gap: var(--gt-space-2);
+  font-size: var(--gt-text-callout);
+  color: var(--gt-label-secondary);
 }
 
 .gt-cmd-result {

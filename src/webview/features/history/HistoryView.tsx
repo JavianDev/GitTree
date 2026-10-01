@@ -3,7 +3,7 @@ import { flushSync } from 'react-dom';
 import type { Commit, GraphRow, RefDecoration, RepoId } from '@shared/model';
 import { RpcRequestError, rpc } from '../../rpc/client';
 import { GraphCanvas } from './GraphCanvas';
-import { laneWidthFor, rowIndent } from './graphGeometry';
+import { laneCenter, laneWidthFor, rowIndent } from './graphGeometry';
 import { LogStream } from './logStream';
 
 const ROW_HEIGHT = 24;
@@ -58,6 +58,18 @@ export interface HistoryViewProps {
    * tip": the sidebar hands over the ref's oid and the graph goes there.
    */
   focusHash?: string;
+  /** Double-click: check the commit's branch out. */
+  onCommitActivate?: (commit: Commit, at: PointerSpot) => void;
+  /** Right-click (or the context-menu key): the commit's details and actions. */
+  onCommitMenu?: (commit: Commit, at: PointerSpot) => void;
+  /** A click on the commit's node in the graph: its details alone. */
+  onCommitDetails?: (commit: Commit, at: PointerSpot) => void;
+}
+
+/** Where, in the window, a popover for a row should open. */
+export interface PointerSpot {
+  x: number;
+  y: number;
 }
 
 /** How long typing settles before the walk re-runs. */
@@ -82,6 +94,9 @@ export function HistoryView({
   uncommittedSelected = false,
   onSelectUncommitted,
   focusHash,
+  onCommitActivate,
+  onCommitMenu,
+  onCommitDetails,
 }: Readonly<HistoryViewProps>): React.JSX.Element {
   /**
    * Commits and rows are published together behind a fresh wrapper object.
@@ -403,7 +418,12 @@ export function HistoryView({
                     indent={rowIndent(row, laneWidth)}
                     rail={row?.color ?? 0}
                     selected={commit.hash === selectedHash}
+                    nodeX={laneCenter(row?.lane ?? 0, laneWidth)}
+                    nodeReach={Math.max(7, Math.min(laneWidth / 2, 9))}
                     onSelect={onSelect}
+                    {...(onCommitActivate ? { onActivate: onCommitActivate } : {})}
+                    {...(onCommitMenu ? { onMenu: onCommitMenu } : {})}
+                    {...(onCommitDetails ? { onDetails: onCommitDetails } : {})}
                   />
                 );
               })}
@@ -435,7 +455,12 @@ function CommitRow({
   indent,
   rail,
   selected,
+  nodeX,
+  nodeReach,
   onSelect,
+  onActivate,
+  onMenu,
+  onDetails,
 }: {
   commit: Commit;
   /** Where the text starts: just past this row's own rails. */
@@ -443,9 +468,25 @@ function CommitRow({
   /** Palette index of this commit's rail; tints its branch pills and merge badge. */
   rail: number;
   selected: boolean;
+  /** The centre of this commit's node, from the row's left edge. */
+  nodeX: number;
+  /** How far either side of the centre a click still counts as on the node. */
+  nodeReach: number;
   onSelect: (commit: Commit) => void;
+  onActivate?: (commit: Commit, at: PointerSpot) => void;
+  onMenu?: (commit: Commit, at: PointerSpot) => void;
+  onDetails?: (commit: Commit, at: PointerSpot) => void;
 }): React.JSX.Element {
   const isMerge = commit.parents.length > 1;
+
+  /*
+   * The graph is painted on a canvas laid over the list with pointer events
+   * off, so a click on a node lands on its row. Measuring from the row's left
+   * edge — the canvas's left edge too — tells a click on the node apart from a
+   * click on the text.
+   */
+  const onNode = (event: React.MouseEvent<HTMLDivElement>) =>
+    Math.abs(event.clientX - event.currentTarget.getBoundingClientRect().left - nodeX) <= nodeReach;
 
   return (
     <div
@@ -460,11 +501,30 @@ function CommitRow({
           '--row-rail': `var(--gt-lane-${rail % 12})`,
         } as React.CSSProperties
       }
-      onClick={() => onSelect(commit)}
+      onClick={(event) => {
+        onSelect(commit);
+        if (onDetails && onNode(event)) {
+          const box = event.currentTarget.getBoundingClientRect();
+          onDetails(commit, { x: box.left + nodeX + nodeReach + 4, y: box.bottom + 2 });
+        }
+      }}
+      onDoubleClick={(event) => onActivate?.(commit, { x: event.clientX, y: event.clientY })}
+      onContextMenu={(event) => {
+        // Always, so the webview's own Cut / Copy / Paste menu never appears
+        // over a commit — there is nothing on a row to cut or paste.
+        event.preventDefault();
+        onSelect(commit);
+        onMenu?.(commit, { x: event.clientX, y: event.clientY });
+      }}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
           onSelect(commit);
+        } else if (event.key === 'ContextMenu' || (event.key === 'F10' && event.shiftKey)) {
+          event.preventDefault();
+          const box = event.currentTarget.getBoundingClientRect();
+          onSelect(commit);
+          onMenu?.(commit, { x: box.left + indent, y: box.bottom });
         }
       }}
     >
@@ -527,7 +587,7 @@ const REF_GLYPH: Partial<Record<RefDecoration['kind'], string>> = {
   stash: '⛁',
 };
 
-function RefPill({ decoration }: { decoration: RefDecoration }): React.JSX.Element | null {
+export function RefPill({ decoration }: { decoration: RefDecoration }): React.JSX.Element | null {
   if (decoration.kind === 'head') return null;
 
   // A remote branch shows only its branch name; the remote is in the glyph and

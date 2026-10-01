@@ -84,6 +84,22 @@ export function ContextMenu({
       role="menu"
       style={{ left: `${left}px`, top: `${top}px` }}
     >
+      <MenuItems items={items} onClose={onClose} />
+    </div>,
+    document.body,
+  );
+}
+
+/** The items of a menu, for a container that positions itself (the commit panel). */
+export function MenuItems({
+  items,
+  onClose,
+}: {
+  items: readonly ContextMenuItem[];
+  onClose: () => void;
+}): React.JSX.Element {
+  return (
+    <>
       {items.map((item, index) =>
         item.separator ? (
           <div key={index} className="gt-file-menu-separator" />
@@ -110,7 +126,6 @@ export function ContextMenu({
           </button>
         ),
       )}
-    </div>,
-    document.body,
+    </>
   );
 }

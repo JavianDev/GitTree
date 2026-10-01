@@ -1,0 +1,140 @@
+/* --- Commit details and actions (right-click a commit, or click its node) --- */
+
+.gt-commit-pop {
+  position: fixed;
+  z-index: 100;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--gt-space-2);
+  max-height: calc(100vh - 16px);
+  outline: none;
+}
+
+.gt-commit-pop[data-layout='stacked'] {
+  flex-direction: column-reverse;
+  width: min(400px, calc(100vw - 16px));
+  overflow-y: auto;
+  background: var(--gt-bg-elevated);
+  border: 1px solid var(--gt-control-border);
+  border-radius: var(--gt-radius-card);
+  box-shadow: var(--gt-shadow-popover);
+}
+
+.gt-commit-pop-menu,
+.gt-commit-card {
+  background: var(--gt-bg-elevated);
+  border: 1px solid var(--gt-control-border);
+  border-radius: var(--gt-radius-card);
+  box-shadow: var(--gt-shadow-popover);
+}
+
+.gt-commit-pop[data-layout='stacked'] .gt-commit-pop-menu,
+.gt-commit-pop[data-layout='stacked'] .gt-commit-card {
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.gt-commit-pop[data-layout='stacked'] .gt-commit-pop-menu {
+  border-top: 1px solid var(--gt-separator);
+}
+
+.gt-commit-pop-menu {
+  flex: none;
+  width: 280px;
+  padding: 4px 0;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+}
+
+.gt-commit-card {
+  flex: none;
+  width: 380px;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  padding: var(--gt-space-3) var(--gt-space-4);
+  font-size: var(--gt-text-caption);
+  color: var(--gt-label);
+}
+
+.gt-commit-card-subject {
+  margin: 0 0 var(--gt-space-2);
+  font-size: var(--gt-text-callout);
+  font-weight: var(--gt-weight-semibold);
+  line-height: var(--gt-leading-tight);
+  overflow-wrap: anywhere;
+}
+
+.gt-commit-card-body {
+  margin: 0 0 var(--gt-space-2);
+  max-height: 160px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--gt-font);
+  font-size: var(--gt-text-caption);
+  color: var(--gt-label-secondary);
+}
+
+.gt-commit-card-refs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: var(--gt-space-2);
+}
+
+.gt-commit-card-fields {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 4px var(--gt-space-3);
+  margin: 0;
+  padding-top: var(--gt-space-2);
+  border-top: 1px solid var(--gt-separator);
+}
+
+.gt-commit-card-fields dt {
+  color: var(--gt-label-secondary);
+}
+
+.gt-commit-card-fields dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.gt-commit-card-sha {
+  display: flex;
+  align-items: baseline;
+  gap: var(--gt-space-2);
+}
+
+.gt-commit-card-sha code {
+  font-family: var(--gt-font-mono);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.gt-commit-card-link {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0;
+  margin-right: var(--gt-space-2);
+  color: var(--gt-accent);
+  font: inherit;
+  cursor: pointer;
+}
+
+.gt-commit-card-link:hover {
+  text-decoration: underline;
+}
+
+.gt-commit-card-muted {
+  color: var(--gt-label-tertiary);
+}
+
+.gt-commit-card-sha .gt-commit-card-link {
+  flex: none;
+  white-space: nowrap;
+}

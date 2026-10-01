@@ -6,6 +6,23 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — act on any commit in the Git Tree pane
+
+- **Double-click a commit row** to check out its branch, as double-clicking it in the sidebar does.
+  A branch held by another worktree offers that worktree; several branches show the menu to choose;
+  a remote branch opens `git switch --track`, and a commit with no branch opens
+  `git switch --detach`, each for review first.
+- **Right-click a commit row** for a panel with the commit's details — parents (click to go to one),
+  author and date, committer and commit date, signature, refs, and the full message — beside its
+  actions: Check Out, Merge into the current branch, Rebase onto it, New Branch Here, New Tag Here,
+  Cherry-pick, Reverse Commit (`git revert`), Reset the current branch (soft, mixed or hard; hard
+  asks for confirmation), Archive (`.zip`, `.tar.gz` or `.tar`), Create Patch (`git format-patch`),
+  Copy SHA and Copy Short SHA. It replaces the webview's Cut / Copy / Paste menu on commit rows.
+  The context-menu key and Shift+F10 open it from the keyboard.
+- **Click a commit's dot** in the graph to see its details on their own.
+- The New Branch and Tag sheets gain Name (and Message) fields.
+
+
 ### Fixed — README screenshots on the Marketplace and in VS Code
 
 - The README's screenshots are now linked to the exact commit of each release instead of the latest

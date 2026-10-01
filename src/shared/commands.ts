@@ -41,7 +41,14 @@ export type CommandId =
   | 'worktree.move'
   | 'worktree.prune'
   | 'worktree.repair'
-  | 'branch.deleteGone';
+  | 'branch.deleteGone'
+  | 'commit.checkout'
+  | 'rebase'
+  | 'cherryPick'
+  | 'revert'
+  | 'reset'
+  | 'archive'
+  | 'formatPatch';
 
 /** Where the action sits in the toolbar's visual rhythm. */
 export type CommandGroup = 'sync' | 'work' | 'branch' | 'tag' | 'tools';
@@ -106,7 +113,22 @@ export interface CommandContext {
   branches?: string[];
   /** Pull refinement: only fast-forward. */
   ffOnly?: boolean;
+  /** Reset refinement: what happens to the work between the old and new commit. */
+  resetMode?: ResetMode;
+  /** Cherry-pick refinement: record where the change came from (`-x`). */
+  recordOrigin?: boolean;
+  /** Cherry-pick and revert refinement: change the files and index, but do not commit. */
+  noCommit?: boolean;
+  /** Cherry-pick and revert of a merge commit: the parent the change is measured against. */
+  mainline?: number;
+  /** Archive and patch: the file to write. */
+  outputPath?: string;
+  /** Archive refinement; follows the chosen file's extension. */
+  archiveFormat?: ArchiveFormat;
 }
+
+export type ResetMode = 'soft' | 'mixed' | 'hard';
+export type ArchiveFormat = 'zip' | 'tar' | 'tar.gz';
 
 export interface CommandSpec {
   id: CommandId;
@@ -120,6 +142,11 @@ export interface CommandSpec {
   flags: CommandFlag[];
   /** True when the action can lose work; gates a confirmation sheet. */
   destructive?: boolean;
+  /**
+   * For a command that can lose work only with some flags (`reset --hard`):
+   * judged from the argv about to run, so a flag typed by hand counts too.
+   */
+  destructiveWhen?: (argv: readonly string[]) => boolean;
   /** Builds the argv, without the leading `git`. */
   build: (ctx: CommandContext) => string[];
 }
@@ -162,6 +189,19 @@ const FLAG: Record<string, CommandFlag> = {
   reason: { flag: '--reason', gloss: 'record why it is locked; shown wherever the worktree is listed' },
   dryRun: { flag: '--dry-run', gloss: 'only report what would be pruned; change nothing' },
   verbose: { flag: '--verbose', gloss: 'name each worktree record as it is removed' },
+  detachCommit: { flag: '--detach', gloss: 'move HEAD to the commit itself, on no branch' },
+  trackRemote: { flag: '--track', gloss: 'create a local branch of the same name that follows this remote branch' },
+  recordOrigin: { flag: '-x', gloss: 'add "(cherry picked from commit …)" to the new commit’s message' },
+  noCommit: { flag: '--no-commit', gloss: 'apply the change to your files and index, but let you commit it yourself' },
+  mainline: { flag: '-m', gloss: 'for a merge commit: which parent the change is measured against (1 is the branch it was merged into)' },
+  noEdit: { flag: '--no-edit', gloss: 'keep git’s own message rather than opening an editor' },
+  soft: { flag: '--soft', gloss: 'keep every change in between, staged' },
+  mixed: { flag: '--mixed', gloss: 'keep every change in between in your files, unstaged' },
+  hard: { flag: '--hard', gloss: 'throw away every change in between, and any uncommitted work' },
+  format: { flag: '--format', gloss: 'the archive type: zip, tar, or tar.gz' },
+  outputFile: { flag: '-o', gloss: 'the file to write' },
+  oneCommit: { flag: '-1', gloss: 'just this commit, not the ones before it' },
+  output: { flag: '--output', gloss: 'write the patch to this file instead of to the screen' },
 };
 
 /** A worktree's concept card: the same idea, said once. */
@@ -316,7 +356,9 @@ export const COMMANDS: Record<CommandId, CommandSpec> = {
       'in git and expensive in older version control systems.',
     flags: [],
     build: (ctx) => {
-      const name = ctx.branch ?? '<name>';
+      // `||`, not `??`: an empty name field would otherwise vanish from the argv
+      // and git would read the start point as the new branch's name.
+      const name = ctx.branch || '<name>';
       const argv = ctx.checkoutAfterCreate ? ['switch', '--create', name] : ['branch', name];
       if (ctx.startPoint) argv.push(ctx.startPoint);
       return argv;
@@ -332,8 +374,8 @@ export const COMMANDS: Record<CommandId, CommandSpec> = {
       'switch is the modern, single-purpose replacement for checkout, which did too many unrelated jobs ' +
       'and made mistakes easy. It moves HEAD to the branch and updates your files to match. ' +
       'Uncommitted work travels with you when it does not conflict, and blocks the switch when it does.',
-    flags: [],
-    build: (ctx) => ['switch', ctx.branch ?? '<branch>'],
+    flags: [FLAG.trackRemote!],
+    build: (ctx) => ['switch', ...(ctx.track ? ['--track'] : []), ctx.branch ?? '<branch>'],
   },
 
   'branch.delete': {
@@ -652,11 +694,163 @@ export const COMMANDS: Record<CommandId, CommandSpec> = {
     build: (ctx) => {
       const argv = ['tag'];
       if (ctx.annotated) argv.push('-a', '-m', ctx.message ?? '');
-      argv.push(ctx.tagName ?? '<name>');
+      argv.push(ctx.tagName || '<name>');
+      if (ctx.commitish) argv.push(ctx.commitish);
       return argv;
     },
   },
+
+  'commit.checkout': {
+    id: 'commit.checkout',
+    title: 'Check Out Commit',
+    group: 'branch',
+    summary: 'Show this commit in your files, on no branch. Every branch stays where it is.',
+    concept:
+      'Checking out a commit rather than a branch is called a detached HEAD: your files show that ' +
+      'commit, but no branch name follows you. It is the safe way to look around, build, or test an ' +
+      'older version. Commits you make here belong to no branch and are easy to lose once you switch ' +
+      'away, so create a branch first if you mean to keep work. Check out any branch to leave.',
+    flags: [FLAG.detachCommit!],
+    build: (ctx) => ['switch', '--detach', ctx.commitish ?? '<commit>'],
+  },
+
+  rebase: {
+    id: 'rebase',
+    title: 'Rebase',
+    group: 'branch',
+    summary: 'Replay the current branch’s own commits on top of this commit.',
+    concept:
+      'Rebase takes the commits your branch has that the target does not, and re-applies them one at a ' +
+      'time on top of the target, so history reads as if you had started from there. The replayed ' +
+      'commits are new commits with new ids — rebase only work nobody else has pulled, or everyone who ' +
+      'has it must recover. If a step conflicts, resolve it and continue, or abort to return to how ' +
+      'things were.',
+    flags: [FLAG.autostash!],
+    build: (ctx) => {
+      const argv = ['rebase'];
+      if (ctx.autostash) argv.push('--autostash');
+      argv.push(ctx.commitish ?? '<upstream>');
+      return argv;
+    },
+  },
+
+  cherryPick: {
+    id: 'cherryPick',
+    title: 'Cherry-pick',
+    group: 'branch',
+    summary: 'Copy the change this commit made onto the current branch, as a new commit.',
+    concept:
+      'Cherry-pick re-applies the change one commit introduced, on top of where you are, as a new ' +
+      'commit with a new id — the way to bring a single fix to a release branch without merging ' +
+      'everything else. -x notes in the message which commit it came from. A merge commit joins two ' +
+      'parents, so git needs to know which side to measure its change against: -m 1 means the branch ' +
+      'it was merged into.',
+    flags: [FLAG.recordOrigin!, FLAG.noCommit!, FLAG.mainline!],
+    build: (ctx) => {
+      const argv = ['cherry-pick'];
+      if (ctx.recordOrigin) argv.push('-x');
+      if (ctx.noCommit) argv.push('--no-commit');
+      if (ctx.mainline) argv.push('-m', String(ctx.mainline));
+      argv.push(ctx.commitish ?? '<commit>');
+      return argv;
+    },
+  },
+
+  revert: {
+    id: 'revert',
+    title: 'Reverse Commit',
+    group: 'branch',
+    summary: 'Add a new commit that undoes the change this commit made.',
+    concept:
+      'Revert deletes nothing. It records a new commit whose change is the exact opposite of the one ' +
+      'you chose, which makes it the safe way to undo a commit that has already been pushed: nobody’s ' +
+      'history is rewritten. For a merge commit, -m 1 undoes everything the merge brought in.',
+    flags: [FLAG.noEdit!, FLAG.noCommit!, FLAG.mainline!],
+    build: (ctx) => {
+      const argv = ['revert', '--no-edit'];
+      if (ctx.noCommit) argv.push('--no-commit');
+      if (ctx.mainline) argv.push('-m', String(ctx.mainline));
+      argv.push(ctx.commitish ?? '<commit>');
+      return argv;
+    },
+  },
+
+  reset: {
+    id: 'reset',
+    title: 'Reset Current Branch',
+    group: 'branch',
+    summary: 'Move the current branch to this commit.',
+    concept:
+      'Reset moves your branch to another commit. What happens to the work in between depends on the ' +
+      'mode: --soft keeps all of it staged, --mixed (git’s default) keeps it in your files but unstaged, ' +
+      'and --hard throws it away along with any uncommitted changes. Commits no branch points to ' +
+      'afterwards can be found in the reflog for a while; uncommitted work lost to --hard cannot. ' +
+      'Never reset a branch other people have pulled.',
+    flags: [FLAG.soft!, FLAG.mixed!, FLAG.hard!],
+    destructiveWhen: (argv) => argv.includes('--hard'),
+    build: (ctx) => ['reset', `--${ctx.resetMode ?? 'mixed'}`, ctx.commitish ?? '<commit>'],
+  },
+
+  archive: {
+    id: 'archive',
+    title: 'Archive',
+    group: 'tools',
+    summary: 'Save the files of this commit as one .zip or .tar.gz file, without the history.',
+    concept:
+      'git archive writes the tracked files exactly as they were in one commit — no .git folder, no ' +
+      'history, and nothing untracked or ignored. It is the clean way to hand someone the source of a ' +
+      'release. The format follows the name of the file you choose.',
+    flags: [FLAG.format!, FLAG.outputFile!],
+    build: (ctx) => [
+      'archive',
+      `--format=${ctx.archiveFormat ?? 'zip'}`,
+      '-o',
+      ctx.outputPath ?? '<file>',
+      ctx.commitish ?? '<commit>',
+    ],
+  },
+
+  formatPatch: {
+    id: 'formatPatch',
+    title: 'Create Patch',
+    group: 'tools',
+    summary: 'Save this commit as a .patch file that git am can apply in any repository.',
+    concept:
+      'format-patch writes a commit as an email-style patch: its author, date, message, and change in ' +
+      'one text file. Anyone can apply it with git am and keep your authorship — useful when you cannot ' +
+      'push to their repository, or to attach a change to a ticket. A merge commit has no single change, ' +
+      'so git skips it.',
+    flags: [FLAG.oneCommit!, FLAG.output!],
+    build: (ctx) => ['format-patch', '-1', `--output=${ctx.outputPath ?? '<file>'}`, ctx.commitish ?? '<commit>'],
+  },
 };
+
+/** The archive format a file name asks for, by its extension. */
+export function archiveFormatFor(file: string): ArchiveFormat {
+  const name = file.toLowerCase();
+  if (name.endsWith('.tar.gz') || name.endsWith('.tgz')) return 'tar.gz';
+  if (name.endsWith('.tar')) return 'tar';
+  return 'zip';
+}
+
+/**
+ * A patch file name the way git itself names one: `0001-` and the subject,
+ * lower-cased, with every run of other characters turned into one dash.
+ */
+export function patchFileName(subject: string): string {
+  const slug = subject
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 52)
+    .replace(/-+$/, '');
+  return `0001-${slug || 'patch'}.patch`;
+}
+
+/** Whether a spec's command, as about to run, can lose work. */
+export function isDestructive(spec: CommandSpec, argv: readonly string[]): boolean {
+  return Boolean(spec.destructive || spec.destructiveWhen?.(argv));
+}
 
 /** Every spec, in toolbar order. */
 export const COMMAND_LIST: CommandSpec[] = Object.values(COMMANDS);

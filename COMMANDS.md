@@ -110,6 +110,20 @@ stashes stacked up across different branches.
 
 ---
 
+## Commits in the Git Tree pane
+
+| Action | Where |
+| --- | --- |
+| Check out the commit's branch | Double-click the row |
+| Details: parents, author, committer, dates, message | Right-click the row, or click its dot in the graph |
+| Check Out · Merge · Rebase · New Branch · New Tag | Right-click the row |
+| Cherry-pick · Reverse Commit · Reset (soft / mixed / hard) | Right-click the row |
+| Archive · Create Patch · Copy SHA | Right-click the row |
+
+Every action opens its command sheet first, except checking out a local branch and copying.
+
+---
+
 ## Worktrees
 
 A worktree is a second folder checked out from the same repository — its own branch and files, sharing

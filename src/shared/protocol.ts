@@ -335,6 +335,17 @@ export interface Api {
   /* Settings the webview may change (an allowlist; see the host) */
   'config/update': { params: { key: string; value: unknown }; result: void };
   'dialog/pickFolder': { params: { title?: string; defaultPath?: string }; result: { path?: string } };
+  /**
+   * Asks where to save a file the next command writes (an archive, a patch).
+   * It starts in the folder that contains the repository, so the file does
+   * not land in the working tree as an untracked change.
+   */
+  'dialog/saveFile': {
+    params: { repoId: RepoId; title?: string; defaultName: string; filters?: Record<string, string[]> };
+    result: { path?: string };
+  };
+  /** Puts text on the system clipboard; `label` names it in the status bar ("Copied SHA"). */
+  'clipboard/write': { params: { text: string; label?: string }; result: void };
 }
 
 export type Method = keyof Api;

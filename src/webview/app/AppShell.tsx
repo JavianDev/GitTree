@@ -4,6 +4,8 @@ import {
   type CommandContext,
   type CommandId,
   type CommandSpec,
+  archiveFormatFor,
+  patchFileName,
   renderCommand,
   tokenize,
 } from '@shared/commands';
@@ -11,7 +13,9 @@ import type { Commit, PullRequestEntry, RefEntry, StashEntry, WorktreeEntry } fr
 import { CommandLog } from '../features/commands/CommandLog';
 import { type CommandOption, CommandSheet } from '../features/commands/CommandSheet';
 import { TeachingCard } from '../features/commands/TeachingCard';
-import { HistoryView } from '../features/history/HistoryView';
+import { type CommitAction, checkoutPlan, commitMenu } from '../features/history/commitActions';
+import { CommitPopover } from '../features/history/CommitPopover';
+import { HistoryView, type PointerSpot } from '../features/history/HistoryView';
 import { CreatePullRequestSheet } from '../features/pullRequests/CreatePullRequestSheet';
 import { PullRequestDiffPane } from '../features/pullRequests/PullRequestDiffPane';
 import { PullRequestMaster } from '../features/pullRequests/PullRequestMaster';
@@ -27,6 +31,7 @@ import { RemoveWorktreeSheet } from '../features/worktrees/RemoveWorktreeSheet';
 import { type WorktreeSelection, WorktreeDetails } from '../features/worktrees/WorktreeDetails';
 import { WorktreeDiffPane } from '../features/worktrees/WorktreeDiffPane';
 import { RpcRequestError, rpc } from '../rpc/client';
+import type { ContextMenuItem } from '../shared/ContextMenu';
 import { BottomRibbon } from './BottomRibbon';
 import { ContextBar, type HistoryOptions, type SearchOptions, type ViewMode } from './ContextBar';
 import { RepoTabs } from './RepoTabs';
@@ -73,10 +78,31 @@ const SHEET_OPTIONS: Partial<Record<CommandId, CommandOption[]>> = {
     { key: 'stagedOnly', label: 'Staged only', hint: 'Stash just what is staged' },
   ],
   'branch.create': [
+    { key: 'branch', label: 'Name', kind: 'text', placeholder: 'feature/name' },
     { key: 'checkoutAfterCreate', label: 'Check out', hint: 'Switch to the branch once created' },
   ],
   'tag.create': [
+    { key: 'tagName', label: 'Name', kind: 'text', placeholder: 'v1.0.0' },
+    { key: 'message', label: 'Message', kind: 'text', placeholder: 'What this release is (annotated tags)' },
     { key: 'annotated', label: 'Annotated', hint: 'A real tag object with a message — use for releases' },
+  ],
+  rebase: [{ key: 'autostash', label: 'Autostash', hint: 'Shelve uncommitted work and restore it after' }],
+  cherryPick: [
+    { key: 'recordOrigin', label: 'Record origin (-x)', hint: 'Note in the message which commit this came from' },
+    { key: 'noCommit', label: 'Don’t commit', hint: 'Apply the change to your files and index; commit it yourself' },
+  ],
+  revert: [{ key: 'noCommit', label: 'Don’t commit', hint: 'Apply the undo to your files and index; commit it yourself' }],
+  reset: [
+    {
+      key: 'resetMode',
+      label: 'Mode',
+      kind: 'choice',
+      choices: [
+        { value: 'soft', label: 'Soft', hint: 'Keep every change in between, staged' },
+        { value: 'mixed', label: 'Mixed', hint: 'Keep every change in between in your files, unstaged' },
+        { value: 'hard', label: 'Hard', hint: 'Discard every change in between and all uncommitted work' },
+      ],
+    },
   ],
   'worktree.lock': [{ key: 'lockReason', label: 'Reason', kind: 'text', placeholder: 'Why it must be kept (optional)' }],
   'worktree.move': [
@@ -162,6 +188,10 @@ export function AppShell(): React.JSX.Element {
   const [removeWorktree, setRemoveWorktree] = useState<WorktreeEntry | undefined>();
   const [branchHeld, setBranchHeld] = useState<{ ref: RefEntry; entry: WorktreeEntry } | undefined>();
   const [settingsSection, setSettingsSection] = useState<SettingsSectionId | undefined>();
+  /** A commit's details panel; with `items`, its actions too (a right-click). */
+  const [commitPop, setCommitPop] = useState<
+    { commit: Commit; at: PointerSpot; items?: ContextMenuItem[] } | undefined
+  >();
 
   const [history, setHistory] = useState<HistoryOptions>({
     scope: 'all',
@@ -333,28 +363,31 @@ export function AppShell(): React.JSX.Element {
     if (ref.kind !== 'stash') setFocusHash(ref.oid);
   }, []);
 
+  /** `git switch <branch>`, run at once: what a double-click on a branch means. */
+  const switchBranch = useCallback(
+    (branch: string) => {
+      if (!active) return;
+      const commandText = renderCommand(COMMANDS['branch.checkout'], { branch }).replace(/^git /, '');
+      const argv = tokenize(commandText);
+      void rpc
+        .request('commands/run', { repoId: active.id, argv })
+        .then((result) => {
+          // A refused checkout explains itself; swallowing it left the
+          // double-click looking like it did nothing.
+          setError(result.exitCode === 0 ? undefined : (result.stderr || result.stdout).trim() || `git switch exited with ${result.exitCode}`);
+          repositories.refresh();
+        })
+        .catch((reason: unknown) => setError(describeError(reason)));
+    },
+    [active, repositories],
+  );
+
   const checkoutRef = useCallback(
     (ref: RefEntry) => {
       selectRef(ref);
-      if (!active) return;
-      if (ref.kind === 'localBranch') {
-        const commandText = renderCommand(COMMANDS['branch.checkout'], { branch: ref.name }).replace(
-          /^git /,
-          '',
-        );
-        const argv = tokenize(commandText);
-        void rpc
-          .request('commands/run', { repoId: active.id, argv })
-          .then((result) => {
-            // A refused checkout explains itself; swallowing it left the
-            // double-click looking like it did nothing.
-            setError(result.exitCode === 0 ? undefined : (result.stderr || result.stdout).trim() || `git switch exited with ${result.exitCode}`);
-            repositories.refresh();
-          })
-          .catch((reason: unknown) => setError(describeError(reason)));
-      }
+      if (ref.kind === 'localBranch') switchBranch(ref.name);
     },
-    [active, selectRef, repositories],
+    [selectRef, switchBranch],
   );
 
   const actions = useMemo<Partial<Record<CommandId, ToolbarAction>>>(() => {
@@ -495,6 +528,129 @@ export function AppShell(): React.JSX.Element {
     [active, runAction, repositories],
   );
 
+  /**
+   * Local branches checked out in another worktree, read when a commit's menu
+   * or double-click needs them: a branch lives in one worktree at a time, so
+   * those are offered as "open its worktree" rather than a switch git refuses.
+   */
+  const branchHolders = useCallback(async (): Promise<Map<string, WorktreeEntry>> => {
+    const holders = new Map<string, WorktreeEntry>();
+    if (!active) return holders;
+    try {
+      const list = await rpc.request('worktrees/list', { repoId: active.id });
+      for (const entry of list.worktrees) if (entry.branch && !entry.isCurrent) holders.set(entry.branch, entry);
+    } catch {
+      // Without the list, a held branch is simply tried; git's refusal is shown.
+    }
+    return holders;
+  }, [active]);
+
+  const copyText = useCallback((text: string, label: string) => {
+    void rpc.request('clipboard/write', { text, label }).catch((reason: unknown) => setError(describeError(reason)));
+  }, []);
+
+  /** Asks where to write the file, then opens the command's sheet with it filled in. */
+  const saveThenRun = useCallback(
+    (id: 'archive' | 'formatPatch', commit: Commit) => {
+      if (!active) return;
+      const archive = id === 'archive';
+      void rpc
+        .request('dialog/saveFile', {
+          repoId: active.id,
+          title: archive ? `Archive ${commit.shortHash}` : `Create a patch of ${commit.shortHash}`,
+          defaultName: archive ? `${active.name}-${commit.shortHash}.zip` : patchFileName(commit.subject),
+          filters: archive
+            ? { 'Zip archive': ['zip'], 'Tar archive, gzipped': ['tar.gz', 'tgz'], 'Tar archive': ['tar'] }
+            : { Patch: ['patch'] },
+        })
+        .then(({ path }) => {
+          if (!path) return;
+          runAction(id, {
+            commitish: commit.hash,
+            outputPath: path,
+            ...(archive ? { archiveFormat: archiveFormatFor(path) } : {}),
+          });
+        })
+        .catch((reason: unknown) => setError(describeError(reason)));
+    },
+    [active, runAction],
+  );
+
+  const runCommitAction = useCallback(
+    (action: CommitAction, commit: Commit) => {
+      switch (action.kind) {
+        case 'switch':
+          switchBranch(action.branch);
+          return;
+        case 'held':
+          setBranchHeld({
+            ref: { kind: 'localBranch', name: action.branch, fullName: `refs/heads/${action.branch}`, oid: commit.hash, isHead: false },
+            entry: action.entry,
+          });
+          return;
+        case 'command':
+          runAction(action.id, action.context);
+          return;
+        case 'archive':
+          saveThenRun('archive', commit);
+          return;
+        case 'patch':
+          saveThenRun('formatPatch', commit);
+          return;
+        case 'copy':
+          copyText(action.text, action.label);
+          return;
+      }
+    },
+    [switchBranch, runAction, saveThenRun, copyText],
+  );
+
+  const head = activeState?.branch;
+
+  const openCommitMenu = useCallback(
+    (commit: Commit, at: PointerSpot) => {
+      const build = (holders: ReadonlyMap<string, WorktreeEntry>): ContextMenuItem[] =>
+        commitMenu(commit, head ?? { detached: false }, holders).map((entry) =>
+          entry.separator
+            ? { label: '', separator: true, run: () => undefined }
+            : {
+                label: entry.label,
+                run: () => {
+                  if (entry.action) runCommitAction(entry.action, commit);
+                },
+                ...(entry.disabled !== undefined ? { disabled: entry.disabled } : {}),
+                ...(entry.hint ? { hint: entry.hint } : {}),
+                ...(entry.destructive ? { destructive: true } : {}),
+                ...(entry.default ? { default: true, shortcut: 'Double-click' } : {}),
+              },
+        );
+      setCommitPop({ commit, at, items: build(new Map()) });
+      // The worktree list decides which branches can be checked out here; the
+      // menu is shown at once and corrected the moment it arrives.
+      void branchHolders().then((holders) => {
+        if (holders.size === 0) return;
+        setCommitPop((current) => (current?.commit.hash === commit.hash && current.items ? { ...current, items: build(holders) } : current));
+      });
+    },
+    [head, runCommitAction, branchHolders],
+  );
+
+  const closeCommitPop = useCallback(() => setCommitPop(undefined), []);
+
+  const openCommitDetails = useCallback((commit: Commit, at: PointerSpot) => setCommitPop({ commit, at }), []);
+
+  const activateCommit = useCallback(
+    (commit: Commit, at: PointerSpot) => {
+      setCommitPop(undefined);
+      void branchHolders().then((holders) => {
+        const plan = checkoutPlan(commit, head ?? { detached: false }, holders);
+        if (plan.kind === 'choose') openCommitMenu(commit, at);
+        else if (plan.kind !== 'none') runCommitAction(plan, commit);
+      });
+    },
+    [head, branchHolders, openCommitMenu, runCommitAction],
+  );
+
   // The palette command (Ctrl+Shift+G W) asks for the New Worktree sheet.
   useEffect(
     () =>
@@ -511,6 +667,7 @@ export function AppShell(): React.JSX.Element {
    * disappears along with the teaching card that was covering it.
    */
   const dismiss = useCallback(() => {
+    if (commitPop) return setCommitPop(undefined);
     if (teaching) return setTeaching(undefined);
     // Shortcuts before settings: settings can open it, and it covers it.
     if (shortcutsOpen) return setShortcutsOpen(false);
@@ -521,7 +678,7 @@ export function AppShell(): React.JSX.Element {
     if (settingsOpen) return setSettingsOpen(false);
     if (search.query) return setSearch((current) => ({ ...current, query: '' }));
     if (logOpen) return setLogOpen(false);
-  }, [teaching, shortcutsOpen, settingsOpen, pending, search.query, logOpen, branchHeld, removeWorktree, createWorktree]);
+  }, [commitPop, teaching, shortcutsOpen, settingsOpen, pending, search.query, logOpen, branchHeld, removeWorktree, createWorktree]);
 
   useKeyboard({
     'help.shortcuts': () => setShortcutsOpen(true),
@@ -644,6 +801,9 @@ export function AppShell(): React.JSX.Element {
             uncommittedSelected={mode === 'changes'}
             onSelectUncommitted={selectUncommitted}
             {...(focusHash ? { focusHash } : {})}
+            onCommitActivate={activateCommit}
+            onCommitMenu={openCommitMenu}
+            onCommitDetails={openCommitDetails}
           />
         ) : (
           <div className="gt-empty">
@@ -794,6 +954,20 @@ export function AppShell(): React.JSX.Element {
             setBranchHeld(undefined);
           }}
           onClose={() => setBranchHeld(undefined)}
+        />
+      )}
+
+      {commitPop && active && (
+        <CommitPopover
+          key={`${commitPop.commit.hash}:${commitPop.items ? 'menu' : 'details'}`}
+          repoId={active.id}
+          commit={commitPop.commit}
+          x={commitPop.at.x}
+          y={commitPop.at.y}
+          {...(commitPop.items ? { items: commitPop.items } : {})}
+          onClose={closeCommitPop}
+          onJump={setFocusHash}
+          onCopy={copyText}
         />
       )}
 

@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import path from 'node:path';
 import * as vscode from 'vscode';
 import type { RepoId, StatusResult } from '@shared/model';
 import type {
@@ -20,7 +21,7 @@ import { BitbucketProvider } from '../pullRequests/providers/BitbucketProvider';
 import { GitHubProvider } from '../pullRequests/providers/GitHubProvider';
 import { GitLabProvider } from '../pullRequests/providers/GitLabProvider';
 import type { RepositoryManager } from '../repo/RepositoryManager';
-import { relativeTo } from '../repo/identity';
+import { displayPath, relativeTo } from '../repo/identity';
 import { TerminalBridge } from '../terminal/TerminalBridge';
 import { WorktreeController } from '../worktrees/WorktreeController';
 import { WorktreeSettingsStore } from '../worktrees/WorktreeSettingsStore';
@@ -491,6 +492,21 @@ export class GitTreePanel {
       this.emit('status/changed', { repoId });
 
       return result;
+    },
+
+    'dialog/saveFile': async ({ repoId, title, defaultName, filters }) => {
+      const repo = this.requireRepo(repoId);
+      const picked = await vscode.window.showSaveDialog({
+        defaultUri: vscode.Uri.file(path.join(path.dirname(repo.root), path.basename(defaultName))),
+        ...(title ? { title } : {}),
+        ...(filters ? { filters } : {}),
+      });
+      return picked ? { path: displayPath(picked.fsPath) } : {};
+    },
+
+    'clipboard/write': async ({ text, label }) => {
+      await vscode.env.clipboard.writeText(text);
+      vscode.window.setStatusBarMessage(`$(check) ${label ?? 'Copied'}`, 2500);
     },
 
     'terminal/open': async ({ repoId }) => {

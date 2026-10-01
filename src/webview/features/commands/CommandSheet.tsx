@@ -3,6 +3,7 @@ import {
   type CommandContext,
   type CommandSpec,
   activeFlags,
+  isDestructive,
   renderCommand,
   tokenize,
 } from '@shared/commands';
@@ -25,10 +26,12 @@ export interface CommandOption {
   label: string;
   /** Why you would want this. Shown beneath the label. */
   hint?: string;
-  /** A checkbox toggling a boolean flag (default), or a free-text field. */
-  kind?: 'checkbox' | 'text';
+  /** A checkbox toggling a boolean flag (default), a free-text field, or one of several choices. */
+  kind?: 'checkbox' | 'text' | 'choice';
   /** Placeholder for a `kind: 'text'` field. */
   placeholder?: string;
+  /** The values a `kind: 'choice'` option offers, each with a hint shown as its tooltip. */
+  choices?: readonly { value: string; label: string; hint?: string }[];
 }
 
 interface RunResult {
@@ -66,7 +69,7 @@ export function CommandSheet({
   const [edited, setEdited] = useState<string | undefined>();
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<RunResult | undefined>();
-  const [confirmed, setConfirmed] = useState(!spec.destructive);
+  const [confirmed, setConfirmed] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -75,13 +78,17 @@ export function CommandSheet({
   const commandText = edited ?? generated;
   const argv = useMemo(() => tokenize(commandText), [commandText]);
   const flags = useMemo(() => activeFlags(spec, ctx), [spec, ctx]);
+  // Judged from what is about to run, so `reset --hard` asks for confirmation
+  // whether it was chosen below or typed into the command.
+  const destructive = isDestructive(spec, argv);
+  const ready = !destructive || confirmed;
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
   const apply = async () => {
-    if (argv.length === 0 || running || !confirmed) return;
+    if (argv.length === 0 || running || !ready) return;
 
     setRunning(true);
     try {
@@ -158,7 +165,27 @@ export function CommandSheet({
         {options.length > 0 && (
           <div className="gt-cmd-options">
             {options.map((option) =>
-              option.kind === 'text' ? (
+              option.kind === 'choice' ? (
+                <div className="gt-cmd-option-choice" key={String(option.key)}>
+                  <span>{option.label}</span>
+                  <div className="gt-segmented" role="radiogroup" aria-label={option.label}>
+                    {(option.choices ?? []).map((choice) => (
+                      <button
+                        type="button"
+                        key={choice.value}
+                        className="gt-segment"
+                        role="radio"
+                        aria-checked={ctx[option.key] === choice.value}
+                        title={choice.hint}
+                        disabled={edited !== undefined}
+                        onClick={() => setCtx({ ...ctx, [option.key]: choice.value })}
+                      >
+                        {choice.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : option.kind === 'text' ? (
                 <label className="gt-cmd-option-text" key={String(option.key)} title={option.hint}>
                   <span>{option.label}</span>
                   <input
@@ -200,7 +227,7 @@ export function CommandSheet({
           </dl>
         )}
 
-        {spec.destructive && (
+        {destructive && (
           <label className="gt-checkbox gt-sheet-warning">
             <input
               type="checkbox"
@@ -241,8 +268,8 @@ export function CommandSheet({
           <button
             type="button"
             className="gt-button"
-            data-variant={spec.destructive ? 'destructive' : 'primary'}
-            disabled={running || argv.length === 0 || !confirmed}
+            data-variant={destructive ? 'destructive' : 'primary'}
+            disabled={running || argv.length === 0 || !ready}
             onClick={() => void apply()}
           >
             {running ? 'Running…' : 'Apply'}
