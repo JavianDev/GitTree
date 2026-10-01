@@ -18,10 +18,10 @@ Git Tree is **free and open source**. If you find it useful, [buying a coffee](h
 
 Unlike VS Code's flat file list, Git Tree shows your branches, commit graph, and changes side-by-side. No modal dialogs, no context switching.
 
-![Three-pane layout with branches, commit graph, and file diffs](./media/screenshots/01-three-pane-layout.png)
+![Four-pane layout: branches, the commit graph, the selected commit's files, and its diff](./media/screenshots/01-three-pane-layout.png)
 
-- **Left pane:** Branches, tags, remotes, and stashes organized hierarchically with fuzzy-search filtering (180px default)
-- **Middle pane:** The full commit graph with correct lane assignment, real-time updates as you work (250px default, collapsible)
+- **Branches pane:** Branches, tags, remotes, and stashes organized hierarchically with fuzzy-search filtering
+- **Git Tree pane:** The full commit graph with correct lane assignment, real-time updates as you work
 - **Files pane:** The changed files, with line-level staging and conflict resolution from the right-click menu
 - **Code pane:** The diff itself, unified or side by side, in its own full-height column
 - **Fully draggable:** Resize any pane by dragging the divider; layout persists across sessions
@@ -41,7 +41,7 @@ Unlike VS Code's flat file list, Git Tree shows your branches, commit graph, and
 
 Real lane assignment across merges, decorations for HEAD/tags/upstream, author and date columns, and instant navigation. Virtualised so a 50,000-commit repository scrolls at full speed.
 
-![Commit graph showing lanes, merges, and decorations](./media/screenshots/02-commit-graph.png)
+![Commit graph in the Midnight theme: lanes, merges, a stash, branch pills, and aligned author and date columns](./media/screenshots/02-commit-graph.png)
 
 **Key features:**
 
@@ -54,7 +54,7 @@ Real lane assignment across merges, decorations for HEAD/tags/upstream, author a
 
 Pick individual lines, hunks, or whole files. The Files pane has **Staged Changes**, **Changes** and **Untracked Changes** sections; every file has a stage checkbox and a file-type icon, and every section a tick-all checkbox and a file count.
 
-![File staging interface with staged and unstaged sections](./media/screenshots/03-line-level-staging.png)
+![Changes view: Staged Changes, Changes and Untracked Changes sections with checkboxes, beside the staged diff](./media/screenshots/03-line-level-staging.png)
 
 - Stage by file (tick its checkbox), hunk, or individual line
 - **Commit / Push / Stash tabs** — see the commits a push would send, or apply / pop / drop a stash,
@@ -70,7 +70,7 @@ Pick individual lines, hunks, or whole files. The Files pane has **Staged Change
 
 Amend, sign-off, GPG/SSH signing, co-authors, and commit templates — all editable before you press Enter.
 
-![Commit dialog with message, amend, signoff, and signing options](./media/screenshots/04-commit-sheet.png)
+![Commit box with an AI-drafted summary and description, Commit & Push, and Run git hooks](./media/screenshots/04-commit-sheet.png)
 
 - **✨ AI commit messages** — one click drafts a summary and description from your staged diff, using
   the AI model you already have in VS Code (such as GitHub Copilot). No API key; falls back to a
@@ -87,7 +87,7 @@ Amend, sign-off, GPG/SSH signing, co-authors, and commit templates — all edita
 
 Every action opens a modal showing the exact command, **editable in real-time**. Toggle options and the command rewrites itself. Hover to see a plain-English explanation of each flag.
 
-![Command sheet with editable command field and toggleable options](./media/screenshots/05-command-sheet.png)
+![Push command sheet showing the exact git command and its options before anything runs](./media/screenshots/05-command-sheet.png)
 
 **Why this matters:**
 
@@ -100,7 +100,7 @@ Every action opens a modal showing the exact command, **editable in real-time**.
 
 A live console of every git invocation, exit code, runtime, and output. Copy any command and paste it into your terminal. Or send it unsigned so you can read and edit it first.
 
-![Command log showing all git commands, exit codes, and durations](./media/screenshots/06-command-log.png)
+![Command log showing git commands with their exit codes, durations, and a failed merge's error](./media/screenshots/06-command-log.png)
 
 - Scroll through your session history
 - Copy any command verbatim (including pipes/redirects)
@@ -111,7 +111,7 @@ A live console of every git invocation, exit code, runtime, and output. Copy any
 
 With forty-seven branches, a flat list is useless. GitTree nests branches by `/`, collapses folders, and lets you fuzzy-search the full path.
 
-![Branch sidebar with collapsible folders and Current/Recent pinned](./media/screenshots/07-branch-sidebar.png)
+![Branch sidebar filtered by “feat”, with matches highlighted and the pane widened to fit them](./media/screenshots/07-branch-sidebar.png)
 
 - **Current** and **Recent** branches pinned above the tree
 - Type to filter — matches the whole path, not just the prefix
@@ -122,7 +122,7 @@ With forty-seven branches, a flat list is useless. GitTree nests branches by `/`
 
 One-click toolbar buttons for the most common operations. Each opens the command sheet for a second to review. Keyboard shortcuts available (press `?` to see them all).
 
-![Toolbar with Commit, Pull, Push, Branch, Merge, Stash buttons](./media/screenshots/08-toolbar.png)
+![Toolbar with Commit, Fetch, Pull, Push, New Branch, Merge, Stash, Discard, and Tag](./media/screenshots/08-toolbar.png)
 
 | Action | Keyboard | Notes |
 | --- | --- | --- |
@@ -137,7 +137,7 @@ One-click toolbar buttons for the most common operations. Each opens the command
 
 Open a folder and GitTree finds every repository inside it — at any depth. Understands the difference between nested repos, submodules, and worktrees.
 
-![Repository tabs showing multiple open repos with quick-add button](./media/screenshots/09-multi-repo.png)
+![Repository tabs for two open repositories, with the + button to add another](./media/screenshots/09-multi-repo.png)
 
 - **Tabs** for each open repository
 - Scroll position, selection, and filters remembered per-repo
@@ -149,7 +149,7 @@ Open a folder and GitTree finds every repository inside it — at any depth. Und
 
 Follows your VS Code theme by default. Also offers curated system-class alternatives.
 
-![Theme selector dropdown showing multiple theme options](./media/screenshots/10-themes.png)
+![The same view in four themes: Light, macOS Dark, Graphite, and Midnight](./media/screenshots/10-themes.png)
 
 - Cycle themes with `Ctrl+Alt+T` (macOS: `⌘+⌥+T`)
 - High-contrast mode fully supported
