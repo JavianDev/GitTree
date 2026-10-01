@@ -12,6 +12,22 @@ Git Tree is **free and open source**. If you find it useful, [buying a coffee](h
 
 ---
 
+## 🆕 New in 0.10
+
+- **Commit, Push and Stash tabs** in the Files pane — the commits a push would send, and every stash
+  with Apply / Pop / Drop on the row (§8)
+- **✨ AI commit messages** drafted from your staged diff by the model you already use in VS Code,
+  plus **Commit & Push** and a **Run git hooks** switch (§4)
+- **Checkbox staging** — Staged Changes, Changes and Untracked Changes sections, a stage checkbox and
+  file-type icon on every file (§3)
+- **Panes that fit their text** — branch names, commit messages and file names show in full without
+  dragging a divider, and every pane has a title bar for its pin and collapse buttons (§1)
+- **A redrawn commit graph** — messages sit right beside their nodes, glassy nodes, merge badges,
+  branch pills in their lane's colour (§2)
+- **Browser sign-in for Bitbucket and GitLab** pull requests (§11)
+
+---
+
 ## ✨ What Makes Git Tree Different
 
 ### 1. **Four-Pane Layout** — See Everything At Once
@@ -32,8 +48,8 @@ Unlike VS Code's flat file list, Git Tree shows your branches, commit graph, and
 - **Files and Code panes:** the file list and the diff are separate panes, each resizable and
   collapsible — four panes in all: Branches | Git Tree | Files | Code
 - **Focus diff:** Click a file (in Changes or in a commit) and the Branches and Git Tree panes fold to
-  thin rails so Files and Code get the full width — **⇤ Restore panels** (or clicking a rail) brings
-  them back
+  thin rails so Files and Code get the full width (as in the staging screenshot in §3) —
+  **⇤ Restore panels** (or clicking a rail) brings them back, each pane sized to its text again
 - **New files show their contents:** an untracked file's whole content appears as added lines,
   not an empty pane
 
@@ -45,6 +61,11 @@ Real lane assignment across merges, decorations for HEAD/tags/upstream, author a
 
 **Key features:**
 
+- Each message starts right beside its own node — no wide graph column pushing every row's text away
+- Glassy nodes: orbs for commits, lenses for merges (with an **M** badge), a gem for the root commit
+- Branch pills tinted in their lane's colour; the checked-out branch is a filled pill
+- Author and date are aligned columns, and drop out first when the pane is narrow so the message keeps
+  the room
 - Click a commit to see its full diff side-by-side
 - Navigate by keyboard: `j`/`k` to move, `Space` to select
 - Filter by message, author, or date without re-rendering
@@ -56,10 +77,12 @@ Pick individual lines, hunks, or whole files. The Files pane has **Staged Change
 
 ![Changes view: Staged Changes, Changes and Untracked Changes sections with checkboxes, beside the staged diff](./media/screenshots/03-line-level-staging.png)
 
-- Stage by file (tick its checkbox), hunk, or individual line
-- **Commit / Push / Stash tabs** — see the commits a push would send, or apply / pop / drop a stash,
-  without leaving the pane
-- **Toolbar:** discard all changes, expand or collapse every folder, refresh
+- Stage by file (tick its checkbox), a whole section (tick its header), a hunk, or individual lines
+- Names are coloured by what happened to the file: added green, deleted struck through, renamed blue
+- New files have their own **Untracked Changes** section, as in VS Code's Source Control view — and
+  selecting one shows its whole content as added lines
+- **Toolbar** on the summary row: ↺ discard all changes to tracked files (untracked files are kept),
+  ⊞ expand and ⊟ collapse every folder, ⟳ refresh
 - Drag files between Staged and Unstaged groups
 - **Drag the divider** between file list and diff to resize (persists across sessions)
 - Use `→` and `←` keyboard shortcuts
@@ -72,12 +95,18 @@ Amend, sign-off, GPG/SSH signing, co-authors, and commit templates — all edita
 
 ![Commit box with an AI-drafted summary and description, Commit & Push, and Run git hooks](./media/screenshots/04-commit-sheet.png)
 
-- **✨ AI commit messages** — one click drafts a summary and description from your staged diff, using
-  the AI model you already have in VS Code (such as GitHub Copilot). No API key; falls back to a
-  message drafted from the changed files when no model is available
-- **Summary + description** fields, and **Commit & Push** (`Ctrl+Shift+Enter`) beside **Commit**
-  (`Ctrl+Enter`)
-- **Run git hooks** — untick to commit with `--no-verify`
+- **✨ AI commit messages** — one click drafts a summary and description from your staged diff (or
+  from every change when nothing is staged), using the AI model you already have in VS Code, such as
+  GitHub Copilot, through VS Code's own language-model API. No API key and no extra account; VS Code
+  asks your permission the first time. The note beside ✨ says which model wrote the draft — review it
+  before committing. With no model available, it drafts a message from the changed files instead and
+  says so
+- **Summary + description** fields, like GitHub Desktop: the commit message is the summary, a blank
+  line, then the description. Amend and an in-progress merge fill both in for you
+- **Commit & Push** (`Ctrl+Shift+Enter`) beside **Commit** (`Ctrl+Enter`) — commits, then pushes to
+  `origin`, setting the upstream on a branch's first push. A refused push is shown verbatim, after the
+  commit has landed
+- **Run git hooks** — on by default; untick to commit with `--no-verify`
 - **Pre-commit hooks** show their output verbatim, never replaced with "commit failed"
 - **Co-authors** via trailer syntax (recognized by GitHub, GitLab, etc.)
 - **Signing** — GPG or SSH (git handles the credential, GitTree just enables the flag)
@@ -91,21 +120,23 @@ Every action opens a modal showing the exact command, **editable in real-time**.
 
 **Why this matters:**
 
-- Mistyped? See the dialog **before anything runs**
+- Mistyped? See the dialog **before anything runs** — above, Push on a branch with no upstream adds
+  `--set-upstream` for you and says why
 - Want to add a flag? Edit the command directly
 - Want to understand the flags? Hover for the teaching card
 - **"Why this command?"** button explains the concept (what `--rebase` does, when `--force-with-lease` is safe)
 
 ### 6. **Command Log — Copy, Send to Terminal, or Re-run**
 
-A live console of every git invocation, exit code, runtime, and output. Copy any command and paste it into your terminal. Or send it unsigned so you can read and edit it first.
+A live console of every git invocation, exit code, runtime, and output. Copy any command and paste it into your terminal, or send it to the integrated terminal to read and edit before you run it.
 
 ![Command log showing git commands with their exit codes, durations, and a failed merge's error](./media/screenshots/06-command-log.png)
 
-- Scroll through your session history
-- Copy any command verbatim (including pipes/redirects)
-- "Send to Terminal" types it in the integrated terminal without running it
-- Filter by command, repo, or date
+- Scroll through your session history for the repository you're in; `Ctrl+\` opens and closes it
+- **Copy** any command verbatim
+- **Terminal** types it in the integrated terminal without running it
+- A failed command shows git's own error right under it (above: a merge that hit conflicts)
+- **Hide reads** keeps the log to the commands that changed something
 
 ### 7. **Branch Management at Scale**
 
@@ -114,7 +145,8 @@ With forty-seven branches, a flat list is useless. GitTree nests branches by `/`
 ![Branch sidebar filtered by “feat”, with matches highlighted and the pane widened to fit them](./media/screenshots/07-branch-sidebar.png)
 
 - **Current** and **Recent** branches pinned above the tree
-- Type to filter — matches the whole path, not just the prefix
+- Type to filter — matches the whole path, not just the prefix, and highlights the match
+- The pane widens to fit the names it shows; double-click the divider to refit it after filtering
 - `Enter` checks out the best match (or double-click)
 - Shows ahead/behind counts and whether upstream exists
 
@@ -131,7 +163,17 @@ One-click toolbar buttons for the most common operations. Each opens the command
 | Push | `Shift+P` | Sets upstream on first push |
 | Branch Create | `b` | Checks out immediately |
 | Merge | `m` | `--no-ff` by default (leaves history clear) |
-| Stash Push | `s` | `--include-untracked` by default |
+| Stash Push | `Shift+S` | `--include-untracked` by default |
+
+**Push and Stash tabs.** The Files pane has a tab for each, beside **Commit**, with a count on each:
+
+![The Push tab listing the commits a push would send, beside the Stash tab with Apply, Pop and Drop](./media/screenshots/11-push-stash-tabs.png)
+
+- **Push (N)** lists exactly the commits a push would send — against the upstream, or every
+  unpublished commit on a branch that has none yet — with **↑ Push**, and **↓ Pull N** when you're behind
+- **Stash (N)** lists every stash with its source branch and age; **Apply**, **Pop** and **Drop** sit on
+  the row, and **Stash changes…** stashes what you have
+- Each button opens the same review-before-run command sheet as the toolbar
 
 ### 9. **Multi-Repo Workspaces**
 
@@ -147,7 +189,8 @@ Open a folder and GitTree finds every repository inside it — at any depth. Und
 
 ### 10. **Themes — Light, Dark, macOS, Graphite, Midnight**
 
-Follows your VS Code theme by default. Also offers curated system-class alternatives.
+**Auto** follows your VS Code theme, light or dark. **macOS Light**, **macOS Dark**, **Graphite** and
+**Midnight** are curated alternatives — above: Light, macOS Dark, Graphite and Midnight.
 
 ![The same view in four themes: Light, macOS Dark, Graphite, and Midnight](./media/screenshots/10-themes.png)
 
@@ -183,7 +226,8 @@ what to do with it.
 
 - View every stash with its message, source branch, and age
 - Click to preview its diff without disturbing your current branch or selection
-- **Apply**, **Pop**, or **Drop** from the right-click menu — Drop requires confirmation
+- **Apply**, **Pop**, or **Drop** from the right-click menu or the Stash tab's rows (§8) — Drop
+  requires confirmation
 - Stash with a custom message from the same command sheet used for every other action
 
 ### 13. **Resolving Merge Conflicts — Mine, Theirs, or Manual**
@@ -336,7 +380,11 @@ The panel opens with four panes: **Branches**, **Commit Graph**, **Files**, and 
 
 ## ⌨️ Keyboard Shortcuts
 
-Press `?` in Git Tree for the full list. Here's the quick reference:
+Press `?` in Git Tree for the full list:
+
+![The keyboard shortcuts sheet, grouped by panes, moving, modes, staging, review, git and repository](./media/screenshots/12-keyboard-shortcuts.png)
+
+Here's the quick reference:
 
 | Action | Keys |
 | --- | --- |
