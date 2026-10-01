@@ -110,9 +110,35 @@ stashes stacked up across different branches.
 
 ---
 
+## Worktrees
+
+A worktree is a second folder checked out from the same repository — its own branch and files, sharing
+one object store. The **Worktrees** section sits right after Branches.
+
+| Action | Where |
+| --- | --- |
+| New worktree | `w`, the **+** on the Worktrees section, a branch or tag's right-click menu, or `Ctrl+Shift+G W` |
+| See its changes and unpushed commits | Click the worktree |
+| Open as a tab / in a new window / in this window | Double-click, or right-click → **Open in …** |
+| Terminal, Reveal, Copy Path, Colour Label | Right-click the worktree |
+| Lock / Unlock, Move, Remove | Right-click the worktree |
+| Prune, Repair, Clean Up Gone Branches, Settings | The section's **⋯** menu |
+| Where worktrees go | Settings ▸ Worktrees |
+
+Every action shows the exact `git worktree …` command first and lands in the command log.
+
+### Workflow: Review a pull request without switching
+
+1. Right-click the PR's branch in **Branches** → **New Worktree from This Branch…**
+2. Check the folder, then **Create Worktree** — it opens in its own tab
+3. Build, run, review; your own branch is untouched in the first tab
+4. Right-click the worktree → **Remove…** when you're done
+
+---
+
 ## Pull Requests
 
-Appears automatically in the sidebar (at the bottom, below Stashes) when your repo's remote points at
+Appears automatically in the sidebar (below Worktrees, Remotes and Tags) when your repo's remote points at
 GitHub, Azure DevOps, GitLab, or Bitbucket — nothing to configure. Sign in with VS Code's own
 GitHub/Microsoft account; GitLab asks for a personal access token once; Bitbucket asks for your
 Atlassian account email and an API token (id.atlassian.com → Security → API tokens → "Create API
@@ -196,6 +222,7 @@ GIT OPERATIONS:
   /           Filter / Checkout Branch
   m           Merge
   Shift+S     Stash
+  w           New worktree
   c           Clear (toggle Changes view)
 
 EDITING:

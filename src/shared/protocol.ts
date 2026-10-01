@@ -27,6 +27,13 @@ import type {
   RepoState,
   StashEntry,
   StatusResult,
+  CopyReport,
+  WorktreeColor,
+  WorktreeConfig,
+  WorktreeList,
+  WorktreeOpenTarget,
+  WorktreeRepoOverride,
+  WorktreeSummary,
 } from './model';
 import type { CommandContext, CommandId } from './commands';
 
@@ -290,6 +297,44 @@ export interface Api {
     params: { repoId: RepoId; path: string; line?: number };
     result: void;
   };
+
+  /* Worktrees. Every `path` must be one `git worktree list` reports for `repoId`'s repository. */
+  'worktrees/list': { params: { repoId: RepoId }; result: WorktreeList };
+  /** Row counts, read in each worktree; cached briefly unless `force`. */
+  'worktrees/summary': {
+    params: { repoId: RepoId; paths: string[]; force?: boolean };
+    result: { summaries: WorktreeSummary[] };
+  };
+  /** A repository id for a worktree folder, so the ordinary status/diff/log calls work on it. */
+  'worktrees/register': { params: { repoId: RepoId; path: string }; result: { repoId: RepoId } };
+  'worktrees/open': { params: { repoId: RepoId; path: string; target: WorktreeOpenTarget }; result: void };
+  'worktrees/reveal': { params: { repoId: RepoId; path: string }; result: void };
+  'worktrees/terminal': { params: { repoId: RepoId; path: string }; result: void };
+  'worktrees/copyPath': { params: { repoId: RepoId; path: string }; result: void };
+  /** Where a worktree for `name` would go under the effective settings (or `location`, for a preview). */
+  'worktrees/suggestPath': {
+    params: { repoId: RepoId; name: string; location?: Partial<WorktreeRepoOverride> };
+    result: { path?: string; base?: string; folder: string; suffixed: boolean; warnings: string[]; error?: string };
+  };
+  /** Whether a folder can take a new worktree. */
+  'worktrees/checkPath': {
+    params: { repoId: RepoId; path: string };
+    result: { exists: boolean; empty: boolean; registered: boolean; insideWorktree?: string; error?: string };
+  };
+  /** Copies untracked/ignored files matching the patterns into a worktree, or reports what would be copied. */
+  'worktrees/copyFiles': {
+    params: { repoId: RepoId; targetPath?: string; include: string[]; exclude: string[]; dryRun: boolean };
+    result: CopyReport;
+  };
+  'worktrees/config': { params: { repoId: RepoId }; result: WorktreeConfig };
+  'worktrees/setOverride': { params: { repoId: RepoId; override: WorktreeRepoOverride | null }; result: WorktreeConfig };
+  'worktrees/setColor': { params: { repoId: RepoId; path: string; color: WorktreeColor | null }; result: void };
+  /** Adds `pattern` to the repository's `.git/info/exclude` (for an in-repository worktree folder). */
+  'worktrees/excludeFolder': { params: { repoId: RepoId; folder: string }; result: void };
+
+  /* Settings the webview may change (an allowlist; see the host) */
+  'config/update': { params: { key: string; value: unknown }; result: void };
+  'dialog/pickFolder': { params: { title?: string; defaultPath?: string }; result: { path?: string } };
 }
 
 export type Method = keyof Api;
@@ -319,8 +364,10 @@ export interface Events {
   'log/batch': { streamId: string; commits: Commit[]; rows: GraphRow[]; done: boolean };
   /** A git command finished; appended to the command log live. */
   'commands/recorded': { entry: JournalEntry };
-  /** Host-side configuration the webview mirrors (accent, density, dates). */
-  'config/changed': { accentColor: string; density: string; dateFormat: string };
+  /** Settings changed; listeners for these scopes should reload. */
+  'config/changed': { scopes: Array<'worktrees' | 'discovery'> };
+  /** The host asks the webview to open a UI surface (a palette command was run). */
+  'ui/request': { action: 'worktree.create' };
 }
 
 export type EventName = keyof Events;

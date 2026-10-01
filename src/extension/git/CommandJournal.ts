@@ -47,6 +47,9 @@ const CONDITIONAL: Record<string, (args: readonly string[]) => boolean> = {
 
   // `stash` with no verb pushes; `stash list`/`show` only read.
   stash: (args) => !['list', 'show'].includes(args[1] ?? ''),
+
+  // `worktree list` reads; add, remove, move, lock, unlock, prune and repair write.
+  worktree: (args) => args[1] !== 'list',
 };
 
 /**

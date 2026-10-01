@@ -61,9 +61,20 @@ same folder reached through a junction become three repositories with three watc
 duplicate graph rows. See [`identity.ts`](../src/extension/repo/identity.ts).
 
 **Classification.** A `.git` *directory* is an ordinary checkout. A `.git` *file* redirects
-elsewhere, and the target says which kind it is: `…/.git/worktrees/` is a linked worktree,
-`…/.git/modules/` is a submodule. A plain repo inside another's working tree is `nested`, and
-staging it from the parent would commit an empty gitlink — the UI blocks that specifically.
+elsewhere, and the target says which kind it is: a gitdir holding a `commondir` file is a linked
+worktree (this also covers worktrees of a bare repository), `…/modules/` is a submodule. A plain repo
+inside another's working tree is `nested`, and staging it from the parent would commit an empty
+gitlink — the UI blocks that specifically. Every node records its `commonDir`, which links a linked
+worktree to its main one (`mainId`) and keys per-repository worktree settings.
+
+**Worktrees outside the workspace.** `git worktree list` names folders discovery never scans (the
+default `<repo>.worktrees` is a sibling). The repository manager gives such a folder one of two forms:
+a **shadow** node — a `RepoNode` and `GitService` with no watchers and no tab, used for its details,
+diffs, and terminal — or an **attached** node, added to the tree with git-dir watchers and a
+`RelativePattern` file watcher, used for "Open in Git Tree tab". Ids are the same `repoId(path)` either
+way, so the ordinary `status/get`, `diff/get` and `log/outgoing` calls work on a worktree. Every RPC
+that takes a worktree path checks it against a fresh `git worktree list` first, so the webview can
+never point git or the file system at an arbitrary folder.
 
 **Scaling.** Two decisions carry it:
 

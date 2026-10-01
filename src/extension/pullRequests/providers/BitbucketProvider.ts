@@ -25,6 +25,7 @@ import {
   chooseSignInMethod,
   providerReason,
   signInWithBrowser,
+  explainTokenFallback,
 } from '../oauthClients';
 import {
   type BitbucketBuildStatus,
@@ -86,6 +87,10 @@ export class BitbucketProvider implements PullRequestProvider {
         const token = await signInWithBrowser(oauth, 'Bitbucket');
         return token ? BEARER + token : undefined;
       }
+    } else if (
+      !(await explainTokenFallback('Bitbucket', 'an API token', 'gitTree.bitbucket.oauthConsumerKey and …Secret'))
+    ) {
+      return undefined;
     }
 
     return this.promptApiToken();

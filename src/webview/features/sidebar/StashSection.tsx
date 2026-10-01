@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { StashEntry } from '@shared/model';
 import { rpc } from '../../rpc/client';
 import { ContextMenu, type ContextMenuItem } from '../../shared/ContextMenu';
+import { SidebarSection } from './SidebarSection';
 
 export type StashActionId = 'stash.apply' | 'stash.pop' | 'stash.drop';
 
@@ -57,22 +58,13 @@ export function StashSection({
   if (stashes.length === 0) return null;
 
   return (
-    <section>
-      <button
-        type="button"
-        className="gt-section-header"
-        onClick={() => setCollapsed((current) => !current)}
-        aria-expanded={!collapsed}
+    <>
+      <SidebarSection
+        title="Stashes"
+        count={stashes.length}
+        collapsed={collapsed}
+        onToggle={() => setCollapsed((current) => !current)}
       >
-        <span className="gt-disclosure" aria-hidden="true">
-          {collapsed ? '▸' : '▾'}
-        </span>
-        Stashes
-        <span className="gt-group-count">{stashes.length}</span>
-      </button>
-
-      {!collapsed && (
-        <div role="tree">
           {stashes.map((stash) => (
             <div
               key={stash.ref}
@@ -101,8 +93,7 @@ export function StashSection({
               <span className="gt-source-meta gt-mono">{stash.shortOid}</span>
             </div>
           ))}
-        </div>
-      )}
+      </SidebarSection>
 
       {contextMenu && (
         <ContextMenu
@@ -112,7 +103,7 @@ export function StashSection({
           onClose={() => setContextMenu(undefined)}
         />
       )}
-    </section>
+    </>
   );
 }
 

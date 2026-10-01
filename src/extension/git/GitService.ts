@@ -11,9 +11,11 @@ import type {
   RepoSettings,
   StashEntry,
   StatusResult,
+  WorktreeSummary,
 } from '@shared/model';
 import { GraphLayout } from '../graph/layout';
 import type { CommitRequest, DiffTarget, LineSelection, LogRequest } from '@shared/protocol';
+import type { GitFeature } from './GitExecutable';
 import { GitError, type GitProcess } from './GitProcess';
 import type { GitScheduler, Priority } from './GitScheduler';
 import { detectMergeOperation } from './mergeOperation';
@@ -26,6 +28,14 @@ import { numstatArgs, parseNumstat } from './parsers/numstat';
 import { REF_ARGS, parseRefs } from './parsers/refs';
 import { REMOTE_ARGS, parseRemotes } from './parsers/remote';
 import { STASH_ARGS, parseStashes } from './parsers/stash';
+import {
+  UNTRACKED_ENTRIES_ARGS,
+  WORKTREE_LIST_ARGS,
+  WORKTREE_LIST_ARGS_LEGACY,
+  WORKTREE_SUMMARY_ARGS,
+  type WorktreeRecord,
+  parseWorktreeList,
+} from './parsers/worktree';
 import { NUL, RS } from './separators';
 
 export interface GitServiceOptions {
@@ -61,6 +71,8 @@ export class GitService {
     readonly repo: RepoNode,
     private readonly git: GitProcess,
     private readonly scheduler: GitScheduler,
+    /** Whether the located git is new enough for a feature; tests default to "yes". */
+    private readonly supports: (feature: GitFeature) => boolean = () => true,
   ) {}
 
   private get cwd(): string {
@@ -543,6 +555,69 @@ export class GitService {
         if (commit) commits.push(commit);
       }
       return { commits, hasUpstream };
+    });
+  }
+
+  /* ---------------------------------------------------------------------- */
+  /* Worktrees                                                              */
+  /* ---------------------------------------------------------------------- */
+
+  /** Every worktree of this repository, main first, as git lists them. */
+  async worktrees(options?: GitServiceOptions): Promise<WorktreeRecord[]> {
+    const nul = this.supports('worktreeListZ');
+    return this.runScheduled(options, async (signal) => {
+      const result = await this.git.run({
+        cwd: this.cwd,
+        args: [...(nul ? WORKTREE_LIST_ARGS : WORKTREE_LIST_ARGS_LEGACY)],
+        signal,
+      });
+      return parseWorktreeList(result.stdout, nul);
+    });
+  }
+
+  /** The shared git directory, absolute: the main `.git` every worktree of this repository uses. */
+  async commonDir(options?: GitServiceOptions): Promise<string> {
+    return this.runScheduled(options, async (signal) => {
+      const result = await this.git.run({ cwd: this.cwd, args: ['rev-parse', '--git-common-dir'], signal });
+      return resolvePath(this.cwd, result.stdout.trim());
+    });
+  }
+
+  /** Change counts and ahead/behind for this worktree's row: one cheap status read. */
+  async summary(options?: GitServiceOptions): Promise<WorktreeSummary> {
+    return this.runScheduled(options, async (signal) => {
+      const records: string[] = [];
+      await this.git.stream({
+        cwd: this.cwd,
+        args: [...WORKTREE_SUMMARY_ARGS],
+        separator: NUL,
+        onRecord: (record) => records.push(record),
+        signal,
+      });
+
+      const { branch, files } = parseStatus(records);
+      return {
+        path: this.repo.root,
+        staged: files.filter((file) => file.staged).length,
+        unstaged: files.filter((file) => file.unstaged && file.kind !== 'untracked' && !file.conflicted).length,
+        untracked: files.filter((file) => file.kind === 'untracked').length,
+        conflicted: files.filter((file) => file.conflicted).length,
+        ahead: branch.ahead,
+        behind: branch.behind,
+        ...(branch.upstream ? { upstream: branch.upstream } : {}),
+      };
+    });
+  }
+
+  /**
+   * Untracked and ignored entries, collapsed to directories (`.venv/`), which
+   * is what a new worktree's "copy files" step may take. Tracked files are
+   * never candidates: the new worktree checks those out itself.
+   */
+  async untrackedEntries(options?: GitServiceOptions): Promise<string[]> {
+    return this.runScheduled(options, async (signal) => {
+      const result = await this.git.run({ cwd: this.cwd, args: [...UNTRACKED_ENTRIES_ARGS], signal });
+      return result.stdout.split(NUL).filter((entry) => entry.length > 0);
     });
   }
 

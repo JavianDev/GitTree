@@ -116,6 +116,38 @@ export async function chooseSignInMethod(provider: string, tokenLabel: string): 
   return picked?.method;
 }
 
+/** Where the one-time browser sign-in setup is described. */
+const OAUTH_SETUP_URL = 'https://github.com/JavianDev/GitTree/blob/HEAD/docs/oauth-setup.md';
+
+/**
+ * When this build has no app registration for the provider, browser sign-in
+ * cannot start — say so, rather than going straight to a token prompt that
+ * looks like the browser option was never there. Returns true to continue
+ * with a token.
+ */
+export async function explainTokenFallback(provider: string, tokenLabel: string, settingKeys: string): Promise<boolean> {
+  const picked = await vscode.window.showQuickPick(
+    [
+      {
+        label: `$(key) Use ${tokenLabel}`,
+        detail: `Browser sign-in isn't set up in this build of Git Tree, so ${provider} needs ${tokenLabel}.`,
+        choice: 'token' as const,
+      },
+      {
+        label: '$(globe) Set up browser sign-in…',
+        detail: `Register Git Tree with ${provider} once, then set ${settingKeys} in Settings (opens the guide)`,
+        choice: 'setup' as const,
+      },
+    ],
+    { title: `Sign in to ${provider}`, ignoreFocusOut: true },
+  );
+  if (picked?.choice === 'setup') {
+    void vscode.env.openExternal(vscode.Uri.parse(OAUTH_SETUP_URL));
+    return false;
+  }
+  return picked?.choice === 'token';
+}
+
 /** Runs the browser flow behind a cancellable notification. */
 export async function signInWithBrowser(session: OAuthSession, provider: string): Promise<string | undefined> {
   return vscode.window.withProgress(

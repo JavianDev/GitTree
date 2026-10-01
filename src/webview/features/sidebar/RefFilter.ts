@@ -25,10 +25,20 @@ export interface RefMatch {
  * distinguish "no match" from "matched with a poor score".
  */
 export function matchRef(query: string, ref: RefEntry): RefMatch | undefined {
-  const normalized = query.trim().toLowerCase();
-  if (!normalized) return { ref, positions: [], score: 0 };
+  const match = matchText(query, ref.name);
+  if (!match) return undefined;
+  return { ref, positions: match.positions, score: match.score + (ref.isHead && query.trim() ? 10 : 0) };
+}
 
-  const haystack = ref.name.toLowerCase();
+/**
+ * The same subsequence match over any text — a worktree's branch or folder
+ * name — so the one filter box finds worktrees exactly as it finds branches.
+ */
+export function matchText(query: string, text: string): { positions: number[]; score: number } | undefined {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return { positions: [], score: 0 };
+
+  const haystack = text.toLowerCase();
   const positions: number[] = [];
 
   let cursor = 0;
@@ -55,10 +65,9 @@ export function matchRef(query: string, ref: RefEntry): RefMatch | undefined {
   }
 
   // Shorter names containing the same match are more likely the intended one.
-  score += Math.max(0, 20 - ref.name.length / 4);
-  if (ref.isHead) score += 10;
+  score += Math.max(0, 20 - text.length / 4);
 
-  return { ref, positions, score };
+  return { positions, score };
 }
 
 /** Matching refs, best first. */

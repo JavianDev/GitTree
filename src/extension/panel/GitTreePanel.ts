@@ -22,6 +22,9 @@ import { GitLabProvider } from '../pullRequests/providers/GitLabProvider';
 import type { RepositoryManager } from '../repo/RepositoryManager';
 import { relativeTo } from '../repo/identity';
 import { TerminalBridge } from '../terminal/TerminalBridge';
+import { WorktreeController } from '../worktrees/WorktreeController';
+import { WorktreeSettingsStore } from '../worktrees/WorktreeSettingsStore';
+import { RpcFailure } from './RpcFailure';
 
 /** Handler signature for one RPC method. */
 type Handler<M extends Method> = (params: Api[M]['params']) => Promise<Api[M]['result']>;
@@ -42,14 +45,19 @@ export class GitTreePanel {
   private readonly terminals = new TerminalBridge();
   private readonly prServices = new Map<RepoId, PullRequestService>();
   private readonly prProviders: PullRequestProvider[];
+  private readonly worktrees: WorktreeController;
   private disposed = false;
+  /** The webview has said it is listening. */
+  private ready = false;
+  /** UI requests made before the webview was ready, delivered when it is. */
+  private readonly pendingUi: Array<Events['ui/request']> = [];
 
-  static show(context: vscode.ExtensionContext, manager: RepositoryManager): void {
+  static show(context: vscode.ExtensionContext, manager: RepositoryManager): GitTreePanel {
     const column = vscode.window.activeTextEditor?.viewColumn ?? vscode.ViewColumn.One;
 
     if (GitTreePanel.current) {
       GitTreePanel.current.panel.reveal(column);
-      return;
+      return GitTreePanel.current;
     }
 
     const panel = vscode.window.createWebviewPanel('gitTree', 'Git Tree', column, {
@@ -61,6 +69,23 @@ export class GitTreePanel {
     });
 
     GitTreePanel.current = new GitTreePanel(panel, context, manager);
+    return GitTreePanel.current;
+  }
+
+  /** The open panel, if any — for settings changes made outside it. */
+  static get instance(): GitTreePanel | undefined {
+    return GitTreePanel.current;
+  }
+
+  /** Asks the webview to open a surface, queued until it is listening. */
+  requestUi(request: Events['ui/request']): void {
+    if (this.ready) this.emit('ui/request', request);
+    else this.pendingUi.push(request);
+  }
+
+  /** Settings changed outside the webview (settings.json, the Settings UI). */
+  notifyConfigChanged(scopes: Events['config/changed']['scopes']): void {
+    this.emit('config/changed', { scopes });
   }
 
   private constructor(
@@ -80,6 +105,15 @@ export class GitTreePanel {
       new GitLabProvider(context.secrets),
       new BitbucketProvider(context.secrets),
     ];
+
+    this.worktrees = new WorktreeController(
+      manager,
+      new WorktreeSettingsStore(context.globalState),
+      this.terminals,
+      context,
+      (event, payload) => this.emit(event, payload),
+    );
+    this.handlers = { ...this.baseHandlers, ...this.worktrees.handlers() };
 
     this.disposables.push(
       panel.webview.onDidReceiveMessage((message: WebviewMessage) => void this.receive(message)),
@@ -132,14 +166,16 @@ export class GitTreePanel {
 
   private emitRepositories(): void {
     this.emit('repos/changed', {
-      nodes: this.manager.repositories.all(),
+      nodes: this.worktrees.decorate(this.manager.repositories.all()),
       activeId: this.manager.active?.id,
     });
   }
 
   private async receive(message: WebviewMessage): Promise<void> {
     if (message.kind === 'ready') {
+      this.ready = true;
       this.emitRepositories();
+      for (const request of this.pendingUi.splice(0)) this.emit('ui/request', request);
       return;
     }
 
@@ -180,7 +216,7 @@ export class GitTreePanel {
   }
 
   private requireRepo(repoId: RepoId) {
-    const repo = this.manager.repositories.get(repoId);
+    const repo = this.manager.node(repoId);
     if (!repo) throw new RpcFailure('not-found', `Unknown repository: ${repoId}`);
     return repo;
   }
@@ -206,9 +242,12 @@ export class GitTreePanel {
     throw new RpcFailure('git', result.stderr.trim() || `git exited with ${result.exitCode}`);
   }
 
-  private readonly handlers: { [M in Method]?: Handler<M> } = {
+  /** Every handler: the base set below plus the worktree controller's. */
+  private readonly handlers: { [M in Method]?: Handler<M> };
+
+  private readonly baseHandlers: { [M in Method]?: Handler<M> } = {
     'repos/list': async () => ({
-      nodes: this.manager.repositories.all(),
+      nodes: this.worktrees.decorate(this.manager.repositories.all()),
       activeId: this.manager.active?.id,
     }),
 
@@ -439,7 +478,10 @@ export class GitTreePanel {
     },
 
     'commands/run': async ({ repoId, argv, stdin }) => {
-      const result = await this.requireService(repoId).run(argv, stdin);
+      const service = this.requireService(repoId);
+      await this.worktrees.beforeCommand(argv);
+      const result = await service.run(argv, stdin);
+      await this.worktrees.afterCommand(repoId, argv, result.exitCode === 0);
 
       // Almost every mutation moves HEAD, the index, or the refs. Refreshing
       // here means the views update from one place rather than each caller
@@ -460,7 +502,7 @@ export class GitTreePanel {
     },
 
     'editor/open': async ({ repoId, path: relativePath, line }) => {
-      const repo = this.manager.repositories.get(repoId);
+      const repo = this.manager.node(repoId);
       if (!repo) throw new RpcFailure('not-found', `Unknown repository: ${repoId}`);
 
       const uri = vscode.Uri.joinPath(vscode.Uri.file(repo.root), relativePath);
@@ -544,16 +586,6 @@ export class GitTreePanel {
     <script nonce="${nonce}" type="module" src="${script}"></script>
   </body>
 </html>`;
-  }
-}
-
-/** An error with an RPC code already attached. */
-class RpcFailure extends Error {
-  constructor(
-    readonly code: RpcError['code'],
-    message: string,
-  ) {
-    super(message);
   }
 }
 

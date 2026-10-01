@@ -402,6 +402,39 @@
    label. Declared once: a second rule further down was overriding half of this
    depending on source order, which is exactly the kind of collision that makes
    spacing drift for no visible reason. */
+/* A section header that also carries actions: the toggle and the buttons sit
+   side by side, since a button cannot contain buttons. */
+.gt-section-head {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.gt-section-head > .gt-section-header {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.gt-section-actions {
+  flex: none;
+  display: flex;
+  gap: 1px;
+  padding: var(--gt-space-2) var(--gt-space-2) 0 0;
+  opacity: 0;
+  transition: opacity var(--gt-duration-hover) var(--gt-ease-standard);
+}
+
+.gt-section-head:hover .gt-section-actions,
+.gt-section-head:focus-within .gt-section-actions {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .gt-section-actions {
+    opacity: 1;
+  }
+}
+
 .gt-section-header {
   display: flex;
   align-items: center;
@@ -1849,3 +1882,17 @@ label.gt-sheet-warning {
 .gt-mono {
   font-family: var(--gt-font-mono);
 }
+
+/* A worktree's colour label, as an accent along the bottom of its repository tab. */
+.gt-tab[data-color] {
+  box-shadow: inset 0 -2px 0 var(--tab-accent, transparent);
+}
+
+.gt-tab[data-color='red'] { --tab-accent: var(--gt-red); }
+.gt-tab[data-color='orange'] { --tab-accent: var(--gt-orange); }
+.gt-tab[data-color='yellow'] { --tab-accent: var(--gt-yellow); }
+.gt-tab[data-color='green'] { --tab-accent: var(--gt-green); }
+.gt-tab[data-color='teal'] { --tab-accent: var(--gt-teal); }
+.gt-tab[data-color='blue'] { --tab-accent: var(--gt-blue); }
+.gt-tab[data-color='purple'] { --tab-accent: var(--gt-purple); }
+.gt-tab[data-color='pink'] { --tab-accent: var(--gt-pink); }

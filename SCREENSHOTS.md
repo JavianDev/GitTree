@@ -205,3 +205,28 @@ It already contains:
 - Proper commit history showing a real graph
 
 You can use this directly, or create a fresh demo repo if needed.
+
+## GitTree-Demo worktree setup (0.11 screenshots)
+
+The worktree and pull-request screenshots use real worktrees of `C:\Projects\GitTree-Demo`.
+Everything here is reversible (`git worktree remove`, `git remote remove origin`, delete the two sibling folders).
+
+```sh
+cd C:/Projects/GitTree-Demo
+git tag v0.9.0 457d67c
+git init --bare -b main C:/Projects/GitTree-Demo.origin.git
+git remote add origin C:/Projects/GitTree-Demo.origin.git
+git push -u origin feature/diff-viewer feature/themes
+git worktree add -- C:/Projects/GitTree-Demo.worktrees/feature-diff-viewer feature/diff-viewer   # + 2 commits, staged/modified/untracked files
+git worktree add -- C:/Projects/GitTree-Demo.worktrees/feature-themes feature/themes
+git worktree lock --reason "Visual QA in progress - keep until sign-off" -- C:/Projects/GitTree-Demo.worktrees/feature-themes
+git worktree add -b hotfix/1.0.1 -- C:/Projects/GitTree-Demo.worktrees/hotfix-1.0.1 v0.9.0
+git worktree add --detach -- C:/Projects/GitTree-Demo.worktrees/review-1bcbfa5 1bcbfa5
+git worktree add -b spike/old-idea -- C:/Projects/GitTree-Demo.worktrees/spike-old-idea main  # then delete the folder: "missing"
+git branch demo/gone-upstream main && git push -u origin demo/gone-upstream && git push origin --delete demo/gone-upstream && git fetch --prune
+```
+
+A commit pushed to `origin/feature/themes` from another clone puts that worktree one behind. `.env`, `.env.local` and a
+small `.venv/` are listed in `.git/info/exclude` so the New Worktree copy preview has something real to show.
+Pull-request data in the harness is sample data (the demo has no GitHub remote); its diffs are the real
+`main...feature/diff-viewer`.

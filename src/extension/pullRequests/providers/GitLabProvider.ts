@@ -11,7 +11,14 @@ import type { GitService } from '../../git/GitService';
 import type { ProviderRepoRef } from '../detectProvider';
 import { type JsonRequest, requestJson } from '../httpJson';
 import type { OAuthSession } from '../oauth';
-import { chooseSignInMethod, gitlabClient, gitlabSession, providerReason, signInWithBrowser } from '../oauthClients';
+import {
+  chooseSignInMethod,
+  explainTokenFallback,
+  gitlabClient,
+  gitlabSession,
+  providerReason,
+  signInWithBrowser,
+} from '../oauthClients';
 import {
   type AddCommentInput,
   type CompleteOptions,
@@ -81,6 +88,8 @@ export class GitLabProvider implements PullRequestProvider {
         const token = await signInWithBrowser(oauth, 'GitLab');
         return token ? BEARER + token : undefined;
       }
+    } else if (!(await explainTokenFallback('GitLab', 'a personal access token', 'gitTree.gitlab.oauthApplicationId'))) {
+      return undefined;
     }
 
     const token = await vscode.window.showInputBox({

@@ -40,6 +40,8 @@ export interface DiscoveredRepo {
   root: string;
   /** Resolved git directory. For a worktree or submodule this points away. */
   gitDir: string;
+  /** The common git directory linked worktrees share; equals `gitDir` for an ordinary checkout. */
+  commonDir?: string;
   /**
    * Classification from filesystem evidence alone. `nested` versus `root` is
    * resolved later, once the full set is known and containment can be tested.
@@ -49,6 +51,8 @@ export interface DiscoveredRepo {
   workspaceFolder: string;
   /** Levels below the workspace folder. */
   depth: number;
+  /** Opened by path from outside every scanned folder (a worktree in a sibling folder). */
+  external?: boolean;
 }
 
 /**
@@ -134,7 +138,7 @@ async function visitDirectory(
 
   const gitEntry = entries.find((entry) => entry.name === '.git');
   if (gitEntry) {
-    const repo = await classify(dir, depth, workspaceFolder);
+    const repo = await classifyDirectory(dir, workspaceFolder, depth);
     if (repo) result.repo = repo;
   }
 
@@ -153,18 +157,22 @@ async function visitDirectory(
  * Determines what kind of repository sits at `dir`.
  *
  * A `.git` *directory* is an ordinary checkout. A `.git` *file* redirects
- * elsewhere, and the redirect target says which kind it is:
+ * elsewhere, and what it redirects to says which kind it is:
  *
- *  - `…/.git/worktrees/<name>` — a linked worktree, sharing the main
+ *  - a gitdir holding a `commondir` file — a linked worktree, sharing the main
  *    repository's object store. Showing it as an independent clone would let a
- *    user "delete" it as if it were one.
- *  - `…/.git/modules/<name>`  — a submodule, whose parent tracks its commit as
- *    a gitlink.
+ *    user "delete" it as if it were one. Reading `commondir` rather than
+ *    matching `/.git/worktrees/` in the path is what also recognises a worktree
+ *    of a *bare* repository (`app.git/worktrees/<name>`).
+ *  - `…/modules/<name>` — a submodule, whose parent tracks its commit as a
+ *    gitlink.
+ *
+ * Exported for opening a single worktree folder without a full scan.
  */
-async function classify(
+export async function classifyDirectory(
   dir: string,
-  depth: number,
   workspaceFolder: string,
+  depth: number,
 ): Promise<DiscoveredRepo | undefined> {
   const gitPath = path.join(dir, '.git');
 
@@ -180,7 +188,8 @@ async function classify(
   if (info.isDirectory()) {
     // `root` here is provisional: containment against the other discovered
     // repositories decides whether this is actually `nested`.
-    return { root, gitDir: displayPath(gitPath), kind: 'root', workspaceFolder, depth };
+    const gitDir = displayPath(gitPath);
+    return { root, gitDir, commonDir: gitDir, kind: 'root', workspaceFolder, depth };
   }
 
   if (!info.isFile()) return undefined;
@@ -188,14 +197,30 @@ async function classify(
   const target = await readGitFile(gitPath, dir);
   if (!target) return undefined;
 
+  const commonDir = await readCommonDir(target);
   const normalized = pathKey(target);
-  const kind: RepoKind = normalized.includes('/.git/worktrees/')
+  const kind: RepoKind = commonDir
     ? 'worktree'
-    : normalized.includes('/.git/modules/')
+    : normalized.includes('/modules/')
       ? 'submodule'
       : 'root';
 
-  return { root, gitDir: displayPath(target), kind, workspaceFolder, depth };
+  const gitDir = displayPath(target);
+  return { root, gitDir, commonDir: commonDir ? displayPath(commonDir) : gitDir, kind, workspaceFolder, depth };
+}
+
+/**
+ * A linked worktree's gitdir names the shared repository in `commondir`,
+ * usually relative (`../..`). Absent for anything that is not a worktree.
+ */
+async function readCommonDir(gitDir: string): Promise<string | undefined> {
+  try {
+    const content = (await readFile(path.join(gitDir, 'commondir'), 'utf8')).trim();
+    if (!content) return undefined;
+    return path.isAbsolute(content) ? content : path.resolve(gitDir, content);
+  } catch {
+    return undefined;
+  }
 }
 
 /** Reads the `gitdir: <path>` redirect from a `.git` file. */

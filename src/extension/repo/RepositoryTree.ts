@@ -19,11 +19,13 @@ export function buildRepositoryTree(discovered: readonly DiscoveredRepo[]): Repo
     id: repoId(repo.root),
     root: repo.root,
     gitDir: repo.gitDir,
+    ...(repo.commonDir ? { commonDir: repo.commonDir } : {}),
     name: path.basename(repo.root) || repo.root,
     kind: repo.kind,
     children: [],
     depth: repo.depth,
     workspaceFolder: repo.workspaceFolder,
+    ...(repo.external ? { external: true } : {}),
   }));
 
   const byId = new Map<RepoId, RepoNode>(nodes.map((node) => [node.id, node]));
@@ -40,6 +42,15 @@ export function buildRepositoryTree(discovered: readonly DiscoveredRepo[]): Repo
     // untracked directory, and staging that directory commits an empty gitlink
     // rather than the work inside it.
     if (node.kind === 'root') node.kind = 'nested';
+  }
+
+  // A linked worktree points at its main worktree's `.git`; when that main
+  // worktree is in the tree too, link them so the UI can group them.
+  const byGitDir = new Map(nodes.map((node) => [pathKey(node.gitDir), node]));
+  for (const node of nodes) {
+    if (node.kind !== 'worktree' || !node.commonDir) continue;
+    const main = byGitDir.get(pathKey(node.commonDir));
+    if (main && main.id !== node.id) node.mainId = main.id;
   }
 
   // Depth in the tree, rather than depth below the workspace folder, is what

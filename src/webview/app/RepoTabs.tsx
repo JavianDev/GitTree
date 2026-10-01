@@ -82,6 +82,7 @@ function RepoTab({
       tabIndex={selected ? 0 : -1}
       aria-selected={selected}
       className="gt-tab"
+      data-color={node.accent}
       title={`${node.root}\n${KIND_TITLE[node.kind]}`}
       onClick={onSelect}
       onKeyDown={(event) => {

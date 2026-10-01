@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
+import type { CommandContext, CommandId } from '@shared/commands';
 import type { GitRemote, RepoSettings } from '@shared/model';
+import { WorktreeSettings } from '../worktrees/WorktreeSettings';
 import { THEMES, THEME_TITLES, type ThemeModel } from '../../app/useTheme';
 import { RpcRequestError, rpc } from '../../rpc/client';
 
@@ -22,6 +24,10 @@ export interface SettingsSheetProps {
   onAppearance: (next: AppearanceOptions) => void;
   onShowShortcuts: () => void;
   onClose: () => void;
+  /** The section to open on, e.g. Worktrees from the sidebar. */
+  initialSection?: SectionId;
+  onRunCommand: (id: CommandId, context?: Partial<CommandContext>) => void;
+  onCreateWorktree: () => void;
 }
 
 interface UserDraft {
@@ -38,11 +44,12 @@ interface RemoteDraft {
 const EMPTY_REMOTE_DRAFT: RemoteDraft = { fetchUrl: '', pushUrl: '' };
 
 /** The sections in the navigation rail, in order. */
-type SectionId = 'remotes' | 'identity' | 'appearance' | 'repository';
+export type SectionId = 'remotes' | 'identity' | 'worktrees' | 'appearance' | 'repository';
 
 const SECTIONS: Array<{ id: SectionId; label: string; hint: string }> = [
   { id: 'remotes', label: 'Remotes', hint: 'Where this repository pushes and fetches' },
   { id: 'identity', label: 'Identity', hint: 'The name and email on your commits' },
+  { id: 'worktrees', label: 'Worktrees', hint: 'Where worktrees go, and what happens around them' },
   { id: 'appearance', label: 'Appearance', hint: 'Theme and how history is displayed' },
   { id: 'repository', label: 'Repository', hint: 'Paths and versions' },
 ];
@@ -144,13 +151,16 @@ export function SettingsSheet({
   onAppearance,
   onShowShortcuts,
   onClose,
+  initialSection,
+  onRunCommand,
+  onCreateWorktree,
 }: Readonly<SettingsSheetProps>): React.JSX.Element {
   // Seeded from the cache so a reopen paints at once rather than spinning.
   const [settings, setSettings] = useState<RepoSettings | undefined>(() => CACHE.get(repoId));
   const [error, setError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
   const [revision, setRevision] = useState(0);
-  const [section, setSection] = useState<SectionId>('remotes');
+  const [section, setSection] = useState<SectionId>(initialSection ?? 'remotes');
 
   const [user, setUser] = useState<UserDraft>({ name: '', email: '', useGlobal: true });
   const [editing, setEditing] = useState<string | undefined>();
@@ -558,6 +568,10 @@ export function SettingsSheet({
                 </div>
               </div>
             </section>
+            )}
+
+            {section === 'worktrees' && (
+              <WorktreeSettings repoId={repoId} onRunCommand={onRunCommand} onCreate={onCreateWorktree} />
             )}
 
             {section === 'repository' && !settings && <SectionSkeleton rows={4} />}

@@ -13,6 +13,12 @@ import { REF_ARGS } from '../src/extension/git/parsers/refs';
 import { REMOTE_ARGS } from '../src/extension/git/parsers/remote';
 import { STASH_ARGS } from '../src/extension/git/parsers/stash';
 import { STATUS_ARGS } from '../src/extension/git/parsers/status';
+import {
+  UNTRACKED_ENTRIES_ARGS,
+  WORKTREE_LIST_ARGS,
+  WORKTREE_LIST_ARGS_LEGACY,
+  WORKTREE_SUMMARY_ARGS,
+} from '../src/extension/git/parsers/worktree';
 import { hasGit } from './fixtures/make-workspace';
 
 /**
@@ -26,6 +32,10 @@ import { hasGit } from './fixtures/make-workspace';
 describe('git arguments are spawnable', () => {
   const argLists: Record<string, readonly string[]> = {
     STASH_ARGS,
+    WORKTREE_LIST_ARGS,
+    WORKTREE_LIST_ARGS_LEGACY,
+    WORKTREE_SUMMARY_ARGS,
+    UNTRACKED_ENTRIES_ARGS,
     REF_ARGS,
     STATUS_ARGS,
     NUMSTAT_ARGS,

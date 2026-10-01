@@ -69,6 +69,7 @@ export type CommandId =
   | 'git.merge'
   | 'git.stash'
   | 'git.tag'
+  | 'git.worktree'
   | 'terminal.open'
   | 'theme.cycle'
   | 'repo.refresh'
@@ -143,6 +144,7 @@ export const BINDINGS: readonly Binding[] = [
   { id: 'git.merge', keys: ['m'], label: 'Merge…', group: 'Git' },
   { id: 'git.stash', keys: ['shift+s'], label: 'Stash…', group: 'Git' },
   { id: 'git.tag', keys: ['t'], label: 'Tag…', group: 'Git' },
+  { id: 'git.worktree', keys: ['w'], label: 'New worktree…', group: 'Git' },
   { id: 'terminal.open', keys: ['shift+t'], label: 'Open terminal here', group: 'Git' },
   { id: 'theme.cycle', keys: ['ctrl+alt+t'], label: 'Cycle theme', group: 'Git', whileTyping: true },
 

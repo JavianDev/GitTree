@@ -58,6 +58,13 @@ describe.skipIf(!gitAvailable)('discovery against a real multi-level workspace',
     expect(pathKey(worktree?.gitDir ?? '')).toContain('/.git/worktrees/');
   });
 
+  it('links a linked worktree to its main repository through commondir', () => {
+    const worktree = find(workspace.worktree);
+    const main = nodes.find((node) => pathKey(node.gitDir) === pathKey(worktree?.commonDir ?? ''));
+    expect(main).toBeDefined();
+    expect(worktree?.mainId).toBe(main?.id);
+  });
+
   it('records the containment hierarchy in both directions', () => {
     const alpha = find(workspace.alpha);
     const nested = find(workspace.nested);

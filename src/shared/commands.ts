@@ -33,7 +33,15 @@ export type CommandId =
   | 'stash.apply'
   | 'stash.pop'
   | 'stash.drop'
-  | 'tag.create';
+  | 'tag.create'
+  | 'worktree.add'
+  | 'worktree.remove'
+  | 'worktree.lock'
+  | 'worktree.unlock'
+  | 'worktree.move'
+  | 'worktree.prune'
+  | 'worktree.repair'
+  | 'branch.deleteGone';
 
 /** Where the action sits in the toolbar's visual rhythm. */
 export type CommandGroup = 'sync' | 'work' | 'branch' | 'tag' | 'tools';
@@ -81,6 +89,23 @@ export interface CommandContext {
   /** Tag refinements. */
   annotated?: boolean;
   tagName?: string;
+  /** Worktree refinements. */
+  worktreePath?: string;
+  newPath?: string;
+  newBranch?: string;
+  commitish?: string;
+  detach?: boolean;
+  track?: boolean;
+  noTrack?: boolean;
+  lockReason?: string;
+  /** A locked worktree needs `--force` twice to remove or move. */
+  forceLocked?: boolean;
+  dryRun?: boolean;
+  verbose?: boolean;
+  /** Several branches at once (clean up gone branches). */
+  branches?: string[];
+  /** Pull refinement: only fast-forward. */
+  ffOnly?: boolean;
 }
 
 export interface CommandSpec {
@@ -127,7 +152,25 @@ const FLAG: Record<string, CommandFlag> = {
   forceDeleteBranch: { flag: '-D', gloss: 'delete the branch even if its commits are unmerged and would be lost' },
   annotate: { flag: '-a', gloss: 'create a tag object with a message, author, and date rather than a bare pointer' },
   separator: { flag: '--', gloss: 'end of options — everything after this is a path, even if it starts with a dash' },
+  ffOnly: { flag: '--ff-only', gloss: 'only move forward to the remote’s commits; stop rather than merge or rebase' },
+  newBranch: { flag: '-b', gloss: 'create this new branch and check it out in the new worktree' },
+  track: { flag: '--track', gloss: 'make the new branch follow the remote branch it starts from' },
+  noTrack: { flag: '--no-track', gloss: 'do not set the starting branch as the new branch’s upstream' },
+  detach: { flag: '--detach', gloss: 'check out the commit itself, on no branch — for reviewing a tag or commit' },
+  force: { flag: '--force', gloss: 'go ahead even though the worktree has uncommitted changes, which are lost' },
+  forceTwice: { flag: '--force --force', gloss: 'also go ahead when the worktree is locked' },
+  reason: { flag: '--reason', gloss: 'record why it is locked; shown wherever the worktree is listed' },
+  dryRun: { flag: '--dry-run', gloss: 'only report what would be pruned; change nothing' },
+  verbose: { flag: '--verbose', gloss: 'name each worktree record as it is removed' },
 };
+
+/** A worktree's concept card: the same idea, said once. */
+const WORKTREE_CONCEPT =
+  'A worktree is a second folder checked out from the same repository. Every worktree shares one ' +
+  'object store and one set of branches, so there is nothing to clone and a commit made in one is ' +
+  'immediately visible in the others. Each has its own branch, files, and staged changes — so you can ' +
+  'review a pull request, run a long build, or fix a bug on another branch without stashing or ' +
+  'switching what you are working on. A branch can be checked out in only one worktree at a time.';
 
 /** Appends `--` and the paths, so a filename can never be read as a flag. */
 function withPaths(argv: string[], paths: string[] | undefined): string[] {
@@ -168,9 +211,10 @@ export const COMMANDS: Record<CommandId, CommandSpec> = {
       'busy branch. A rebase replays your commits on top of theirs so history stays linear, at the ' +
       'cost of rewriting your commits — fine for work only you have, risky for commits others have pulled. ' +
       'Add --autostash and uncommitted work is shelved and restored around the operation.',
-    flags: [FLAG.rebase!, FLAG.autostash!, FLAG.prune!],
+    flags: [FLAG.rebase!, FLAG.autostash!, FLAG.prune!, FLAG.ffOnly!],
     build: (ctx) => {
       const argv = ['pull'];
+      if (ctx.ffOnly) argv.push('--ff-only');
       if (ctx.rebase) argv.push('--rebase');
       if (ctx.autostash) argv.push('--autostash');
       if (ctx.prune) argv.push('--prune');
@@ -459,6 +503,140 @@ export const COMMANDS: Record<CommandId, CommandSpec> = {
     flags: [],
     destructive: true,
     build: (ctx) => ['stash', 'drop', ...(ctx.stashRef ? [ctx.stashRef] : [])],
+  },
+
+  'worktree.add': {
+    id: 'worktree.add',
+    title: 'New Worktree',
+    group: 'branch',
+    summary: 'Check out a branch, tag, or commit into a new folder beside this one.',
+    concept: WORKTREE_CONCEPT,
+    flags: [FLAG.newBranch!, FLAG.track!, FLAG.noTrack!, FLAG.detach!, FLAG.separator!],
+    build: (ctx) => {
+      const argv = ['worktree', 'add'];
+      if (ctx.newBranch) argv.push('-b', ctx.newBranch);
+      if (ctx.track) argv.push('--track');
+      if (ctx.noTrack) argv.push('--no-track');
+      if (ctx.detach) argv.push('--detach');
+      argv.push('--', ctx.worktreePath ?? '<path>');
+      if (ctx.commitish) argv.push(ctx.commitish);
+      return argv;
+    },
+  },
+
+  'worktree.remove': {
+    id: 'worktree.remove',
+    title: 'Remove Worktree',
+    group: 'branch',
+    summary: 'Delete this worktree’s folder and git’s record of it. The branch is kept.',
+    concept:
+      WORKTREE_CONCEPT +
+      ' Removing one deletes its folder, including any untracked files in it; committed work is safe ' +
+      'because the commits live in the shared repository. git refuses while the worktree has ' +
+      'uncommitted changes unless you pass --force, and refuses a locked worktree unless you pass it twice.',
+    flags: [FLAG.force!, FLAG.forceTwice!, FLAG.separator!],
+    destructive: true,
+    build: (ctx) => {
+      const argv = ['worktree', 'remove'];
+      if (ctx.force || ctx.forceLocked) argv.push('--force');
+      if (ctx.forceLocked) argv.push('--force');
+      argv.push('--', ctx.worktreePath ?? '<path>');
+      return argv;
+    },
+  },
+
+  'worktree.lock': {
+    id: 'worktree.lock',
+    title: 'Lock Worktree',
+    group: 'branch',
+    summary: 'Protect this worktree from being pruned, moved, or removed by accident.',
+    concept:
+      'Locking a worktree tells git to leave it alone: prune skips it even when its folder is ' +
+      'unreachable (a removable drive, a network share), and remove and move need an extra --force. ' +
+      'The reason you give is shown wherever the worktree is listed.',
+    flags: [FLAG.reason!, FLAG.separator!],
+    build: (ctx) => {
+      const argv = ['worktree', 'lock'];
+      if (ctx.lockReason) argv.push('--reason', ctx.lockReason);
+      argv.push('--', ctx.worktreePath ?? '<path>');
+      return argv;
+    },
+  },
+
+  'worktree.unlock': {
+    id: 'worktree.unlock',
+    title: 'Unlock Worktree',
+    group: 'branch',
+    summary: 'Allow this worktree to be pruned, moved, or removed again.',
+    flags: [FLAG.separator!],
+    build: (ctx) => ['worktree', 'unlock', '--', ctx.worktreePath ?? '<path>'],
+  },
+
+  'worktree.move': {
+    id: 'worktree.move',
+    title: 'Move Worktree',
+    group: 'branch',
+    summary: 'Move this worktree to another folder, keeping git’s record of it intact.',
+    concept:
+      'Moving a worktree folder by hand breaks the links between it and the repository. git worktree ' +
+      'move moves the folder and updates both links in one step. The main worktree cannot be moved, ' +
+      'and a locked one needs --force twice.',
+    flags: [FLAG.force!, FLAG.forceTwice!, FLAG.separator!],
+    build: (ctx) => {
+      const argv = ['worktree', 'move'];
+      if (ctx.force || ctx.forceLocked) argv.push('--force');
+      if (ctx.forceLocked) argv.push('--force');
+      argv.push('--', ctx.worktreePath ?? '<path>', ctx.newPath ?? '<new-path>');
+      return argv;
+    },
+  },
+
+  'worktree.prune': {
+    id: 'worktree.prune',
+    title: 'Prune Worktrees',
+    group: 'branch',
+    summary: 'Forget worktrees whose folders were deleted. Locked worktrees are never pruned.',
+    concept:
+      'When a worktree folder is deleted outside git, its record stays behind in .git/worktrees and its ' +
+      'branch stays "checked out" there, so no other worktree can use it. Prune clears records whose ' +
+      'folders are gone. It never touches a folder that exists, and it skips locked worktrees.',
+    flags: [FLAG.dryRun!, FLAG.verbose!],
+    build: (ctx) => {
+      const argv = ['worktree', 'prune'];
+      if (ctx.dryRun) argv.push('--dry-run');
+      if (ctx.verbose) argv.push('--verbose');
+      return argv;
+    },
+  },
+
+  'worktree.repair': {
+    id: 'worktree.repair',
+    title: 'Repair Worktree Links',
+    group: 'branch',
+    summary: 'Reconnect worktrees whose folders, or the repository itself, were moved by hand.',
+    concept:
+      'Each worktree and the repository point at each other by path. Moving either one by hand breaks ' +
+      'those links. Repair rewrites them; pass the new folders of moved worktrees so git can find them.',
+    flags: [FLAG.separator!],
+    build: (ctx) => withPaths(['worktree', 'repair'], ctx.paths),
+  },
+
+  'branch.deleteGone': {
+    id: 'branch.deleteGone',
+    title: 'Clean Up Gone Branches',
+    group: 'branch',
+    summary: 'Delete local branches whose remote branch no longer exists.',
+    concept:
+      'When a pull request merges and its branch is deleted on the remote, your local branch stays ' +
+      'behind, tracking something that is gone. Fetching with --prune marks those branches "gone". ' +
+      'This deletes them. -d refuses a branch with unmerged commits; -D deletes it anyway.',
+    flags: [FLAG.deleteBranch!, FLAG.forceDeleteBranch!],
+    destructive: true,
+    build: (ctx) => [
+      'branch',
+      ctx.forceDelete ? '-D' : '-d',
+      ...(ctx.branches && ctx.branches.length > 0 ? ctx.branches : ['<branch>']),
+    ],
   },
 
   'tag.create': {

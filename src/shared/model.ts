@@ -39,6 +39,17 @@ export interface RepoNode {
   depth: number;
   /** Path of the workspace folder this repo was discovered under. */
   workspaceFolder: string;
+  /**
+   * The repository's common git directory: the main `.git` that every linked
+   * worktree shares. Equal to `gitDir` for an ordinary checkout.
+   */
+  commonDir?: string;
+  /** For a linked worktree: the node of its main worktree, when that is in the tree too. */
+  mainId?: RepoId;
+  /** Opened from outside every workspace folder, e.g. a worktree in a sibling folder. */
+  external?: boolean;
+  /** Colour label of this worktree, for the repository tab's accent. */
+  accent?: WorktreeColor;
 }
 
 /** Live state for a repository that has been activated. */
@@ -607,4 +618,129 @@ export interface PullRequestConnection {
   project?: string;
   /** Result of a *silent* session check — no popup was shown to produce this value. */
   signedIn: boolean;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Worktrees                                                                */
+/* ------------------------------------------------------------------------ */
+
+/** Colour labels a worktree can carry: a sidebar dot, a tab accent, an optional title-bar tint. */
+export type WorktreeColor = 'red' | 'orange' | 'yellow' | 'green' | 'teal' | 'blue' | 'purple' | 'pink';
+
+export const WORKTREE_COLORS: readonly WorktreeColor[] = ['red', 'orange', 'yellow', 'green', 'teal', 'blue', 'purple', 'pink'];
+
+/** One working folder of a repository, as `git worktree list` reports it. */
+export interface WorktreeEntry {
+  /** Display path: forward slashes, original casing. */
+  path: string;
+  /** The id this worktree has, or would have, as a repository node. */
+  repoId: RepoId;
+  /** Checked-out commit; absent for a bare repository or an unborn branch. */
+  head?: string;
+  /** Short branch name, e.g. `feature/login`. Absent when detached or bare. */
+  branch?: string;
+  detached: boolean;
+  bare: boolean;
+  /** The main worktree: the one holding the repository's `.git` directory. */
+  isMain: boolean;
+  /** The worktree the asking repository node is showing. */
+  isCurrent: boolean;
+  locked: boolean;
+  lockReason?: string;
+  /** git reports it can be pruned: its folder is gone. */
+  prunable: boolean;
+  prunableReason?: string;
+  /** The folder does not exist (checked directly, so older git agrees). */
+  missing: boolean;
+  /** A workspace folder of this VS Code window is inside it. */
+  openInWindow: boolean;
+  /** Already a repository node in the tree (a workspace repo or an open tab). */
+  inTree: boolean;
+  color?: WorktreeColor;
+}
+
+export interface WorktreeList {
+  /** The shared git directory every worktree of this repository points at. */
+  commonDir: string;
+  /** Path of the main worktree; absent for a bare repository. */
+  mainPath?: string;
+  bare: boolean;
+  worktrees: WorktreeEntry[];
+}
+
+/** Cheap status counts for a worktree row: one `git status` in that folder. */
+export interface WorktreeSummary {
+  path: string;
+  staged: number;
+  unstaged: number;
+  untracked: number;
+  conflicted: number;
+  ahead: number;
+  behind: number;
+  upstream?: string;
+  error?: string;
+}
+
+/** Where new worktrees go, and how they are named. */
+export interface WorktreeLocationSettings {
+  /** Template for the folder new worktrees are created in; empty means `<repo>.worktrees` beside the repo. */
+  directory: string;
+  /** A folder inside the repository (e.g. `.worktrees`); takes precedence over `directory` when set. */
+  subfolder: string;
+  /** `feature/login` → `feature/login` (true) or `feature-login` (false). */
+  preserveBranchHierarchy: boolean;
+}
+
+export type WorktreeOpenTarget = 'gitTreeTab' | 'newWindow' | 'currentWindow';
+export type WorktreeOpenBehavior = WorktreeOpenTarget | 'none';
+
+/** Every worktree setting, as VS Code settings define it. */
+export interface WorktreeDefaults extends WorktreeLocationSettings {
+  openBehavior: WorktreeOpenBehavior;
+  preserveSubfolder: boolean;
+  autoPull: boolean;
+  autoPush: boolean;
+  deleteGoneBranchOnRemove: boolean;
+  copyInclude: string[];
+  copyExclude: string[];
+  colorLabels: boolean;
+  titleBarTint: 'off' | 'workspaceFile';
+  extraPaths: string[];
+}
+
+/** What one repository changes from the defaults; stored per repository by Git Tree. */
+export interface WorktreeRepoOverride {
+  directory?: string;
+  subfolder?: string;
+  preserveBranchHierarchy?: boolean;
+  copyInclude?: string[];
+  copyExclude?: string[];
+}
+
+export interface WorktreeConfig {
+  defaults: WorktreeDefaults;
+  override: WorktreeRepoOverride;
+  /** Defaults with this repository's override applied. */
+  effective: WorktreeDefaults;
+  /** Values the path template variables resolve to for this repository. */
+  vars: { userHome: string; repoName: string; repoParent: string; repoRoot: string };
+  platform: 'win32' | 'posix';
+  git: { version: string; listNul: boolean; removeMove: boolean; repair: boolean };
+}
+
+/** What `worktrees/copyFiles` did, or would do on a dry run. */
+export interface CopyReport {
+  entries: Array<{
+    path: string;
+    kind: 'file' | 'dir' | 'symlink';
+    files: number;
+    bytes: number;
+    status: 'planned' | 'copied' | 'skipped-exists' | 'skipped-symlink' | 'skipped-limit' | 'error';
+    note?: string;
+  }>;
+  totalFiles: number;
+  totalBytes: number;
+  truncated: boolean;
+  errors: string[];
+  invalidPatterns: string[];
 }

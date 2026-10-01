@@ -6,6 +6,53 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — Worktrees
+
+- **A WORKTREES section in the sidebar**, right after Branches: every worktree of the repository from
+  `git worktree list`, the main one first and the rest grouped by branch folder, with `main`, `current`,
+  `locked`, `missing` and `detached` badges, uncommitted-change counts, ahead/behind, colour labels, and
+  the full and shortest-unique path in the tooltip. The filter box finds worktrees too.
+- **Worktree details** (a new Worktree view): the worktree's branch, path, changes and upstream; its
+  staged, changed and untracked files (stage and unstage in that worktree); and the commits it has not
+  pushed — each file's or commit's diff in the Code pane.
+- **New Worktree** (`W`, the section's **+**, a branch or tag's right-click menu, or *GitTree: New
+  Worktree…* / `Ctrl+Shift+G W`): a new branch from any branch, remote branch, tag or commit; or an
+  existing branch, a remote branch as a new tracking branch, or a tag or commit detached. The folder is
+  suggested from the repository's settings (default: `<repo>.worktrees` beside the repository) and
+  editable; untracked files such as `.env` and `.venv` can be copied across (never overwriting, never
+  `.git`, with a preview and a size limit); and pull, push and lock can follow. Every step is listed
+  before it runs, the `git worktree add` command is editable, and each step's output is shown.
+- **Open** a worktree as a Git Tree tab (also from outside the workspace — it gets its own file
+  watcher), in a new VS Code window, or in this one, reopening the sub-folder you were in.
+- **Reveal**, **Terminal**, **Copy Path**, **Colour Label**, **Lock** (with a reason) / **Unlock**,
+  **Move**, **Prune**, **Repair**, and **Remove** — which asks for exactly the force git needs (once for
+  uncommitted changes, twice for a locked worktree), can delete the branch too, and first closes Git
+  Tree's own terminal and watchers on the folder so Windows lets git delete it.
+- **Clean Up Gone Branches**: delete local branches whose remote branch was deleted.
+- **Settings ▸ Worktrees**: where worktrees go — beside the repository, in a folder inside it (added to
+  `.git/info/exclude`), or anywhere, with `${userHome}`, `${repoName}`, `${repoParent}`, `${repoRoot}`
+  and `${branch}` — per repository or for all; keeping branch folders; open behaviour; pull/push after
+  creating; copy patterns; deleting gone branches on remove; colour labels; an optional title-bar
+  tint; and extra folders to scan. Settings are written to `gitTree.worktrees.*` and
+  `gitTree.discovery.extraPaths`, or stored per repository by Git Tree.
+- A branch checked out in another worktree is marked `wt`, and double-clicking it offers that worktree
+  instead of running a `git switch` that git would refuse. Branches and tags gain a right-click menu.
+
+### Changed
+
+- **Stashes moved to the very end of the sidebar**, after Pull Requests.
+- When Bitbucket or GitLab browser sign-in isn't set up in a build, signing in now says so and offers
+  the setup guide, instead of going straight to a token prompt.
+
+### Fixed
+
+- A worktree of a **bare** repository was shown as an independent repository; worktrees are now
+  recognised by their `commondir`, and linked to their main repository.
+- A linked worktree's branch moves (commits, fetches) did not refresh it: their refs live in the shared
+  git directory, which is now watched too.
+- `git worktree list` was logged as a change in the command log; it is a read.
+- Double-clicking a branch that could not be checked out did nothing visible; git's reason is now shown.
+
 ### Changed — a leaner package, and a README that shows 0.10
 
 - **The extension download is about 650 KB, in 17 files.** The package carried the TypeScript

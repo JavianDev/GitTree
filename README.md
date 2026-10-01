@@ -12,7 +12,26 @@ Git Tree is **free and open source**. If you find it useful, [buying a coffee](h
 
 ---
 
-## 🆕 New in 0.10
+## 🆕 New in 0.11 — Worktrees
+
+- **A WORKTREES section** right after Branches: every working folder of the repository, grouped by
+  branch folder, with `main`, `current`, `locked`, `missing` and `detached` badges, change counts,
+  ahead/behind, and colour labels (§14)
+- **New Worktree** (`W`, `Ctrl+Shift+G W`): a new branch from any branch, tag or commit — or an existing
+  branch, a remote branch tracked locally, or a tag checked out detached — into a folder Git Tree
+  suggests, with untracked files like `.env` copied across and the exact `git worktree add` shown first
+- **Worktree details** in the Files pane: staged, changed and untracked files, and the commits it has
+  not pushed, with their diffs in the Code pane
+- **Open** a worktree as a Git Tree tab, in a new VS Code window, or in this one; **Reveal**, **Terminal**,
+  **Copy Path**, **Lock**, **Move**, **Remove** (asking for exactly the `--force` it needs), **Prune**,
+  **Repair**, and **Clean Up Gone Branches**
+- **Settings ▸ Worktrees**: where each repository's worktrees go (beside it, in a folder inside it, or
+  anywhere), and what happens when one is created, opened or removed
+- A branch checked out in another worktree is marked `wt`, and double-clicking it offers that worktree
+  instead of a `git switch` that cannot work
+- **Stashes** moved to the very end of the sidebar
+
+## New in 0.10
 
 - **Commit, Push and Stash tabs** in the Files pane — the commits a push would send, and every stash
   with Apply / Pop / Drop on the row (§8)
@@ -211,6 +230,8 @@ apps, Bitbucket takes an [API token](https://id.atlassian.com/manage-profile/sec
 created *with scopes* for Bitbucket and GitLab a personal access token. Logins live in VS Code's
 secret storage and refresh automatically; a rejected one is forgotten so you're simply asked again.
 
+![A pull request: the sidebar's Pull Requests section, the PR's reviewers, checks, linked issue and actions, and its overall diff](./media/screenshots/19-pull-requests.png)
+
 - List open, completed, or abandoned pull requests with a status filter
 - Create a PR against any branch, mark it draft, write the description
 - Vote — approve, approve with suggestions, reject, or (Azure DevOps only) wait for author
@@ -218,6 +239,8 @@ secret storage and refresh automatically; a rejected one is forgotten so you're 
 - Overall diff and per-commit diff, reusing the same diff viewer as everywhere else in Git Tree
 - Comment threads, read and reply to, right from the sidebar
 - Policy/check/pipeline status and linked work items or issues, shown per PR when the provider has them
+
+![Comment threads on a pull request — a general discussion and a thread on src/diff.ts line 3 — beside the diff](./media/screenshots/20-pr-comments.png)
 
 ### 12. **Full Stash Management**
 
@@ -254,6 +277,96 @@ a rebase**, a detail most git tools leave you to discover the hard way.
 - **Continue** and **Abort** buttons once every conflict is resolved (or if you want to back out
   entirely) — Continue for a merge simply means committing, prefilled with git's own merge message
 
+### 14. **Worktrees — Two Branches at Once, No Stashing**
+
+A worktree is a second folder checked out from the same repository: its own branch, files and staged
+changes, sharing one object store, so there is nothing to clone and a commit made in one is
+immediately visible in the others. Review a pull request, run a long build, or fix a bug on another
+branch without stashing or switching what you're in the middle of.
+
+![The Worktrees section after Branches, grouped by branch folder with badges, counts and colour labels; a worktree's details in the Files pane and a file's diff in the Code pane](./media/screenshots/13-worktrees.png)
+
+**The WORKTREES section** sits right after BRANCHES and lists every worktree of the repository: the
+main one pinned first, the rest grouped by their branch's folder (`feature/…`), each with
+
+- `main` and `current` badges, `locked` (with its reason in the tooltip), `missing` for a folder that
+  was deleted, and `detached` for a commit or tag checked out on no branch
+- uncommitted changes (`3∆`) and how far it is ahead of or behind its upstream (`2↑`, `1↓`)
+- a colour label — shown as a dot, and as the accent on its repository tab
+- the full path and the shortest path that tells it apart, in the tooltip
+
+The filter box finds worktrees by branch or folder name, just as it finds branches.
+
+**Click** a worktree to see its details: branch, path, change count, ahead/behind and upstream, then its
+Staged Changes, Changes and Untracked Files (tick a box to stage *in that worktree*), and the commits
+it hasn't pushed. Selecting a file or commit shows its diff in the Code pane. **Double-click** opens it.
+
+![The right-click menu of a locked worktree: Open in a Git Tree tab, a new or this VS Code window, Reveal, Terminal, Copy Path, Details, Colour Label, Unlock, Move and Remove](./media/screenshots/14-worktree-menu.png)
+
+**Right-click** for everything else. Actions git (or safety) won't allow are greyed out with the reason —
+you can't remove the main worktree, the one this tab is showing, or one open in this window.
+
+- **Open in Git Tree Tab** — it becomes a repository tab here, even when the folder is outside your workspace
+- **Open in New VS Code Window** / **This Window** — reopening the same sub-folder you're in (a monorepo
+  package, say) when it exists there
+- **Reveal in File Explorer**, **Open Terminal Here**, **Copy Path**, **Colour Label…**
+- **Lock…** (with a reason) / **Unlock**, **Move…**, **Remove…**
+- From the section's ⋯ menu: **Prune Stale Worktrees…**, **Repair Worktree Links…**,
+  **Clean Up Gone Branches…** (local branches whose remote branch was deleted), **Worktree Settings…**
+
+**New Worktree** — press `W`, click **+** on the section, choose *New Worktree from This Branch…* on a
+branch or tag, or run *GitTree: New Worktree…* (`Ctrl+Shift+G W`) from the command palette:
+
+![New Worktree: a new branch based on main, the suggested location beside the repository, open-after choice, colour, files to copy with a preview, after-create options, and the exact commands that will run](./media/screenshots/15-new-worktree.png)
+
+- **New branch** based on any branch, remote branch (tracked or not), tag, or commit — the name is
+  checked against git's rules as you type
+- **Existing branch or tag** — a local branch (one already checked out elsewhere is shown as such), a
+  remote branch checked out as a new tracking branch, or a tag or commit checked out detached
+- **Location** suggested from your settings and editable, with Browse…; a taken folder gets `-2`
+- **Copy files git doesn't track** — `.env`, `.env.*`, `.venv`, build caches — from this worktree into the
+  new one, with a preview of what and how much. Nothing is ever overwritten, `.git` is never copied,
+  and the copy stops at 25,000 files, 1 GB or a minute. *(A copied Python venv still points at the old
+  folder in its activate scripts; recreate it if that matters.)*
+- **After creating** — pull (fast-forward only), push the new branch, lock it
+- **What will run** lists every step, the `git worktree add` command is editable, and each step's
+  output appears as it runs — all of it in the command log
+
+**Removing** asks for exactly what git needs, and says why:
+
+![Remove Worktree for a locked worktree: Force, Force even though it is locked, Also delete the branch, the command, and a confirmation](./media/screenshots/16-remove-worktree.png)
+
+one `--force` to discard uncommitted changes, `--force` twice for a locked worktree, and optionally the
+branch too (`-d`, or `-D` if unmerged) — pre-ticked when its remote branch is gone if you choose. Git
+Tree closes its own terminal and file watchers on the folder first, so Windows lets git delete it.
+
+**A branch can live in one worktree at a time**, so a branch checked out elsewhere is marked `wt` in
+BRANCHES, and double-clicking it offers to open that worktree rather than running a `git switch` that
+would fail:
+
+![feature/diff-viewer is checked out in another worktree: Open Its Worktree, Open in New Window, or Cancel](./media/screenshots/18-branch-in-worktree.png)
+
+**Settings ▸ Worktrees** sets where worktrees go and how they behave — for this repository, or as the
+default for all of them (your VS Code settings):
+
+![Settings ▸ Worktrees: location beside the repository, in a folder inside it, or a folder of your choice, with a live preview; the repository's worktrees; and what happens when creating, opening and removing](./media/screenshots/17-worktree-settings.png)
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| `gitTree.worktrees.directory` | *(beside the repository)* | Folder for new worktrees. Empty means `<repo>.worktrees` next to the repository. Variables: `${userHome}`, `${repoName}`, `${repoParent}`, `${repoRoot}`, `${branch}`, and `~` |
+| `gitTree.worktrees.subfolder` | `""` | Put worktrees in a folder *inside* the repository instead (e.g. `.worktrees`, added to `.git/info/exclude`) |
+| `gitTree.worktrees.preserveBranchHierarchy` | `false` | `feature/login` → `feature/login` instead of `feature-login` |
+| `gitTree.worktrees.openBehavior` | `gitTreeTab` | After creating, and on double-click: `gitTreeTab`, `newWindow`, `currentWindow`, or `none` |
+| `gitTree.worktrees.preserveSubfolder` | `true` | Opening in a window reopens the sub-folder you're in |
+| `gitTree.worktrees.autoPull` / `autoPush` | `false` | Pre-tick pull (`--ff-only`) / push (`--set-upstream`) after creating |
+| `gitTree.worktrees.copyInclude` / `copyExclude` | `[]` | Untracked files to copy into new worktrees, as globs (`.env`, `.venv`, `docs/tmp/**`) |
+| `gitTree.worktrees.deleteGoneBranchOnRemove` | `false` | Pre-tick deleting the branch when its remote branch is gone |
+| `gitTree.worktrees.colorLabels` | `true` | Colour dots and tab accents |
+| `gitTree.worktrees.titleBarTint` | `off` | `workspaceFile` tints a coloured worktree's window title bar (via a `.code-workspace` in Git Tree's storage — nothing is written in the repository) |
+| `gitTree.discovery.extraPaths` | `[]` | Extra folders to scan for repositories and worktrees, when the workspace root isn't one |
+
+Location, sub-folder, hierarchy and copy patterns can each be set per repository in Settings ▸ Worktrees.
+
 ---
 
 ## 🎬 Feature Walkthroughs
@@ -265,6 +378,12 @@ Find a file with changes, click specific lines or hunks to stage, write a commit
 ### Workflow: Check Out a Branch Via Sidebar
 
 Type in the filter box to find a branch, press Enter to switch. Watch the graph and diff update in real time as you work across branches.
+
+### Workflow: Review a Pull Request in a Worktree
+
+Right-click the PR's branch in BRANCHES → **New Worktree from This Branch…** → **Create**. It opens in its
+own tab with your current branch untouched — build it, run it, comment, then **Remove** the worktree
+from its right-click menu when you're done.
 
 ### Workflow: Fetch, Review, and Push
 
@@ -282,6 +401,9 @@ Press `f` for fetch, review incoming changes in the graph, press `Shift+P` to pu
 - ✓ Commit (amend, sign-off, GPG/SSH signing, co-authors, templates), Commit & Push, skip hooks
 - ✓ AI-drafted commit messages via VS Code's language models (e.g. GitHub Copilot)
 - ✓ Commit / Push / Stash tabs in the Files pane
+- ✓ Worktrees — list, create (new or existing branch, tag, commit), open as a tab or window, details,
+  lock / unlock, move, remove, prune, repair, clean up gone branches, colour labels, per-repository
+  location (see §14)
 - ✓ Diff (file-level and line-level, side-by-side and inline)
 - ✓ History search (by message or author)
 - ✓ Fetch, Pull, Push, Branch, Merge, Stash, Tag operations
@@ -393,6 +515,7 @@ Here's the quick reference:
 | Stage / Unstage | `s` / `u` |
 | Commit | `Ctrl+Enter` |
 | Commit & Push | `Ctrl+Shift+Enter` |
+| New worktree | `w` (or `Ctrl+Shift+G W` anywhere in VS Code) |
 | Filter refs | `/` |
 | Fetch / Pull / Push | `f` / `p` / `Shift+P` |
 | Branch / Merge | `b` / `m` |
@@ -415,6 +538,8 @@ Here's the quick reference:
 | `gitTree.accentColor` | `#007AFF` | Interface accent color |
 | `gitTree.graph.density` | `comfortable` | Commit graph row height |
 | `gitTree.dateFormat` | `relative` | How commit dates render (relative/absolute/iso) |
+| `gitTree.discovery.extraPaths` | `[]` | Extra folders to scan for repositories and worktrees |
+| `gitTree.worktrees.*` | | Worktree location and behaviour — see §14 |
 
 `node_modules`, `dist`, `build`, `target`, `.venv` and similar are skipped automatically.
 
@@ -422,9 +547,12 @@ Here's the quick reference:
 
 ## 🔒 Privacy
 
-Git Tree runs **entirely on your machine**. It executes your local Git binary and reads your repositories. It sends **nothing** anywhere — no telemetry, no analytics, no network access of any kind.
+Git Tree runs **on your machine**. It executes your local Git binary and reads your repositories, and sends **no telemetry or analytics**.
 
-Future AI features will be **off by default**, require explicit opt-in, show you the exact payload before anything is sent, and never run in the background.
+It reaches the network only when you ask it to: **pull requests** talk to GitHub, Azure DevOps, GitLab or
+Bitbucket once you sign in, and **✨ AI commit messages** send the staged diff to the language model
+*you* have in VS Code (such as GitHub Copilot), only when you click ✨ — VS Code asks your permission the
+first time.
 
 ---
 

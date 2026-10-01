@@ -76,6 +76,12 @@
         "command": "gitTree.revealRepository",
         "title": "Reveal Repository in GitTree",
         "category": "GitTree"
+      },
+      {
+        "command": "gitTree.worktrees.create",
+        "title": "New Worktree…",
+        "category": "GitTree",
+        "icon": "$(git-branch)"
       }
     ],
     "menus": {
@@ -109,6 +115,11 @@
         "command": "gitTree.refresh",
         "key": "ctrl+shift+g r",
         "mac": "cmd+shift+g r"
+      },
+      {
+        "command": "gitTree.worktrees.create",
+        "key": "ctrl+shift+g w",
+        "mac": "cmd+shift+g w"
       }
     ],
     "configuration": {
@@ -227,6 +238,102 @@
             "secrets/**"
           ],
           "description": "Files never included in an AI request payload."
+        },
+        "gitTree.discovery.extraPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "scope": "machine-overridable",
+          "markdownDescription": "Extra folders to scan for repositories and worktrees, in addition to the workspace folders — useful when the workspace root is not itself a repository. `~` and `${userHome}` are expanded. Scanned to `#gitTree.discovery.maxDepth#`."
+        },
+        "gitTree.worktrees.directory": {
+          "type": "string",
+          "default": "",
+          "scope": "machine-overridable",
+          "markdownDescription": "Folder new worktrees are created in. Empty means a folder beside the repository: `<repo>.worktrees` (e.g. `C:ProjectsGitTree.worktrees\feature-login`). Variables: `${userHome}`, `${repoName}`, `${repoParent}`, `${repoRoot}`, `${branch}`, and a leading `~`. Without `${branch}`, the branch folder is appended. Each repository can override this in Git Tree ▸ Settings ▸ Worktrees."
+        },
+        "gitTree.worktrees.subfolder": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Create worktrees in this folder **inside** the repository instead (e.g. `.worktrees`). Takes precedence over `#gitTree.worktrees.directory#`; Git Tree adds it to `.git/info/exclude` so it never shows as untracked."
+        },
+        "gitTree.worktrees.preserveBranchHierarchy": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Keep branch folders in worktree paths: `feature/login` → `feature/login` when on, `feature-login` when off."
+        },
+        "gitTree.worktrees.openBehavior": {
+          "type": "string",
+          "enum": [
+            "gitTreeTab",
+            "newWindow",
+            "currentWindow",
+            "none"
+          ],
+          "default": "gitTreeTab",
+          "enumDescriptions": [
+            "Open it as a repository tab in Git Tree.",
+            "Open its folder in a new VS Code window.",
+            "Open its folder in this VS Code window.",
+            "Do not open it after creating."
+          ],
+          "description": "What happens after creating a worktree, and when you double-click one in the Worktrees section."
+        },
+        "gitTree.worktrees.preserveSubfolder": {
+          "type": "boolean",
+          "default": true,
+          "description": "When opening a worktree in a VS Code window, open the same sub-folder you are in now (e.g. a package of a monorepo), falling back to the worktree root."
+        },
+        "gitTree.worktrees.autoPull": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Pre-tick \"Pull after creating\" in the New Worktree sheet: `git pull --ff-only` in a new worktree of an existing branch with an upstream."
+        },
+        "gitTree.worktrees.autoPush": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Pre-tick \"Push the new branch\" in the New Worktree sheet: `git push --set-upstream` after creating a new branch."
+        },
+        "gitTree.worktrees.deleteGoneBranchOnRemove": {
+          "type": "boolean",
+          "default": false,
+          "description": "Pre-tick \"Also delete the branch\" when removing a worktree whose branch no longer exists on the remote."
+        },
+        "gitTree.worktrees.copyInclude": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "markdownDescription": "Untracked or ignored files and folders to copy from the current worktree into a new one, as globs relative to the repository root, e.g. `.env`, `.env.*`, `.venv`, `docs/tmp/**`. Nothing is ever overwritten. Each repository can override this."
+        },
+        "gitTree.worktrees.copyExclude": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "markdownDescription": "Globs left out of the copy even when included, e.g. `**/node_modules`, `target`."
+        },
+        "gitTree.worktrees.colorLabels": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show worktree colour labels: a dot in the Worktrees section and an accent on the repository tab."
+        },
+        "gitTree.worktrees.titleBarTint": {
+          "type": "string",
+          "enum": [
+            "off",
+            "workspaceFile"
+          ],
+          "default": "off",
+          "enumDescriptions": [
+            "Do not tint windows.",
+            "Open a coloured worktree through a generated .code-workspace file (kept in Git Tree's storage, never in the repository) that tints the window's title bar."
+          ],
+          "description": "Tint the title bar of a VS Code window opened on a coloured worktree."
         }
       }
     }

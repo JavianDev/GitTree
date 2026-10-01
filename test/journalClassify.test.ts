@@ -59,6 +59,13 @@ describe('isMutating — the verb is in the flags, not the name', () => {
     expect(classify('remote set-url origin https://example.com/r.git')).toBe(true);
   });
 
+  it('separates listing worktrees from changing them', () => {
+    expect(classify('worktree list --porcelain -z')).toBe(false);
+    for (const verb of ['add -b x -- p main', 'remove -- p', 'move -- a b', 'lock -- p', 'unlock -- p', 'prune --verbose', 'repair']) {
+      expect(classify(`worktree ${verb}`), verb).toBe(true);
+    }
+  });
+
   it('separates stash listing from stashing', () => {
     expect(classify('stash list')).toBe(false);
     expect(classify('stash show')).toBe(false);

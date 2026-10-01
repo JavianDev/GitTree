@@ -45,6 +45,24 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       GitTreePanel.show(context, manager);
       if (node) await manager.refreshState(node.id);
     }),
+
+    vscode.commands.registerCommand('gitTree.worktrees.create', () => {
+      GitTreePanel.show(context, manager).requestUi({ action: 'worktree.create' });
+    }),
+  );
+
+  // Worktree settings are read on demand, so the webview only needs telling;
+  // extra discovery paths change which repositories exist, so those rescan.
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration(async (event) => {
+      const scopes: Array<'worktrees' | 'discovery'> = [];
+      if (event.affectsConfiguration('gitTree.worktrees')) scopes.push('worktrees');
+      if (event.affectsConfiguration('gitTree.discovery')) {
+        scopes.push('discovery');
+        await manager.rescan();
+      }
+      if (scopes.length > 0) GitTreePanel.instance?.notifyConfigChanged(scopes);
+    }),
   );
 
   // A watcher fired: refresh the status counts shown in the sidebar. Gated on

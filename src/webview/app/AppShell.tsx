@@ -7,7 +7,7 @@ import {
   renderCommand,
   tokenize,
 } from '@shared/commands';
-import type { Commit, PullRequestEntry, RefEntry, StashEntry } from '@shared/model';
+import type { Commit, PullRequestEntry, RefEntry, StashEntry, WorktreeEntry } from '@shared/model';
 import { CommandLog } from '../features/commands/CommandLog';
 import { type CommandOption, CommandSheet } from '../features/commands/CommandSheet';
 import { TeachingCard } from '../features/commands/TeachingCard';
@@ -19,6 +19,13 @@ import { ReviewPane } from '../features/review/ReviewPane';
 import { SettingsSheet } from '../features/settings/SettingsSheet';
 import { ObjectSidebar } from '../features/sidebar/ObjectSidebar';
 import type { StashActionId } from '../features/sidebar/StashSection';
+import type { SectionId as SettingsSectionId } from '../features/settings/SettingsSheet';
+import type { WorktreeAction } from '../features/worktrees/actions';
+import { BranchInWorktreeSheet } from '../features/worktrees/BranchInWorktreeSheet';
+import { CreateWorktreeSheet } from '../features/worktrees/CreateWorktreeSheet';
+import { RemoveWorktreeSheet } from '../features/worktrees/RemoveWorktreeSheet';
+import { type WorktreeSelection, WorktreeDetails } from '../features/worktrees/WorktreeDetails';
+import { WorktreeDiffPane } from '../features/worktrees/WorktreeDiffPane';
 import { RpcRequestError, rpc } from '../rpc/client';
 import { BottomRibbon } from './BottomRibbon';
 import { ContextBar, type HistoryOptions, type SearchOptions, type ViewMode } from './ContextBar';
@@ -71,6 +78,17 @@ const SHEET_OPTIONS: Partial<Record<CommandId, CommandOption[]>> = {
   'tag.create': [
     { key: 'annotated', label: 'Annotated', hint: 'A real tag object with a message — use for releases' },
   ],
+  'worktree.lock': [{ key: 'lockReason', label: 'Reason', kind: 'text', placeholder: 'Why it must be kept (optional)' }],
+  'worktree.move': [
+    { key: 'newPath', label: 'Move to', kind: 'text', placeholder: 'New folder' },
+    { key: 'force', label: 'Force', hint: 'Move even with uncommitted changes' },
+    { key: 'forceLocked', label: 'Even though locked', hint: 'Passes --force twice' },
+  ],
+  'worktree.prune': [
+    { key: 'dryRun', label: 'Dry run', hint: 'Only report what would be pruned' },
+    { key: 'verbose', label: 'Verbose', hint: 'Name each record as it is pruned' },
+  ],
+  'branch.deleteGone': [{ key: 'forceDelete', label: 'Even if unmerged (-D)', hint: 'Delete branches whose commits are not merged anywhere' }],
 };
 
 /**
@@ -137,6 +155,13 @@ export function AppShell(): React.JSX.Element {
   const [pullRequestId, setPullRequestId] = useState<number | undefined>();
   const [prCommitHash, setPrCommitHash] = useState<string | undefined>();
   const [createPrOpen, setCreatePrOpen] = useState(false);
+  /** The worktree whose details are open; its own repository id arrives once registered. */
+  const [worktree, setWorktree] = useState<{ entry: WorktreeEntry; repoId?: string } | undefined>();
+  const [worktreeSelection, setWorktreeSelection] = useState<WorktreeSelection | undefined>();
+  const [createWorktree, setCreateWorktree] = useState<{ mode?: 'new' | 'existing'; base?: RefEntry } | undefined>();
+  const [removeWorktree, setRemoveWorktree] = useState<WorktreeEntry | undefined>();
+  const [branchHeld, setBranchHeld] = useState<{ ref: RefEntry; entry: WorktreeEntry } | undefined>();
+  const [settingsSection, setSettingsSection] = useState<SettingsSectionId | undefined>();
 
   const [history, setHistory] = useState<HistoryOptions>({
     scope: 'all',
@@ -188,19 +213,22 @@ export function AppShell(): React.JSX.Element {
     if (next) {
       setMode('history');
       setPullRequestId(undefined);
+      setWorktree(undefined);
     }
   }, []);
 
   const selectPr = useCallback((pr: PullRequestEntry) => {
     setPullRequestId(pr.id);
     setPrCommitHash(undefined);
+    setWorktree(undefined);
     setMode('pullRequest');
   }, []);
 
-  /** Switching to History or Changes leaves whatever PR was selected behind. */
+  /** Switching to History or Changes leaves whatever PR or worktree was selected behind. */
   const changeMode = useCallback((next: ViewMode) => {
     setMode(next);
     if (next !== 'pullRequest') setPullRequestId(undefined);
+    if (next !== 'worktree') setWorktree(undefined);
   }, []);
 
   /**
@@ -317,8 +345,13 @@ export function AppShell(): React.JSX.Element {
         const argv = tokenize(commandText);
         void rpc
           .request('commands/run', { repoId: active.id, argv })
-          .then(() => repositories.refresh())
-          .catch(() => undefined);
+          .then((result) => {
+            // A refused checkout explains itself; swallowing it left the
+            // double-click looking like it did nothing.
+            setError(result.exitCode === 0 ? undefined : (result.stderr || result.stdout).trim() || `git switch exited with ${result.exitCode}`);
+            repositories.refresh();
+          })
+          .catch((reason: unknown) => setError(describeError(reason)));
       }
     },
     [active, selectRef, repositories],
@@ -375,6 +408,102 @@ export function AppShell(): React.JSX.Element {
     [runAction],
   );
 
+  /** Everything the Worktrees section, the details pane, and the branch menu ask for. */
+  const handleWorktree = useCallback(
+    (action: WorktreeAction) => {
+      if (!active) return;
+      const repoId = active.id;
+      const fail = (reason: unknown) => setError(describeError(reason));
+
+      switch (action.kind) {
+        case 'select':
+        case 'details': {
+          const entry = action.entry;
+          setWorktree({ entry });
+          setWorktreeSelection(undefined);
+          setPullRequestId(undefined);
+          setMode('worktree');
+          if (!entry.missing && !entry.bare) {
+            void rpc
+              .request('worktrees/register', { repoId, path: entry.path })
+              .then((result) => setWorktree((current) => (current?.entry.path === entry.path ? { entry, repoId: result.repoId } : current)))
+              .catch(fail);
+          }
+          return;
+        }
+        case 'open':
+          void rpc.request('worktrees/open', { repoId, path: action.entry.path, target: action.target }).catch(fail);
+          return;
+        case 'reveal':
+          void rpc.request('worktrees/reveal', { repoId, path: action.entry.path }).catch(fail);
+          return;
+        case 'terminal':
+          void rpc.request('worktrees/terminal', { repoId, path: action.entry.path }).catch(fail);
+          return;
+        case 'copyPath':
+          void rpc.request('worktrees/copyPath', { repoId, path: action.entry.path }).catch(fail);
+          return;
+        case 'color':
+          void rpc
+            .request('worktrees/setColor', { repoId, path: action.entry.path, color: action.color })
+            .then(() => {
+              setWorktree((current) =>
+                current?.entry.path === action.entry.path
+                  ? { ...current, entry: { ...current.entry, ...(action.color ? { color: action.color } : { color: undefined }) } }
+                  : current,
+              );
+              repositories.refresh();
+            })
+            .catch(fail);
+          return;
+        case 'lock':
+          runAction('worktree.lock', { worktreePath: action.entry.path });
+          return;
+        case 'unlock':
+          runAction('worktree.unlock', { worktreePath: action.entry.path });
+          return;
+        case 'move':
+          runAction('worktree.move', { worktreePath: action.entry.path, newPath: action.entry.path });
+          return;
+        case 'remove':
+          setRemoveWorktree(action.entry);
+          return;
+        case 'create':
+          setCreateWorktree({ ...(action.mode ? { mode: action.mode } : {}), ...(action.base ? { base: action.base } : {}) });
+          return;
+        case 'branchHeld':
+          setBranchHeld({ ref: action.ref, entry: action.entry });
+          return;
+        case 'cleanupGone':
+          runAction('branch.deleteGone', { branches: action.branches });
+          return;
+        case 'refresh':
+          repositories.refresh();
+          return;
+        case 'prune':
+          runAction('worktree.prune', { verbose: true });
+          return;
+        case 'repair':
+          runAction('worktree.repair');
+          return;
+        case 'settings':
+          setSettingsSection('worktrees');
+          setSettingsOpen(true);
+          return;
+      }
+    },
+    [active, runAction, repositories],
+  );
+
+  // The palette command (Ctrl+Shift+G W) asks for the New Worktree sheet.
+  useEffect(
+    () =>
+      rpc.on('ui/request', ({ action }) => {
+        if (action === 'worktree.create') setCreateWorktree({});
+      }),
+    [],
+  );
+
   /**
    * `Escape` unwinds one layer at a time.
    *
@@ -385,11 +514,14 @@ export function AppShell(): React.JSX.Element {
     if (teaching) return setTeaching(undefined);
     // Shortcuts before settings: settings can open it, and it covers it.
     if (shortcutsOpen) return setShortcutsOpen(false);
-    if (settingsOpen) return setSettingsOpen(false);
     if (pending) return setPending(undefined);
+    if (branchHeld) return setBranchHeld(undefined);
+    if (removeWorktree) return setRemoveWorktree(undefined);
+    if (createWorktree) return setCreateWorktree(undefined);
+    if (settingsOpen) return setSettingsOpen(false);
     if (search.query) return setSearch((current) => ({ ...current, query: '' }));
     if (logOpen) return setLogOpen(false);
-  }, [teaching, shortcutsOpen, settingsOpen, pending, search.query, logOpen]);
+  }, [teaching, shortcutsOpen, settingsOpen, pending, search.query, logOpen, branchHeld, removeWorktree, createWorktree]);
 
   useKeyboard({
     'help.shortcuts': () => setShortcutsOpen(true),
@@ -407,6 +539,7 @@ export function AppShell(): React.JSX.Element {
     'repo.rescan': () => {
       void rpc.request('repos/rescan', undefined).catch(() => undefined);
     },
+    'git.worktree': () => setCreateWorktree({}),
     // Git shortcuts open the command sheet rather than running: a mistyped key
     // shows a dialog to read and cancel, never an executed push.
     ...Object.fromEntries(
@@ -448,6 +581,7 @@ export function AppShell(): React.JSX.Element {
         mode={mode}
         onMode={changeMode}
         showPrTab={pullRequestId !== undefined}
+        showWorktreeTab={worktree !== undefined}
         history={history}
         onHistory={setHistory}
         search={search}
@@ -489,6 +623,8 @@ export function AppShell(): React.JSX.Element {
             selectedPrId={pullRequestId}
             onSelectPr={selectPr}
             onCreatePr={() => setCreatePrOpen(true)}
+            {...(mode === 'worktree' && worktree ? { selectedWorktree: worktree.entry.path } : {})}
+            onWorktree={handleWorktree}
           />
         ) : (
           <nav className="gt-sidebar" aria-label="Repository objects" />
@@ -518,8 +654,19 @@ export function AppShell(): React.JSX.Element {
           </div>
         )}
 
-        {/* Files: what to look at — a change's or commit's files, or a PR's details and commits. */}
-        {active && openPrId !== undefined ? (
+        {/* Files: what to look at — a change's or commit's files, a PR's details and commits, or a worktree. */}
+        {active && mode === 'worktree' && worktree ? (
+          <WorktreeDetails
+            key={`${active.id}:${worktree.entry.path}`}
+            entry={worktree.entry}
+            {...(worktree.repoId ? { worktreeRepoId: worktree.repoId } : {})}
+            revision={repositories.revision}
+            colorLabels
+            {...(worktreeSelection ? { selection: worktreeSelection } : {})}
+            onSelect={setWorktreeSelection}
+            onAction={handleWorktree}
+          />
+        ) : active && openPrId !== undefined ? (
           <PullRequestMaster
             key={`${active.id}:${openPrId}`}
             repoId={active.id}
@@ -553,6 +700,12 @@ export function AppShell(): React.JSX.Element {
         {/* Code. Always mounted, so the review pane's portal target survives a
             switch into and out of a pull request. */}
         <div className="gt-code-pane" ref={setCodePane}>
+          {active && mode === 'worktree' && worktree && (
+            <WorktreeDiffPane
+              {...(worktree.repoId ? { worktreeRepoId: worktree.repoId } : {})}
+              {...(worktreeSelection ? { selection: worktreeSelection } : {})}
+            />
+          )}
           {active && openPrId !== undefined && (
             <PullRequestDiffPane
               key={`${active.id}:${openPrId}:${prCommitHash ?? 'overall'}`}
@@ -594,7 +747,53 @@ export function AppShell(): React.JSX.Element {
           appearance={history}
           onAppearance={(next) => setHistory((current) => ({ ...current, ...next }))}
           onShowShortcuts={() => setShortcutsOpen(true)}
-          onClose={() => setSettingsOpen(false)}
+          onClose={() => {
+            setSettingsOpen(false);
+            setSettingsSection(undefined);
+          }}
+          {...(settingsSection ? { initialSection: settingsSection } : {})}
+          onRunCommand={runAction}
+          onCreateWorktree={() => setCreateWorktree({})}
+        />
+      )}
+
+      {createWorktree && active && (
+        <CreateWorktreeSheet
+          repoId={active.id}
+          {...(activeState?.branch?.head ? { currentBranch: activeState.branch.head } : {})}
+          {...(createWorktree.mode ? { initialMode: createWorktree.mode } : {})}
+          {...(createWorktree.base ? { initialBase: createWorktree.base } : {})}
+          onExplain={setTeaching}
+          onClose={() => setCreateWorktree(undefined)}
+          onCreated={() => repositories.refresh()}
+        />
+      )}
+
+      {removeWorktree && active && (
+        <RemoveWorktreeSheet
+          repoId={active.id}
+          entry={removeWorktree}
+          onExplain={setTeaching}
+          onClose={() => setRemoveWorktree(undefined)}
+          onRemoved={() => {
+            if (worktree?.entry.path === removeWorktree.path) {
+              setWorktree(undefined);
+              setMode('history');
+            }
+            repositories.refresh();
+          }}
+        />
+      )}
+
+      {branchHeld && active && (
+        <BranchInWorktreeSheet
+          ref_={branchHeld.ref}
+          entry={branchHeld.entry}
+          onOpen={(target) => {
+            void rpc.request('worktrees/open', { repoId: active.id, path: branchHeld.entry.path, target }).catch((reason: unknown) => setError(describeError(reason)));
+            setBranchHeld(undefined);
+          }}
+          onClose={() => setBranchHeld(undefined)}
         />
       )}
 

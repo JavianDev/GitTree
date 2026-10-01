@@ -21,6 +21,12 @@ export const FEATURE_MIN_VERSION = {
   statusPorcelainV2: [2, 11, 0],
   /** `worktree list --porcelain` */
   worktreePorcelain: [2, 7, 0],
+  /** `worktree list --porcelain -z` */
+  worktreeListZ: [2, 36, 0],
+  /** `worktree remove` and `worktree move` */
+  worktreeRemoveMove: [2, 17, 0],
+  /** `worktree repair` */
+  worktreeRepair: [2, 30, 0],
   /** `sparse-checkout` with cone mode */
   sparseCheckout: [2, 25, 0],
   /** `commit-graph` maintenance task */

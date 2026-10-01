@@ -124,3 +124,64 @@ export function recentRefs(refs: readonly RefEntry[], count = 5): RefEntry[] {
     .sort((a, b) => (b.committedAt ?? '').localeCompare(a.committedAt ?? ''))
     .slice(0, count);
 }
+
+/* -------------------------------------------------------------------------- */
+/* Generic folders                                                            */
+/* -------------------------------------------------------------------------- */
+
+export interface TreeFolder<T> {
+  kind: 'folder';
+  name: string;
+  path: string;
+  children: Array<TreeNode<T>>;
+  count: number;
+}
+
+export interface TreeLeaf<T> {
+  kind: 'leaf';
+  name: string;
+  item: T;
+}
+
+export type TreeNode<T> = TreeFolder<T> | TreeLeaf<T>;
+
+/**
+ * The same `/` grouping `buildRefTree` gives branches, for anything with a
+ * slash-separated name — worktrees grouped by their branch's folder, so
+ * `feature/login` and `feature/themes` sit under one `feature` row.
+ */
+export function buildTree<T>(items: readonly T[], nameOf: (item: T) => string): Array<TreeNode<T>> {
+  const root: TreeFolder<T> = { kind: 'folder', name: '', path: '', children: [], count: 0 };
+
+  for (const item of items) {
+    const segments = nameOf(item).split('/').filter((segment) => segment.length > 0);
+    const leafName = segments.pop();
+    if (!leafName) continue;
+
+    let parent = root;
+    parent.count++;
+    for (const segment of segments) {
+      const path = parent.path ? `${parent.path}/${segment}` : segment;
+      let next = parent.children.find(
+        (child): child is TreeFolder<T> => child.kind === 'folder' && child.name === segment,
+      );
+      if (!next) {
+        next = { kind: 'folder', name: segment, path, children: [], count: 0 };
+        parent.children.push(next);
+      }
+      next.count++;
+      parent = next;
+    }
+    parent.children.push({ kind: 'leaf', name: leafName, item });
+  }
+
+  const sort = (nodes: Array<TreeNode<T>>): void => {
+    nodes.sort((a, b) => {
+      if (a.kind !== b.kind) return a.kind === 'folder' ? -1 : 1;
+      return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+    });
+    for (const node of nodes) if (node.kind === 'folder') sort(node.children);
+  };
+  sort(root.children);
+  return root.children;
+}

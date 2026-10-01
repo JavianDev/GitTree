@@ -1,0 +1,700 @@
+/*
+ * Worktrees: the sidebar section, the details pane, the New/Remove sheets, the
+ * multi-step plan, and Settings ▸ Worktrees. Every value resolves to a token in
+ * tokens.css, so all five themes style it without overrides.
+ */
+
+/* -------------------------------------------------------------------------- */
+/* Sidebar rows                                                               */
+/* -------------------------------------------------------------------------- */
+
+.gt-wt-dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--gt-label-tertiary);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.15);
+}
+
+.gt-wt-dot[data-hollow='true'] {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--gt-label-tertiary);
+}
+
+.gt-wt-row[data-missing='true'] .gt-source-name {
+  color: var(--gt-label-tertiary);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--gt-label-tertiary) 70%, transparent);
+}
+
+.gt-wt-badge {
+  flex: none;
+}
+
+.gt-wt-badge[data-kind='main'] {
+  color: var(--gt-orange);
+  border-color: color-mix(in srgb, var(--gt-orange) 45%, transparent);
+}
+
+.gt-wt-badge[data-kind='current'] {
+  color: var(--gt-accent);
+  border-color: color-mix(in srgb, var(--gt-accent) 45%, transparent);
+}
+
+.gt-wt-badge[data-kind='locked'] {
+  color: var(--gt-purple);
+  border-color: color-mix(in srgb, var(--gt-purple) 45%, transparent);
+}
+
+.gt-wt-badge[data-kind='missing'] {
+  color: var(--gt-red);
+  border-color: color-mix(in srgb, var(--gt-red) 45%, transparent);
+}
+
+/* A branch row whose branch lives in another worktree. */
+.gt-wt-marker {
+  color: var(--gt-teal);
+  border-color: color-mix(in srgb, var(--gt-teal) 45%, transparent);
+}
+
+.gt-wt-ghost {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  width: calc(100% - 2 * var(--gt-space-2));
+  text-align: left;
+  color: var(--gt-label-secondary);
+  padding-left: var(--gt-space-3);
+}
+
+.gt-wt-ghost:hover {
+  color: var(--gt-label);
+}
+
+.gt-wt-ghost-plus {
+  flex: none;
+  width: 9px;
+  text-align: center;
+  color: var(--gt-accent);
+  font-weight: var(--gt-weight-semibold);
+}
+
+.gt-wt-error .gt-source-name {
+  color: var(--gt-red);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Details pane                                                               */
+/* -------------------------------------------------------------------------- */
+
+.gt-wt-details {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--gt-bg-content);
+}
+
+.gt-wt-details-header {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-1);
+  padding: var(--gt-space-3);
+  border-bottom: 1px solid var(--gt-separator);
+}
+
+.gt-wt-details-title {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  min-width: 0;
+}
+
+.gt-wt-details-title h2 {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--gt-text-headline);
+  font-weight: var(--gt-weight-semibold);
+}
+
+.gt-wt-details-path {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  min-width: 0;
+  font-size: var(--gt-text-caption);
+  color: var(--gt-label-secondary);
+}
+
+.gt-wt-details-path .gt-mono {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gt-wt-details-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gt-space-1) var(--gt-space-3);
+  margin: 0;
+  font-size: var(--gt-text-caption);
+  color: var(--gt-label-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.gt-wt-details-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gt-space-1);
+  margin-top: var(--gt-space-1);
+}
+
+.gt-wt-banner {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  margin: var(--gt-space-2) var(--gt-space-3) 0;
+  padding: var(--gt-space-2) var(--gt-space-3);
+  border-radius: var(--gt-radius-card);
+  border: 1px solid color-mix(in srgb, var(--gt-purple) 40%, transparent);
+  background: color-mix(in srgb, var(--gt-purple) 10%, transparent);
+  font-size: var(--gt-text-caption);
+}
+
+.gt-wt-banner[data-tone='warning'] {
+  border-color: color-mix(in srgb, var(--gt-orange) 40%, transparent);
+  background: color-mix(in srgb, var(--gt-orange) 10%, transparent);
+}
+
+.gt-wt-banner > span {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.gt-wt-details-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: var(--gt-space-3);
+}
+
+.gt-wt-group {
+  border-bottom: 1px solid var(--gt-separator);
+}
+
+.gt-wt-group-title {
+  margin: 0;
+  padding: var(--gt-space-2) var(--gt-space-3) var(--gt-space-1);
+  font-size: var(--gt-text-caption);
+  font-weight: var(--gt-weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gt-label-secondary);
+}
+
+.gt-wt-group-count {
+  color: var(--gt-label-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.gt-wt-group-empty {
+  margin: 0;
+  padding: 0 var(--gt-space-3) var(--gt-space-2);
+  font-size: var(--gt-text-caption);
+  color: var(--gt-label-tertiary);
+}
+
+.gt-wt-file {
+  padding-left: var(--gt-space-3);
+}
+
+.gt-wt-file-dir {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--gt-text-caption);
+  color: var(--gt-label-tertiary);
+}
+
+.gt-wt-file-kind {
+  flex: none;
+  min-width: 2ch;
+  text-align: right;
+  font-family: var(--gt-font-mono);
+  font-size: var(--gt-text-caption);
+  font-weight: var(--gt-weight-semibold);
+  color: var(--gt-orange);
+}
+
+.gt-wt-file-kind[data-kind='untracked'],
+.gt-wt-file-kind[data-kind='added'] {
+  color: var(--gt-green);
+}
+
+.gt-wt-file-kind[data-kind='deleted'],
+.gt-wt-file-kind[data-kind='conflicted'] {
+  color: var(--gt-red);
+}
+
+.gt-wt-commits {
+  width: calc(100% - 2 * var(--gt-space-3));
+  margin: 0 var(--gt-space-3) var(--gt-space-2);
+  border-collapse: collapse;
+  font-size: var(--gt-text-caption);
+}
+
+.gt-wt-commits th {
+  text-align: left;
+  font-weight: var(--gt-weight-medium);
+  color: var(--gt-label-tertiary);
+  padding: 2px var(--gt-space-2) 2px 0;
+  border-bottom: 1px solid var(--gt-separator);
+}
+
+.gt-wt-commits td {
+  padding: 3px var(--gt-space-2) 3px 0;
+  color: var(--gt-label-secondary);
+  white-space: nowrap;
+}
+
+.gt-wt-commits tr[tabindex] {
+  cursor: default;
+}
+
+.gt-wt-commits tbody tr:hover {
+  background: var(--gt-fill-hover);
+}
+
+.gt-wt-commits tr[aria-selected='true'] {
+  background: color-mix(in srgb, var(--gt-accent) 16%, transparent);
+}
+
+.gt-wt-commit-subject {
+  max-width: 0;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--gt-label) !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Sheets                                                                     */
+/* -------------------------------------------------------------------------- */
+
+.gt-wt-sheet {
+  gap: var(--gt-space-3);
+}
+
+.gt-wt-form {
+  display: grid;
+  gap: var(--gt-space-3);
+}
+
+.gt-wt-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-1);
+  min-width: 0;
+}
+
+.gt-wt-label {
+  font-size: var(--gt-text-caption);
+  font-weight: var(--gt-weight-semibold);
+  color: var(--gt-label-secondary);
+}
+
+.gt-wt-hint {
+  font-size: var(--gt-text-caption);
+  color: var(--gt-label-tertiary);
+}
+
+.gt-wt-hint[data-tone='error'] {
+  color: var(--gt-red);
+}
+
+.gt-wt-hint[data-tone='warning'] {
+  color: var(--gt-orange);
+}
+
+.gt-link {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--gt-accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.gt-wt-row-inline {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  min-width: 0;
+}
+
+.gt-wt-row-inline > .gt-text-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.gt-wt-radios {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gt-space-1) var(--gt-space-4);
+}
+
+.gt-wt-radios-column {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.gt-wt-reason {
+  width: 220px;
+}
+
+.gt-wt-picker {
+  max-height: 168px;
+  overflow-y: auto;
+  border: 1px solid var(--gt-control-border);
+  border-radius: var(--gt-radius-control);
+  background: var(--gt-control-bg);
+  padding: 2px;
+}
+
+.gt-wt-pick-group {
+  margin: var(--gt-space-1) var(--gt-space-2) 2px;
+  font-size: var(--gt-text-caption);
+  color: var(--gt-label-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.gt-wt-pick {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  width: 100%;
+  padding: 3px var(--gt-space-2);
+  border: 0;
+  border-radius: var(--gt-radius-control);
+  background: transparent;
+  color: var(--gt-label);
+  text-align: left;
+  font-size: var(--gt-text-callout);
+  cursor: default;
+}
+
+.gt-wt-pick:hover:not(:disabled) {
+  background: var(--gt-fill-hover);
+}
+
+.gt-wt-pick[aria-pressed='true'] {
+  background: var(--gt-accent);
+  color: var(--gt-on-accent);
+}
+
+.gt-wt-pick:disabled {
+  color: var(--gt-label-tertiary);
+}
+
+.gt-wt-pick-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gt-wt-pick-note {
+  flex: none;
+  font-size: var(--gt-text-caption);
+}
+
+.gt-wt-swatches {
+  display: flex;
+  gap: var(--gt-space-2);
+}
+
+.gt-wt-swatch {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.2);
+}
+
+.gt-wt-swatch[data-none='true'] {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--gt-label-tertiary);
+}
+
+.gt-wt-swatch[aria-pressed='true'] {
+  outline: 2px solid var(--gt-accent);
+  outline-offset: 2px;
+}
+
+.gt-wt-more {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-2);
+  padding: var(--gt-space-2) var(--gt-space-3);
+  border: 1px solid var(--gt-separator);
+  border-radius: var(--gt-radius-card);
+}
+
+.gt-wt-more > summary {
+  list-style: none;
+  cursor: default;
+}
+
+.gt-wt-more[open] > summary {
+  margin-bottom: var(--gt-space-2);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Chips                                                                      */
+/* -------------------------------------------------------------------------- */
+
+.gt-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gt-space-1);
+  padding: 3px;
+  border: 1px solid var(--gt-control-border);
+  border-radius: var(--gt-radius-control);
+  background: var(--gt-control-bg);
+}
+
+.gt-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 2px 1px var(--gt-space-2);
+  border-radius: var(--gt-radius-pill);
+  background: var(--gt-fill);
+  font-size: var(--gt-text-caption);
+}
+
+.gt-chip-remove {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--gt-label-tertiary);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.gt-chip-remove:hover {
+  background: var(--gt-fill-hover);
+  color: var(--gt-label);
+}
+
+.gt-chip-input {
+  flex: 1 1 120px;
+  min-width: 100px;
+  border: 0;
+  background: transparent;
+  color: var(--gt-label);
+  font-size: var(--gt-text-caption);
+  padding: 2px var(--gt-space-1);
+  outline: none;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Plan                                                                       */
+/* -------------------------------------------------------------------------- */
+
+.gt-plan {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-1);
+}
+
+.gt-plan-step {
+  display: flex;
+  gap: var(--gt-space-2);
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.gt-plan-index {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--gt-fill);
+  color: var(--gt-label-secondary);
+  font-size: var(--gt-text-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+.gt-plan-step[data-state='done'] .gt-plan-index {
+  background: color-mix(in srgb, var(--gt-green) 22%, transparent);
+  color: var(--gt-green);
+}
+
+.gt-plan-step[data-state='failed'] .gt-plan-index {
+  background: color-mix(in srgb, var(--gt-red) 22%, transparent);
+  color: var(--gt-red);
+}
+
+.gt-plan-step[data-state='running'] .gt-plan-index {
+  background: color-mix(in srgb, var(--gt-accent) 22%, transparent);
+  color: var(--gt-accent);
+}
+
+.gt-plan-step[data-state='skipped'] {
+  opacity: 0.5;
+}
+
+.gt-plan-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--gt-text-callout);
+  padding-top: 3px;
+}
+
+.gt-plan-command {
+  font-family: var(--gt-font-mono);
+  font-size: var(--gt-text-caption);
+  overflow-wrap: anywhere;
+}
+
+.gt-plan-note {
+  font-size: var(--gt-text-caption);
+  color: var(--gt-label-tertiary);
+}
+
+.gt-plan-output {
+  margin: 0;
+  padding: var(--gt-space-1) var(--gt-space-2);
+  border-radius: var(--gt-radius-control);
+  background: var(--gt-fill);
+  font-family: var(--gt-font-mono);
+  font-size: var(--gt-text-caption);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Settings ▸ Worktrees                                                       */
+/* -------------------------------------------------------------------------- */
+
+.gt-wt-settings {
+  gap: var(--gt-space-2);
+}
+
+.gt-wt-settings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gt-space-3);
+  flex-wrap: wrap;
+}
+
+.gt-wt-settings-sub {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  margin: var(--gt-space-3) 0 0;
+  font-size: var(--gt-text-caption);
+  font-weight: var(--gt-weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gt-label-secondary);
+}
+
+.gt-wt-dim {
+  color: var(--gt-label-tertiary);
+  font-size: var(--gt-text-caption);
+}
+
+.gt-wt-inline-input {
+  width: 120px;
+  margin: 0 var(--gt-space-1);
+  padding-top: 1px;
+  padding-bottom: 1px;
+}
+
+.gt-wt-preview {
+  margin: 0;
+  font-size: var(--gt-text-callout);
+}
+
+.gt-wt-field-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  font-size: var(--gt-text-callout);
+  color: var(--gt-label-secondary);
+}
+
+.gt-wt-settings-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gt-wt-settings-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--gt-space-2);
+  min-width: 0;
+  padding: 2px 0;
+  font-size: var(--gt-text-callout);
+}
+
+.gt-wt-settings-branch {
+  flex: none;
+  max-width: 34%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: var(--gt-weight-medium);
+}
+
+.gt-wt-settings-path {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--gt-label-secondary);
+  font-size: var(--gt-text-caption);
+}

@@ -45,6 +45,15 @@ export class TerminalBridge implements vscode.Disposable {
     terminal.sendText(command, false);
   }
 
+  /**
+   * Closes the repository's terminal, ahead of removing or moving its folder:
+   * a shell whose working directory is inside it keeps Windows from deleting it.
+   */
+  close(repoId: RepoId): void {
+    this.terminals.get(repoId)?.dispose();
+    this.terminals.delete(repoId);
+  }
+
   dispose(): void {
     this.closeListener.dispose();
     // Terminals are not disposed: the user may still be reading output in them,

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
 export interface ContextMenuItem {
@@ -8,6 +8,18 @@ export interface ContextMenuItem {
   separator?: boolean;
   /** One-line explanation, shown as the item's native tooltip. */
   hint?: string;
+  /**
+   * Why the item cannot be used right now. A disabled item stays in the menu
+   * with its reason as the tooltip, so a missing action is explained rather
+   * than hidden.
+   */
+  disabled?: string;
+  /** The action a double-click or Enter would take; shown in bold. */
+  default?: boolean;
+  /** A key hint shown at the right edge, e.g. "Enter". */
+  shortcut?: string;
+  /** A colour token (CSS value) for a leading swatch, e.g. a colour label. */
+  swatch?: string;
 }
 
 export interface ContextMenuProps {
@@ -22,7 +34,8 @@ export interface ContextMenuProps {
  *
  * Modeled on CommandPreview.tsx's portal + viewport-aware positioning,
  * but click-toggled instead of hover-toggled. Shared across any row-based
- * list (file rows, stash rows, PR rows, ...) rather than owned by one feature.
+ * list (file rows, stash rows, PR rows, worktree rows, ...) rather than owned
+ * by one feature.
  */
 export function ContextMenu({
   x,
@@ -45,17 +58,20 @@ export function ContextMenu({
       }
     };
 
-    document.addEventListener('click', handleClickOutside);
+    // Deferred a tick: the click that opened a menu from another menu would
+    // otherwise land here and close it straight away.
+    const timer = setTimeout(() => document.addEventListener('click', handleClickOutside), 0);
     document.addEventListener('keydown', handleKeyDown);
 
     return () => {
+      clearTimeout(timer);
       document.removeEventListener('click', handleClickOutside);
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [onClose]);
 
   // Flip to the left if the menu would run off the right edge.
-  const width = 220;
+  const width = 240;
   const left = Math.min(x, Math.max(8, window.innerWidth - width - 8));
   // Flip upward if the menu would run off the bottom.
   const height = Math.max(24, items.length * 28 + 8);
@@ -77,14 +93,20 @@ export function ContextMenu({
             type="button"
             className="gt-file-menu-item"
             data-destructive={item.destructive ? 'true' : undefined}
+            data-default={item.default ? 'true' : undefined}
             role="menuitem"
-            title={item.hint}
+            disabled={item.disabled !== undefined}
+            aria-disabled={item.disabled !== undefined}
+            title={item.disabled ?? item.hint}
             onClick={() => {
+              if (item.disabled !== undefined) return;
               item.run();
               onClose();
             }}
           >
-            {item.label}
+            {item.swatch && <span className="gt-file-menu-swatch" style={{ background: item.swatch }} aria-hidden="true" />}
+            <span className="gt-file-menu-label">{item.label}</span>
+            {item.shortcut && <span className="gt-file-menu-shortcut">{item.shortcut}</span>}
           </button>
         ),
       )}

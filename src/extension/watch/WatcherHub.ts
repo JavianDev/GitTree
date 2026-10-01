@@ -1,11 +1,9 @@
 import { type FSWatcher, watch } from 'node:fs';
 import path from 'node:path';
 import * as vscode from 'vscode';
-import type { RepoId } from '@shared/model';
+import type { RepoId, RepoNode } from '@shared/model';
 import type { RepositoryTree } from '../repo/RepositoryTree';
-
-/** Files inside `.git` whose change means repository state moved. */
-const GIT_FILES = ['HEAD', 'index', 'MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REBASE_HEAD', 'REVERT_HEAD'];
+import { gitWatchTargets } from './gitWatchTargets';
 
 const DEBOUNCE_MS = 150;
 
@@ -39,6 +37,12 @@ interface RefreshWindow {
 export class WatcherHub implements vscode.Disposable {
   private workspaceWatcher?: vscode.FileSystemWatcher;
   private readonly gitWatchers = new Map<RepoId, FSWatcher[]>();
+  /**
+   * File watchers for repositories opened from outside every workspace folder
+   * — a worktree in a sibling folder. The workspace-wide watcher never sees
+   * their files, so each gets its own, for as long as it is open.
+   */
+  private readonly externalWatchers = new Map<RepoId, vscode.FileSystemWatcher>();
   private readonly windows = new Map<RepoId, RefreshWindow>();
   private disposed = false;
 
@@ -74,10 +78,28 @@ export class WatcherHub implements vscode.Disposable {
       this.gitWatchers.delete(repoId);
     }
 
-    for (const node of this.tree.all()) {
-      if (this.gitWatchers.has(node.id)) continue;
-      this.gitWatchers.set(node.id, this.watchGitDir(node.id, node.gitDir));
+    for (const [repoId, watcher] of this.externalWatchers) {
+      if (current.has(repoId)) continue;
+      watcher.dispose();
+      this.externalWatchers.delete(repoId);
     }
+
+    for (const node of this.tree.all()) {
+      if (!this.gitWatchers.has(node.id)) this.gitWatchers.set(node.id, this.watchGitDir(node));
+      if (node.external && !this.externalWatchers.has(node.id)) this.externalWatchers.set(node.id, this.watchExternal(node));
+    }
+  }
+
+  /**
+   * Closes one repository's handles now, ahead of removing or moving its
+   * folder: on Windows an open directory handle can make git's delete fail.
+   * The next `syncRepositories` restores them if the repository is still there.
+   */
+  release(repoId: RepoId): void {
+    for (const watcher of this.gitWatchers.get(repoId) ?? []) watcher.close();
+    this.gitWatchers.delete(repoId);
+    this.externalWatchers.get(repoId)?.dispose();
+    this.externalWatchers.delete(repoId);
   }
 
   dispose(): void {
@@ -89,30 +111,41 @@ export class WatcherHub implements vscode.Disposable {
       for (const watcher of watchers) watcher.close();
     }
     this.gitWatchers.clear();
+    for (const watcher of this.externalWatchers.values()) watcher.dispose();
+    this.externalWatchers.clear();
 
     for (const window of this.windows.values()) clearTimeout(window.timer);
     this.windows.clear();
   }
 
-  private watchGitDir(repoId: RepoId, gitDir: string): FSWatcher[] {
+  private watchGitDir(node: RepoNode): FSWatcher[] {
     const watchers: FSWatcher[] = [];
 
-    const add = (target: string, options?: { recursive?: boolean }) => {
+    for (const target of gitWatchTargets(node)) {
       try {
         // `persistent: false` keeps these handles from holding the host open.
-        const watcher = watch(target, { persistent: false, ...options }, () => this.schedule(repoId));
+        const watcher = watch(target.path, { persistent: false, recursive: target.recursive }, () => this.schedule(node.id));
         watcher.on('error', () => watcher.close());
         watchers.push(watcher);
       } catch {
         // A missing MERGE_HEAD is the normal case, not an error.
       }
-    };
-
-    for (const file of GIT_FILES) add(path.join(gitDir, file));
-    // refs/ is small and shallow; recursive here costs one handle, not a tree.
-    add(path.join(gitDir, 'refs'), { recursive: true });
+    }
 
     return watchers;
+  }
+
+  private watchExternal(node: RepoNode): vscode.FileSystemWatcher {
+    const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(vscode.Uri.file(node.root), '**/*'));
+    const route = (uri: vscode.Uri) => {
+      const fsPath = uri.fsPath;
+      if (fsPath.includes(`${path.sep}.git${path.sep}`) || fsPath.endsWith(`${path.sep}.git`)) return;
+      this.schedule(node.id);
+    };
+    watcher.onDidChange(route);
+    watcher.onDidCreate(route);
+    watcher.onDidDelete(route);
+    return watcher;
   }
 
   private routeWorktreeChange(uri: vscode.Uri): void {
