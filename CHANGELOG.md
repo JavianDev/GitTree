@@ -6,6 +6,20 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed — a leaner package, and a README that shows 0.10
+
+- **The extension download is about 650 KB, in 17 files.** The package carried the TypeScript
+  sources, the tests, React's `node_modules` (already bundled into the webview), editor and agent
+  settings folders, and the README's screenshots. None of it is loaded at runtime — the extension
+  runs entirely from `dist/` — so `.vscodeignore` now leaves it out. The README's images are served
+  from the repository, as before.
+- **README:** every screenshot retaken from the current UI against the GitTree-Demo repository,
+  cropped to what each section is about, plus new ones for the Push and Stash tabs and the keyboard
+  sheet; a "New in 0.10" summary; Stash's shortcut corrected to `Shift+S`.
+- **Tests** for Commit & Push against a real remote (a hook that refuses the commit, skipping hooks,
+  the outgoing list before and after a push, the exact push argv, a push the remote refuses) and for
+  every path of the AI commit-message draft.
+
 ### Added — a Files pane that does the work
 
 - **Commit / Push / Stash tabs** across the top of the Files pane, each with its count:

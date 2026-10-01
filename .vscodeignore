@@ -1,2 +1,25 @@
 # Baked into dist/extension.js at build time; never ship the raw file.
 oauth-clients.json
+
+# The extension runs entirely from dist/: the host bundle needs only Node
+# built-ins and `vscode`, and the webview bundle already contains React. The
+# rest is development material, and vsce does not read .gitignore.
+src/**
+test/**
+node_modules/**
+.claude/**
+.vscode/**
+.githooks/**
+.github/**
+tsconfig*.json
+vite.config.ts
+vitest.config.ts
+esbuild.mjs
+update_readme.sh
+SCREENSHOTS*.md
+git-tree-reddit-post.md
+*.vsix
+
+# The README's images are served from the repository on GitHub (vsce rewrites
+# relative links to it), so the package does not need its own copies.
+media/screenshots/**
