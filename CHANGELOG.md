@@ -6,6 +6,13 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed — README screenshots on the Marketplace and in VS Code
+
+- The README's screenshots are now linked to the exact commit of each release instead of the latest
+  files on GitHub. Screenshots replaced under the same file name could keep showing their older
+  version from a cache — in VS Code's extension page, the browser, or GitHub's CDN — so the 0.11
+  images could appear out of date. Every release now has its own image URLs.
+
 ### Added — Worktrees
 
 - **A WORKTREES section in the sidebar**, right after Branches: every worktree of the repository from
