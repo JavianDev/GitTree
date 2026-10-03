@@ -1,13 +1,14 @@
 I got tired of switching between VS Code and a separate Git app, so I built one into the editor.
 
-It's called Git Tree, a free, open-source VS Code extension. I just shipped version 0.12.
+It's called Git Tree, a free, open-source VS Code extension.
 
 What it does:
 
 🌳 A real commit graph, your branches, the changed files and the diff, side by side in one panel
-🖱️ New in 0.12: double-click any commit to check out its branch. Right-click it to see its parents, author, committer and full message next to every action: merge, rebase, cherry-pick, revert, reset, tag, branch, archive, create a patch, copy the SHA
+🖱️ Double-click a commit to check out its branch, or right-click it to see its details and act on it: merge, rebase, cherry-pick, revert, reset, tag, archive and more
 📂 Worktrees: have two branches checked out at once in separate folders, so you can review a pull request without stashing what you're working on
 ✅ Stage single lines or hunks with checkboxes
+📦 Stashes, merge-conflict help, several repositories as tabs, keyboard shortcuts for everything, and themes
 ✨ Draft a commit message with the AI model you already use in VS Code, then commit and push in one step
 🔀 Pull requests for GitHub, Azure DevOps, GitLab and Bitbucket, inside the editor
 
