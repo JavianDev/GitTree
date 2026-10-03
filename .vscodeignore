@@ -23,3 +23,4 @@ docs/git-tree-reddit-post.md
 # The README's images are served from the repository on GitHub (vsce rewrites
 # relative links to it), so the package does not need its own copies.
 media/screenshots/**
+docs/git-tree-linkedin-post.txt
