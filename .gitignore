@@ -9,3 +9,9 @@ coverage/
 *.log
 # OAuth app registrations (Bitbucket consumer secret). Baked into the build, never committed.
 oauth-clients.json
+
+# Social media post drafts
+git-tree-reddit-post.md
+git-tree-linkedin-post.txt
+GitTree-Reddit-Post/
+GitTree-LinkedIn-Post/
