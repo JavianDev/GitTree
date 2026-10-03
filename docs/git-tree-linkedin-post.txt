@@ -2,15 +2,37 @@ I got tired of switching between VS Code and a separate Git app, so I built one 
 
 It's called Git Tree, a free, open-source VS Code extension.
 
-What it does:
+Everything it supports today:
 
-🌳 A real commit graph, your branches, the changed files and the diff, side by side in one panel
-🖱️ Double-click a commit to check out its branch, or right-click it to see its details and act on it: merge, rebase, cherry-pick, revert, reset, tag, archive and more
-📂 Worktrees: have two branches checked out at once in separate folders, so you can review a pull request without stashing what you're working on
-✅ Stage single lines or hunks with checkboxes
-📦 Stashes, merge-conflict help, several repositories as tabs, keyboard shortcuts for everything, and themes
-✨ Draft a commit message with the AI model you already use in VS Code, then commit and push in one step
-🔀 Pull requests for GitHub, Azure DevOps, GitLab and Bitbucket, inside the editor
+🌳 History
+• A real commit graph next to your branches, the changed files and the diff, in one panel
+• Search commits by message, author or SHA
+• Double-click a commit to check out its branch; right-click it for its details and actions: merge, rebase, cherry-pick, revert, reset, tag, branch, archive, create a patch, copy the SHA
+
+✅ Changes and commits
+• Stage whole files, hunks or single lines with checkboxes
+• ✨ Draft the commit message with the AI model you already use in VS Code
+• Amend, sign-off, git hooks on or off, and Commit & Push in one step
+• Resolve merge conflicts with one click: use mine, use theirs, or open the editor
+
+🔄 Branches and sync
+• Fetch, pull, push, merge, new branch and tag from the toolbar
+• Branches grouped by folder, with recent ones pinned and a filter that finds any branch
+• A Push tab that shows exactly what a push would send
+• Stashes: apply, pop or drop any one of them
+
+📂 Worktrees
+• Two branches checked out at once in separate folders, to review a pull request without stashing your work
+• Create, open, lock, move, prune and remove them, and choose where they live
+
+🔀 Pull requests
+• GitHub, Azure DevOps, GitLab and Bitbucket, detected from your remote
+• List, create, review, comment, approve and merge without leaving the editor
+
+🧭 Everyday comfort
+• Several repositories as tabs, including nested repos and submodules
+• Keyboard shortcuts for everything
+• Follows your VS Code theme, or pick Light, Dark, Graphite or Midnight
 
 The part I care about most: every button shows the exact git command before it runs, and you can edit it. Everything that ran goes into a log. It's a GUI that teaches you git instead of hiding it.
 
