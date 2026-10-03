@@ -17,7 +17,7 @@ vitest.config.ts
 esbuild.mjs
 update_readme.sh
 SCREENSHOTS*.md
-git-tree-reddit-post.md
+docs/git-tree-reddit-post.md
 *.vsix
 
 # The README's images are served from the repository on GitHub (vsce rewrites
