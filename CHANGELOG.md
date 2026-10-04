@@ -6,6 +6,17 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **The Repositories sidebar view is gone.** Repositories live in the Git Tree panel itself, as its
+  tabs (with **+** to add one), where they follow Git Tree's theme. A **Git Tree** button in the status
+  bar opens the panel; `Ctrl+Shift+G T` and the command palette still work.
+- **Git failures appear as a floating card** instead of a full-width banner that pushed the panes
+  down. It names the problem in a line, keeps git's own message one click away with **Copy**, and
+  offers fixes read from that message: **Stash & Retry** and **Review Changes** when uncommitted work
+  is in the way, **Pull** for a rejected push, **Push and Set Upstream** for a new branch, and the
+  **Command Log**.
+
 ### Fixed
 
 - The **◂ hide button** is back in the top-right corner of the Branches, Git Tree and Files panes,
