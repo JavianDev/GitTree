@@ -8,6 +8,12 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Stage All / Unstage All buttons** on the Staged Changes, Changes and Untracked Changes headers,
+  and a **Stage / Unstage button** on each file row (shown on the row under the pointer and on
+  selected rows; with several files selected it acts on all of them). The checkboxes still work.
+
+### Added
+
 - A **Git Tree** button in the status bar opens the panel from anywhere.
 
 ### Changed

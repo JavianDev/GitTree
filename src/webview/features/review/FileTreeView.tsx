@@ -596,6 +596,28 @@ export function FileTree({
           {also && <span className="gt-review-tag">{also}</span>}
 
           <span className="gt-review-spacer" />
+          {staging && (group.id === 'staged' || group.id === 'unstaged' || group.id === 'untracked') && file.nestedRepoId === undefined && (
+            <button
+              type="button"
+              className="gt-row-stage"
+              data-action={group.id === 'staged' ? 'unstage' : 'stage'}
+              disabled={busy === true}
+              title={
+                group.id === 'staged'
+                  ? 'Unstage — take it out of the next commit (also every selected file)'
+                  : 'Stage — put it in the next commit (also every selected file)'
+              }
+              onClick={(event) => {
+                event.stopPropagation();
+                // A selected row acts for the whole selection, like the context menu.
+                const paths = selection.isSelected(key) ? actOn(key, group.id) : [file.path];
+                if (group.id === 'staged') onUnstage(paths);
+                else stage(paths);
+              }}
+            >
+              {group.id === 'staged' ? '− Unstage' : '+ Stage'}
+            </button>
+          )}
           <LineCounts additions={node.additions} deletions={node.deletions} />
 
           {group.id === 'commit' && (
@@ -647,6 +669,18 @@ export function FileTree({
               <span className="gt-review-group-title">{group.title}</span>
               <LineCounts additions={group.additions} deletions={group.deletions} />
               <span className="gt-review-spacer" />
+              {bulk && group.files.length > 0 && (
+                <button
+                  type="button"
+                  className="gt-group-stage"
+                  data-action={group.id === 'staged' ? 'unstage' : 'stage'}
+                  disabled={busy === true}
+                  onClick={bulk.run}
+                >
+                  {group.id === 'staged' ? '− ' : '+ '}
+                  {bulk.label}
+                </button>
+              )}
               <span className="gt-review-group-files">
                 {group.files.length} {group.files.length === 1 ? 'file' : 'files'}
               </span>

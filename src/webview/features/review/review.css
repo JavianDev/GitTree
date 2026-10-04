@@ -858,3 +858,54 @@
   background: var(--gt-separator);
   margin: 4px 0;
 }
+
+/* --- Explicit Stage / Unstage buttons, beside the checkboxes ------------------ */
+
+.gt-group-stage,
+.gt-row-stage {
+  appearance: none;
+  flex: none;
+  border: 1px solid var(--gt-control-border);
+  background: var(--gt-control-bg);
+  color: var(--gt-label);
+  border-radius: var(--gt-radius-control);
+  font: inherit;
+  font-size: var(--gt-text-caption);
+  font-weight: var(--gt-weight-medium);
+  line-height: 1;
+  padding: 3px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.gt-group-stage[data-action='stage'],
+.gt-row-stage[data-action='stage'] {
+  color: var(--gt-green);
+}
+
+.gt-group-stage[data-action='unstage'],
+.gt-row-stage[data-action='unstage'] {
+  color: var(--gt-orange);
+}
+
+.gt-group-stage:hover:not(:disabled),
+.gt-row-stage:hover:not(:disabled) {
+  background: var(--gt-fill-hover);
+}
+
+.gt-group-stage:disabled,
+.gt-row-stage:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* A row's button shows where you are: under the pointer, or on the selection. */
+.gt-row-stage {
+  visibility: hidden;
+}
+
+.gt-review-row:hover .gt-row-stage,
+.gt-review-row[aria-selected='true'] .gt-row-stage,
+.gt-row-stage:focus-visible {
+  visibility: visible;
+}
