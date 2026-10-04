@@ -229,16 +229,6 @@
   flex: none;
   display: flex;
   gap: 1px;
-  opacity: 0;
-  /* Invisible and untouchable together: a transparent control that still
-     swallows a click is worse than no control. */
-  pointer-events: none;
-}
-
-.gt-split-pane:hover .gt-split-controls,
-.gt-split-pane:focus-within .gt-split-controls {
-  opacity: 1;
-  pointer-events: auto;
 }
 
 .gt-split-control {

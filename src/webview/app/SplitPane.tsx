@@ -500,8 +500,9 @@ export function SplitPane({
                     in the DOM so tabbing into the pane reaches them first. */}
                 <header className="gt-pane-header">
                   <span className="gt-pane-title">{label}</span>
-                {canPin(index) && (
+                {index < count - 1 && (
                   <div className="gt-split-controls">
+                    {canPin(index) && (
                     <button
                       type="button"
                       className="gt-split-control"
@@ -518,6 +519,7 @@ export function SplitPane({
                         📌
                       </span>
                     </button>
+                    )}
 
                     <button
                       type="button"

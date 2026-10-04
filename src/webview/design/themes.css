@@ -151,3 +151,37 @@ body[data-gt-theme='midnight'] {
   --gt-diff-del-bg: rgba(255, 107, 96, 0.15);
   --gt-diff-del-marker: #ff6b60;
 }
+
+/*
+ * Native controls — checkboxes, radios, dropdown lists, date and colour
+ * pickers, scrollbars — draw themselves from `color-scheme`, not from our
+ * tokens. Without it they follow VS Code's theme, so a dark editor painted
+ * dark controls into a light Git Tree theme and the other way round.
+ */
+body.vscode-light,
+body.vscode-high-contrast-light,
+body[data-gt-theme='macos-light'] {
+  color-scheme: light;
+}
+
+body.vscode-dark,
+body.vscode-high-contrast,
+body[data-gt-theme='macos-dark'],
+body[data-gt-theme='graphite'],
+body[data-gt-theme='midnight'] {
+  color-scheme: dark;
+}
+
+body[data-gt-theme='macos-light'] {
+  color-scheme: light;
+}
+
+body {
+  accent-color: var(--gt-accent);
+}
+
+select,
+option {
+  background-color: var(--gt-control-bg);
+  color: var(--gt-label);
+}

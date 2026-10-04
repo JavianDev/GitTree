@@ -6,6 +6,14 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- The **◂ hide button** is back in the top-right corner of the Branches, Git Tree and Files panes,
+  always visible, so a pane can be folded away by hand.
+- **Scrollbars, checkboxes, dropdowns and other native controls follow Git Tree's theme** instead of
+  VS Code's. A light Git Tree theme in a dark VS Code no longer shows dark scrollbars, and scrollbars
+  are thin, without arrow buttons.
+
 ### Changed
 
 - **No more hover auto-hide.** Collapsed panes are plain rails again that open when you click them,

@@ -311,6 +311,19 @@ body[data-gt-theme='macos-light'] select option {
   border-radius: var(--gt-radius-control);
 }
 
+/*
+ * VS Code's webview stylesheet colours scrollbars from the editor's theme with
+ * `scrollbar-color`, which Chromium prefers over the ::-webkit-scrollbar rules
+ * below — so under a different Git Tree theme they came out dark on light.
+ * Setting it here keeps them in Git Tree's own colours.
+ */
+html,
+* {
+  scrollbar-color: var(--gt-label-quaternary) transparent;
+  /* Thin also drops the arrow buttons the standard scrollbar adds on Windows. */
+  scrollbar-width: thin;
+}
+
 ::-webkit-scrollbar {
   width: 11px;
   height: 11px;
