@@ -1,6 +1,8 @@
 I got tired of switching between VS Code and a separate Git app, so I built one into the editor.
 
 It's called Git Tree, a free, open-source VS Code extension.
+🔗 VS Code Marketplace: https://marketplace.visualstudio.com/items?itemName=javian-picardo-group-inc.git-tree
+💻 Source: https://github.com/JavianDev/GitTree
 
 Everything it supports today:
 
@@ -39,8 +41,4 @@ The part I care about most: every button shows the exact git command before it r
 It runs your local git and sends no telemetry. MIT licensed.
 
 I'd love feedback from anyone who lives in VS Code and Git all day. What would make you switch from your current Git client?
-
-🔗 VS Code Marketplace: https://marketplace.visualstudio.com/items?itemName=javian-picardo-group-inc.git-tree
-💻 Source: https://github.com/JavianDev/GitTree
-
 #VSCode #Git #OpenSource #DeveloperTools #SoftwareEngineering #DevEx

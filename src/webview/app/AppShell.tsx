@@ -33,6 +33,8 @@ import { WorktreeDiffPane } from '../features/worktrees/WorktreeDiffPane';
 import { RpcRequestError, rpc } from '../rpc/client';
 import type { ContextMenuItem } from '../shared/ContextMenu';
 import { BottomRibbon } from './BottomRibbon';
+import { FailureCard } from './FailureCard';
+import type { FailureFix, GitFailure } from './gitFailure';
 import { ContextBar, type HistoryOptions, type SearchOptions, type ViewMode } from './ContextBar';
 import { RepoTabs } from './RepoTabs';
 import type { CommandId as KeyCommandId } from './keymap';
@@ -167,7 +169,10 @@ export function AppShell(): React.JSX.Element {
   const [commit, setCommit] = useState<Commit | undefined>();
   const [selectedRef, setSelectedRef] = useState<string | undefined>();
   const [focusHash, setFocusHash] = useState<string | undefined>();
-  const [error, setError] = useState<string | undefined>();
+  /** The last git failure, shown as a floating card with ways to fix it. */
+  const [failure, setFailure] = useState<GitFailure | undefined>();
+  /** Most views only have git's text; a retry is offered where the argv is known. */
+  const setError = useCallback((text: string | undefined) => setFailure(text ? { text } : undefined), []);
   const [logOpen, setLogOpen] = useState(false);
   const [teaching, setTeaching] = useState<CommandSpec | undefined>();
   /**
@@ -374,7 +379,11 @@ export function AppShell(): React.JSX.Element {
         .then((result) => {
           // A refused checkout explains itself; swallowing it left the
           // double-click looking like it did nothing.
-          setError(result.exitCode === 0 ? undefined : (result.stderr || result.stdout).trim() || `git switch exited with ${result.exitCode}`);
+          setFailure(
+            result.exitCode === 0
+              ? undefined
+              : { text: (result.stderr || result.stdout).trim() || `git switch exited with ${result.exitCode}`, retry: argv },
+          );
           repositories.refresh();
         })
         .catch((reason: unknown) => setError(describeError(reason)));
@@ -635,6 +644,46 @@ export function AppShell(): React.JSX.Element {
     [head, runCommitAction, branchHolders],
   );
 
+  const fixFailure = useCallback(
+    (fix: FailureFix) => {
+      const current = failure;
+      setFailure(undefined);
+      switch (fix) {
+        case 'stashAndRetry': {
+          if (!active || !current?.retry) return;
+          const repoId = active.id;
+          const retry = current.retry;
+          const stash = ['stash', 'push', '--include-untracked', '-m', `Git Tree: before git ${retry.join(' ')}`];
+          void rpc
+            .request('commands/run', { repoId, argv: stash })
+            .then((stashed) => {
+              if (stashed.exitCode !== 0) throw new Error((stashed.stderr || stashed.stdout).trim());
+              return rpc.request('commands/run', { repoId, argv: retry });
+            })
+            .then((result) => {
+              if (result.exitCode !== 0) setFailure({ text: (result.stderr || result.stdout).trim() });
+              repositories.refresh();
+            })
+            .catch((reason: unknown) => setError(reason instanceof Error ? reason.message : describeError(reason)));
+          return;
+        }
+        case 'reviewChanges':
+          selectUncommitted();
+          return;
+        case 'pull':
+          runAction('pull');
+          return;
+        case 'pushSetUpstream':
+          runAction('push', { setUpstream: true });
+          return;
+        case 'openLog':
+          setLogOpen(true);
+          return;
+      }
+    },
+    [failure, active, repositories, setError, selectUncommitted, runAction],
+  );
+
   const closeCommitPop = useCallback(() => setCommitPop(undefined), []);
 
   const openCommitDetails = useCallback((commit: Commit, at: PointerSpot) => setCommitPop({ commit, at }), []);
@@ -668,6 +717,7 @@ export function AppShell(): React.JSX.Element {
    */
   const dismiss = useCallback(() => {
     if (commitPop) return setCommitPop(undefined);
+    if (failure) return setFailure(undefined);
     if (teaching) return setTeaching(undefined);
     // Shortcuts before settings: settings can open it, and it covers it.
     if (shortcutsOpen) return setShortcutsOpen(false);
@@ -678,7 +728,7 @@ export function AppShell(): React.JSX.Element {
     if (settingsOpen) return setSettingsOpen(false);
     if (search.query) return setSearch((current) => ({ ...current, query: '' }));
     if (logOpen) return setLogOpen(false);
-  }, [commitPop, teaching, shortcutsOpen, settingsOpen, pending, search.query, logOpen, branchHeld, removeWorktree, createWorktree]);
+  }, [commitPop, failure, teaching, shortcutsOpen, settingsOpen, pending, search.query, logOpen, branchHeld, removeWorktree, createWorktree]);
 
   useKeyboard({
     'help.shortcuts': () => setShortcutsOpen(true),
@@ -745,12 +795,14 @@ export function AppShell(): React.JSX.Element {
         onSearch={setSearch}
       />
 
-      {error && (
-        <div className="gt-error" role="alert">
-          <strong>Git reported a problem</strong>
-          {/* Verbatim: for a failing hook this output is the whole diagnostic. */}
-          <pre>{error}</pre>
-        </div>
+      {failure && (
+        <FailureCard
+          key={failure.text}
+          failure={failure}
+          onFix={fixFailure}
+          onCopy={(text) => copyText(text, 'Copied git’s message')}
+          onDismiss={() => setFailure(undefined)}
+        />
       )}
 
       <SplitPane
