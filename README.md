@@ -12,15 +12,32 @@ Git Tree is **free and open source**. If you find it useful, [buying a coffee](h
 
 ---
 
-## 🆕 New in 0.12 — Act on Any Commit
+## 🆕 New in 0.13 — Fewer Clicks, Clearer Errors
+
+- **Stage / Unstage buttons:** every section has **Stage All** or **Unstage All**, and the file under
+  your pointer (or every selected file) has its own **Stage** or **Unstage** button, beside the
+  checkboxes.
+- **Errors you can act on:** when git refuses something, a small card floats over the panel, names the
+  problem in a line, and offers the fix — **Stash & Retry** when uncommitted work blocks a checkout,
+  **Pull** for a rejected push, **Push and Set Upstream** for a new branch — with **Copy** for git's
+  own message.
+- **Pull requests from new branches:** a source branch that isn't on the remote yet is pushed first
+  (**Push & Create**), so GitHub never answers "head invalid".
+- **Sheets close when done:** a toolbar command that succeeds closes its sheet; a failure keeps it
+  open with git's output.
+- **A Git Tree button in the status bar** opens the panel from anywhere.
+- **Everything follows Git Tree's theme**, including scrollbars, checkboxes, dropdowns and code text,
+  even when VS Code uses a different one.
+
+## New in 0.12 — Act on Any Commit
 
 - **Double-click a commit** to check out its branch. A commit with only a remote branch, or no
   branch, opens the checkout sheet first, so you read the command before you land on a new branch
   or a detached HEAD.
-- **Right-click a commit** for its details and every action in one panel: parents, author and date,
-  committer and commit date, and the full message, beside Check Out, Merge, Rebase, New Branch,
-  New Tag, Cherry-pick, Reverse Commit, Reset (soft / mixed / hard), Archive, Create Patch, and
-  Copy SHA. Each action shows its exact git command before it runs.
+- **Right-click a commit** for every action: Check Out, Merge, Rebase, New Branch, New Tag,
+  Cherry-pick, Reverse Commit, Reset (soft / mixed / hard), Archive, Create Patch, and Copy SHA. Each
+  shows its exact git command before it runs. **Show Details**, at the top of the menu, opens the
+  commit's parents, author and date, committer and commit date, and full message beside it.
 - **Click a commit's dot** in the graph to see the same details on their own.
 
 ![Right-click a commit: its actions beside its parents, author, committer, dates and message](./media/screenshots/21-commit-menu.png)
@@ -53,7 +70,7 @@ Git Tree is **free and open source**. If you find it useful, [buying a coffee](h
 - **Checkbox staging** — Staged Changes, Changes and Untracked Changes sections, a stage checkbox and
   file-type icon on every file (§3)
 - **Panes that fit their text** — branch names, commit messages and file names show in full without
-  dragging a divider, and every pane has a title bar for its pin and collapse buttons (§1)
+  dragging a divider, and every pane has a title bar with a ◂ button to hide it (§1)
 - **A redrawn commit graph** — messages sit right beside their nodes, glassy nodes, merge badges,
   branch pills in their lane's colour (§2)
 - **Browser sign-in for Bitbucket and GitLab** pull requests (§11)
@@ -76,7 +93,8 @@ Unlike VS Code's flat file list, Git Tree shows your branches, commit graph, and
 - **Panes fit their text:** Branches, Git Tree and Files open wide enough to show branch names,
   commit messages and file names in full, with no gap between panes — no dragging needed.
   Double-click a divider to fit the pane on its left again
-- **Title bars:** every pane is labelled, with its pin and collapse buttons in the title bar
+- **Title bars:** every pane is labelled, with a ◂ button in its title bar to hide it; click its rail to
+  bring it back
 - **Files and Code panes:** the file list and the diff are separate panes, each resizable and
   collapsible — four panes in all: Branches | Git Tree | Files | Code
 - **Focus diff:** Click a file (in Changes or in a commit) and the Branches and Git Tree panes fold to
@@ -105,7 +123,7 @@ Real lane assignment across merges, decorations for HEAD/tags/upstream, author a
 
 ### 3. **Line-Level Staging** — Stage Exactly What You Mean
 
-Pick individual lines, hunks, or whole files. The Files pane has **Staged Changes**, **Changes** and **Untracked Changes** sections; every file has a stage checkbox and a file-type icon, and every section a tick-all checkbox and a file count.
+Pick individual lines, hunks, or whole files. The Files pane has **Staged Changes**, **Changes** and **Untracked Changes** sections; every file has a stage checkbox and a file-type icon, and every section a tick-all checkbox and a file count. Prefer buttons? Each section has **Stage All** / **Unstage All**, and the file under your pointer — or every selected file — has a **Stage** / **Unstage** button.
 
 ![Changes view: Staged Changes, Changes and Untracked Changes sections with checkboxes, beside the staged diff](./media/screenshots/03-line-level-staging.png)
 
@@ -246,7 +264,8 @@ secret storage and refresh automatically; a rejected one is forgotten so you're 
 ![A pull request: the sidebar's Pull Requests section, the PR's reviewers, checks, linked issue and actions, and its overall diff](./media/screenshots/19-pull-requests.png)
 
 - List open, completed, or abandoned pull requests with a status filter
-- Create a PR against any branch, mark it draft, write the description
+- Create a PR against any branch, mark it draft, write the description — a branch that isn't on the
+  remote yet is pushed first (**Push & Create**)
 - Vote — approve, approve with suggestions, reject, or (Azure DevOps only) wait for author
 - Complete with squash and delete-source-branch options; Azure DevOps adds a policy-bypass override
 - Overall diff and per-commit diff, reusing the same diff viewer as everywhere else in Git Tree
@@ -411,6 +430,9 @@ Press `f` for fetch, review incoming changes in the graph, press `Shift+P` to pu
 - ✓ Repository discovery (nested, submodules, worktrees, at any workspace depth)
 - ✓ Real commit graph with correct merge lane assignment
 - ✓ Status and staging (file / hunk / individual line)
+- ✓ Stage All / Unstage All per section, and Stage / Unstage buttons on files
+- ✓ Commit actions from the graph: double-click to check out; right-click to merge, rebase, cherry-pick, revert, reset, tag, branch, archive, create a patch, or copy the SHA, with the commit's details
+- ✓ Git errors as a card with fixes (Stash & Retry, Review Changes, Pull, Push and Set Upstream) and Copy
 - ✓ Commit (amend, sign-off, GPG/SSH signing, co-authors, templates), Commit & Push, skip hooks
 - ✓ AI-drafted commit messages via VS Code's language models (e.g. GitHub Copilot)
 - ✓ Commit / Push / Stash tabs in the Files pane

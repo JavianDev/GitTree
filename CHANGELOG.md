@@ -6,6 +6,11 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- The README covers 0.13 — Stage / Unstage buttons, the error card, Push & Create for pull requests,
+  Show Details — and no longer mentions the pin buttons that were removed.
+
 ### Fixed
 
 - **New Pull Request from a branch that was never pushed** failed with GitHub's
