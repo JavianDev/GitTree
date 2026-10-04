@@ -21,6 +21,9 @@ Git Tree is **free and open source**. If you find it useful, [buying a coffee](h
   problem in a line, and offers the fix — **Stash & Retry** when uncommitted work blocks a checkout,
   **Pull** for a rejected push, **Push and Set Upstream** for a new branch — with **Copy** for git's
   own message.
+
+  ![A blocked checkout: the card names the problem and offers Stash & Retry, Review Changes, Copy and the Command Log](./media/screenshots/22-error-card.png)
+
 - **Pull requests from new branches:** a source branch that isn't on the remote yet is pushed first
   (**Push & Create**), so GitHub never answers "head invalid".
 - **Sheets close when done:** a toolbar command that succeeds closes its sheet; a failure keeps it
@@ -40,7 +43,7 @@ Git Tree is **free and open source**. If you find it useful, [buying a coffee](h
   commit's parents, author and date, committer and commit date, and full message beside it.
 - **Click a commit's dot** in the graph to see the same details on their own.
 
-![Right-click a commit: its actions beside its parents, author, committer, dates and message](./media/screenshots/21-commit-menu.png)
+![Right-click a commit: its actions, with Show Details opening its parents, author, committer, dates and message beside them](./media/screenshots/21-commit-menu.png)
 
 ## New in 0.11 — Worktrees
 

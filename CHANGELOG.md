@@ -8,6 +8,11 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Every README screenshot retaken from the current UI (hide buttons, Stage / Unstage buttons, the
+  commit menu with Show Details, themed scrollbars), and a new one of the error card.
+
+### Changed
+
 - The README covers 0.13 — Stage / Unstage buttons, the error card, Push & Create for pull requests,
   Show Details — and no longer mentions the pin buttons that were removed.
 
