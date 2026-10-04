@@ -94,7 +94,12 @@ export function CommandSheet({
     try {
       const outcome = await rpc.request('commands/run', { repoId, argv });
       setResult(outcome);
-      if (outcome.exitCode === 0) onApplied?.();
+      if (outcome.exitCode === 0) {
+        onApplied?.();
+        // Done is done: the sheet closes and the views show the result. A
+        // failure keeps it open, because git's output is the next step.
+        onClose();
+      }
     } catch (error) {
       setResult({
         stdout: '',

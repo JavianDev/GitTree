@@ -1518,8 +1518,13 @@
 }
 
 .gt-preview-flag code {
+  align-self: start;
   font-family: var(--gt-font-mono);
   color: var(--gt-accent);
+  /* Explicit, so VS Code's own preformatted colours never show through. */
+  background: color-mix(in srgb, var(--gt-accent) 10%, transparent);
+  padding: 1px 6px;
+  border-radius: 4px;
 }
 
 .gt-preview-explain {

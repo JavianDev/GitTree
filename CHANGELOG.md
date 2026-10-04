@@ -8,6 +8,13 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **Toolbar sheets close once their command succeeds** — New Branch, Fetch, Pull, Push, Merge, Stash,
+  Tag and the rest. A failure keeps the sheet open with git's output.
+- The flag chips in the toolbar's hover preview (`--set-upstream`, …) use Git Tree's theme colours
+  instead of VS Code's dark code background.
+
+### Changed
+
 - **Right-clicking a commit shows its actions first**, with **Show Details** at the top: it opens the
   commit's details beside the menu, which stays open. Clicking a commit's dot still shows the details
   alone.
