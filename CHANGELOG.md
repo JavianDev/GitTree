@@ -6,6 +6,14 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **New Pull Request from a branch that was never pushed** failed with GitHub's
+  `422 Validation Failed … "field":"head","code":"invalid"`. The sheet now notices a source branch
+  that is not on the remote, or has commits that are not pushed, and offers **Push & Create**: it runs
+  the `git push --set-upstream` it shows, then opens the pull request. If the host still cannot find
+  the branch, the error says so in words.
+
 ### Changed
 
 - **Toolbar sheets close once their command succeeds** — New Branch, Fetch, Pull, Push, Merge, Stash,

@@ -177,3 +177,17 @@
   flex: 1 1 auto;
   resize: vertical;
 }
+
+.gt-pr-push-first {
+  align-items: flex-start;
+}
+
+.gt-pr-push-command {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--gt-font-mono);
+  font-size: var(--gt-text-caption);
+  color: var(--gt-label-secondary);
+  background: none;
+  overflow-wrap: anywhere;
+}
