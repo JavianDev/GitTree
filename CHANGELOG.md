@@ -6,6 +6,14 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **New Pull Request's Create button did nothing on `main`:** the target defaulted to the same branch
+  as the source, which disables it, and nothing said why. The target now defaults to a different
+  branch, and a line beside the button says what is missing — a branch, a title, a source different
+  from the target, or commits the target doesn't have yet.
+- GitHub's "No commits between …" is explained in words.
+
 ### Changed
 
 - Every README screenshot retaken from the current UI (hide buttons, Stage / Unstage buttons, the

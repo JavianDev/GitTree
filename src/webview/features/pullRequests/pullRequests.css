@@ -191,3 +191,11 @@
   background: none;
   overflow-wrap: anywhere;
 }
+
+.gt-pr-blocked {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-right: var(--gt-space-2);
+  font-size: var(--gt-text-caption);
+  color: var(--gt-label-secondary);
+}

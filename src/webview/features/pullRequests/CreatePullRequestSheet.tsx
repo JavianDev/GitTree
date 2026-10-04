@@ -39,6 +39,20 @@ export function CreatePullRequestSheet({
   const unpushed = sourceRef !== undefined && !unpublished ? (sourceRef.ahead ?? 0) : 0;
   const needsPush = unpublished || unpushed > 0;
   const pushArgv = ['push', ...(unpublished ? ['--set-upstream'] : []), remote, sourceBranch];
+  const targetRef = branches.find((ref) => ref.name === targetBranch);
+
+  /** Why Create cannot run yet, said beside the button rather than left to guess. */
+  const blocked = !sourceBranch
+    ? 'Choose the branch with your changes.'
+    : !targetBranch
+      ? 'Choose the branch to merge into.'
+      : sourceBranch === targetBranch
+        ? 'Source and target are the same branch — choose the branch with your changes as the source.'
+        : sourceRef && targetRef && sourceRef.oid === targetRef.oid
+          ? `${sourceBranch} has no commits that ${targetBranch} doesn’t already have — commit something on it first.`
+          : !title.trim()
+            ? 'Add a title.'
+            : undefined;
 
   useEffect(() => {
     void rpc
@@ -48,7 +62,9 @@ export function CreatePullRequestSheet({
         setBranches(local);
 
         if (!targetBranch) {
-          const fallback = DEFAULT_TARGETS.find((name) => local.some((ref) => ref.name === name));
+          // Never the source itself: on main, "main → main" left Create disabled
+          // with nothing on screen saying why.
+          const fallback = DEFAULT_TARGETS.find((name) => name !== currentBranch && local.some((ref) => ref.name === name));
           if (fallback) setTargetBranch(fallback);
         }
       })
@@ -58,7 +74,7 @@ export function CreatePullRequestSheet({
   }, [repoId]);
 
   const create = async () => {
-    if (!sourceBranch || !targetBranch || !title.trim() || running) return;
+    if (blocked || running) return;
     setRunning(true);
     setError(undefined);
 
@@ -86,7 +102,11 @@ ${(pushed.stderr || pushed.stdout).trim()}`);
       const text = caught instanceof RpcRequestError ? caught.displayText : String(caught);
       // GitHub's 422 for a head it cannot find, said plainly.
       setError(
-        /"field"\s*:\s*"head"/.test(text)
+        /No commits between/i.test(text)
+          ? `${sourceBranch} has no commits that ${targetBranch} doesn’t already have, so there is nothing to review.
+
+${text}`
+          : /"field"\s*:\s*"head"/.test(text)
           ? `${remote} has no branch named ${sourceBranch}, so there is nothing to open a pull request from. Push the branch, then try again.
 
 ${text}`
@@ -167,6 +187,7 @@ ${text}`
         )}
 
         <div className="gt-sheet-actions">
+          {blocked && <span className="gt-pr-blocked">{blocked}</span>}
           <button type="button" className="gt-button" onClick={onClose}>
             Cancel
           </button>
@@ -174,7 +195,8 @@ ${text}`
             type="button"
             className="gt-button"
             data-variant="primary"
-            disabled={running || !sourceBranch || !targetBranch || !title.trim() || sourceBranch === targetBranch}
+            disabled={running || blocked !== undefined}
+            title={blocked}
             onClick={() => void create()}
           >
             {running ? 'Creating…' : needsPush && pushFirst ? 'Push & Create' : 'Create'}
