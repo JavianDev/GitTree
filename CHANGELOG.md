@@ -6,6 +6,14 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **No more hover auto-hide.** Collapsed panes are plain rails again that open when you click them,
+  as in 0.10.1; a pane no longer pops open over its neighbour while the pointer passes over it.
+- **Restore panels** now sits at the left edge of the Files pane, beside where the hidden panes were.
+- The commit graph starts a few pixels in from the edge, so the leftmost line no longer runs into the
+  selected row's accent bar on narrow screens.
+
 ### Added — act on any commit in the Git Tree pane
 
 - **Double-click a commit row** to check out its branch, as double-clicking it in the sidebar does.

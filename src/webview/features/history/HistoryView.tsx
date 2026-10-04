@@ -7,6 +7,11 @@ import { laneCenter, laneWidthFor, rowIndent } from './graphGeometry';
 import { LogStream } from './logStream';
 
 const ROW_HEIGHT = 24;
+/**
+ * Space between the list's left edge and the first lane, so the leftmost rail
+ * never touches the selected row's accent bar.
+ */
+export const GRAPH_INSET = 5;
 /** Rows rendered beyond the viewport, so fast scrolling does not show gaps. */
 const OVERSCAN = 12;
 
@@ -415,10 +420,10 @@ export function HistoryView({
                   <CommitRow
                     key={commit.hash}
                     commit={commit}
-                    indent={rowIndent(row, laneWidth)}
+                    indent={rowIndent(row, laneWidth) + GRAPH_INSET}
                     rail={row?.color ?? 0}
                     selected={commit.hash === selectedHash}
-                    nodeX={laneCenter(row?.lane ?? 0, laneWidth)}
+                    nodeX={GRAPH_INSET + laneCenter(row?.lane ?? 0, laneWidth)}
                     nodeReach={Math.max(7, Math.min(laneWidth / 2, 9))}
                     onSelect={onSelect}
                     {...(onCommitActivate ? { onActivate: onCommitActivate } : {})}

@@ -764,8 +764,6 @@ export function AppShell(): React.JSX.Element {
         onMeasure={layout.fit}
         fitMax={PANE_FIT_MAX}
         {...(active ? { fitKey: active.id } : {})}
-        pinned={layout.pinned}
-        onTogglePin={layout.togglePin}
       >
         {active ? (
           <ObjectSidebar

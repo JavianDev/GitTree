@@ -628,6 +628,8 @@ export function ReviewPane({
     >
       {mode === 'changes' && (
         <nav className="gt-review-tabs" role="tablist" aria-label="Working tree">
+          {/* At the left edge, beside where the hidden panes were. */}
+          {onRestorePanels && <RestorePanelsButton onClick={onRestorePanels} />}
           {(
             [
               ['commit', 'Commit', changedCount],
@@ -648,17 +650,6 @@ export function ReviewPane({
             </button>
           ))}
           <span className="gt-review-spacer" />
-          {onRestorePanels && (
-            <button
-              type="button"
-              className="gt-button"
-              data-size="small"
-              title="Bring back the Branches and Git Tree panels"
-              onClick={onRestorePanels}
-            >
-              ⇤ Restore panels
-            </button>
-          )}
         </nav>
       )}
 
@@ -687,6 +678,7 @@ export function ReviewPane({
         <>
           <header className="gt-review-header">
             <div className="gt-review-summary">
+              {mode === 'history' && onRestorePanels && <RestorePanelsButton onClick={onRestorePanels} />}
               <strong>{total === 1 ? '1 file' : `${total} files`}</strong>
               {(additions > 0 || deletions > 0) && (
                 <span className="gt-review-counts">
@@ -729,17 +721,6 @@ export function ReviewPane({
                     ⟳
                   </button>
                 </div>
-              )}
-              {mode === 'history' && onRestorePanels && (
-                <button
-                  type="button"
-                  className="gt-button"
-                  data-size="small"
-                  title="Bring back the Branches and Git Tree panels"
-                  onClick={onRestorePanels}
-                >
-                  ⇤ Restore panels
-                </button>
               )}
               {mode === 'history' && (
                 <span className="gt-review-progress">
@@ -1195,4 +1176,19 @@ function emptyDiffText(
 
 function describeError(error: unknown): string {
   return error instanceof RpcRequestError ? error.displayText : String(error);
+}
+
+/** Brings back the Branches and Git Tree panes that opening a file folded away. */
+function RestorePanelsButton({ onClick }: { onClick: () => void }): React.JSX.Element {
+  return (
+    <button
+      type="button"
+      className="gt-button"
+      data-size="small"
+      title="Bring back the Branches and Git Tree panels"
+      onClick={onClick}
+    >
+      ⇤ Restore panels
+    </button>
+  );
 }

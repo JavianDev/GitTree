@@ -865,7 +865,8 @@
 .gt-graph-overlay {
   position: absolute;
   top: 0;
-  left: 0;
+  /* GRAPH_INSET in HistoryView: clear of the selected row's accent bar. */
+  left: 5px;
   bottom: 0;
   z-index: 1;
   pointer-events: none;
@@ -885,7 +886,7 @@
   flex: none;
   width: 9px;
   height: 9px;
-  margin-left: 3px;
+  margin-left: 8px;
   border-radius: 50%;
   /* Dashed, because this row is not a commit — nothing here is recorded yet. */
   border: 1.5px dashed var(--gt-label-tertiary);
