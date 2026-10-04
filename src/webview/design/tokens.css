@@ -373,3 +373,14 @@ html,
     --gt-bg-inspector: #222225;
   }
 }
+
+/*
+ * VS Code's webview stylesheet gives `code`, `kbd` and `pre` the editor theme's
+ * preformatted colours — a black box inside a light Git Tree theme. Ours win.
+ */
+code,
+kbd,
+pre {
+  color: inherit;
+  background-color: transparent;
+}

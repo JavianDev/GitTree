@@ -20,6 +20,8 @@ export interface ContextMenuItem {
   shortcut?: string;
   /** A colour token (CSS value) for a leading swatch, e.g. a colour label. */
   swatch?: string;
+  /** Leave the menu open after running (an item that reveals more beside it). */
+  keepOpen?: boolean;
 }
 
 export interface ContextMenuProps {
@@ -117,7 +119,7 @@ export function MenuItems({
             onClick={() => {
               if (item.disabled !== undefined) return;
               item.run();
-              onClose();
+              if (!item.keepOpen) onClose();
             }}
           >
             {item.swatch && <span className="gt-file-menu-swatch" style={{ background: item.swatch }} aria-hidden="true" />}

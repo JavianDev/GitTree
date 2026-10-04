@@ -46,9 +46,11 @@ const SIGNATURE: Record<SignatureStatus, string> = {
 export function CommitPopover({ repoId, commit, x, y, items, onClose, onJump, onCopy }: CommitPopoverProps): React.JSX.Element {
   const [detail, setDetail] = useState<Commit | undefined>();
   const [failed, setFailed] = useState(false);
+  /** With actions, the details wait to be asked for; alone, they are the point. */
+  const [detailsOpen, setDetailsOpen] = useState(items === undefined);
   const [position, setPosition] = useState<{ left: number; top: number } | undefined>();
   const panelRef = useRef<HTMLDivElement>(null);
-  const stacked = items !== undefined && window.innerWidth < SIDE_BY_SIDE_MIN;
+  const stacked = items !== undefined && detailsOpen && window.innerWidth < SIDE_BY_SIDE_MIN;
 
   useEffect(() => {
     let cancelled = false;
@@ -76,7 +78,7 @@ export function CommitPopover({ repoId, commit, x, y, items, onClose, onJump, on
     const left = Math.max(8, Math.min(x, window.innerWidth - width - 8));
     const top = Math.max(8, Math.min(y, window.innerHeight - height - 8));
     setPosition((current) => (current && current.left === left && current.top === top ? current : { left, top }));
-  }, [x, y, detail, failed, items, stacked]);
+  }, [x, y, detail, failed, items, stacked, detailsOpen]);
 
   useEffect(() => {
     panelRef.current?.focus({ preventScroll: true });
@@ -130,10 +132,23 @@ export function CommitPopover({ repoId, commit, x, y, items, onClose, onJump, on
     >
       {items && (
         <div className="gt-commit-pop-menu" role="menu" aria-label="Commit actions">
-          <MenuItems items={items} onClose={onClose} />
+          <MenuItems
+            items={[
+              {
+                label: detailsOpen ? 'Hide Details' : 'Show Details',
+                hint: 'Parents, author, committer, dates and the full message',
+                keepOpen: true,
+                run: () => setDetailsOpen((open) => !open),
+              },
+              { label: '', separator: true, run: () => undefined },
+              ...items,
+            ]}
+            onClose={onClose}
+          />
         </div>
       )}
 
+      {detailsOpen && (
       <section className="gt-commit-card" aria-label="Commit details">
         <p className="gt-commit-card-subject">{full.subject}</p>
         {full.body && <pre className="gt-commit-card-body">{full.body}</pre>}
@@ -206,6 +221,7 @@ export function CommitPopover({ repoId, commit, x, y, items, onClose, onJump, on
 
         {failed && <p className="gt-commit-card-muted">Could not read the rest of this commit.</p>}
       </section>
+      )}
     </div>,
     document.body,
   );

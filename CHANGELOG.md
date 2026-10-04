@@ -6,6 +6,14 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **Right-clicking a commit shows its actions first**, with **Show Details** at the top: it opens the
+  commit's details beside the menu, which stays open. Clicking a commit's dot still shows the details
+  alone.
+- **The commit SHA, and any code text, follow Git Tree's theme** instead of VS Code's preformatted
+  colours, which drew a black box inside a light theme.
+
 ### Added
 
 - **Stage All / Unstage All buttons** on the Staged Changes, Changes and Untracked Changes headers,

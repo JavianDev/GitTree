@@ -110,6 +110,9 @@
 }
 
 .gt-commit-card-sha code {
+  background: none;
+  color: var(--gt-label);
+  padding: 0;
   font-family: var(--gt-font-mono);
   font-size: 11px;
   overflow-wrap: anywhere;
