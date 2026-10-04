@@ -14,8 +14,8 @@ Press `Ctrl+Shift+P` (or `Cmd+Shift+P` on macOS) and type:
 | Open Git Tree | `Ctrl+Shift+G` then `T` |
 | Refresh Repos | `Ctrl+Shift+G` then `R` |
 
-### From the Status Bar
-Click **Git Tree** in the status bar at the bottom of the window
+### From Activity Bar
+Click the **Git Tree icon** (branch) in the left sidebar
 
 ---
 
@@ -279,7 +279,7 @@ APPEARANCE:
 - Press `Ctrl+Shift+P` and type `Git Tree: Open`
 
 **Panel is empty?**
-- Click **+** in the repository tabs to add one
+- Click the repository in the Repositories view on the left
 - Or press `Ctrl+Shift+G` then `R` to refresh
 
 **Forgot a shortcut?**

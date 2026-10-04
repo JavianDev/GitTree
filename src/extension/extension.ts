@@ -3,13 +3,20 @@ import type { RepoId, RepoNode } from '@shared/model';
 import { GitTreePanel } from './panel/GitTreePanel';
 import { deliverUriCallback } from './pullRequests/oauth';
 import { RepositoryManager } from './repo/RepositoryManager';
+import { RepositoryTreeProvider } from './views/RepositoryTreeProvider';
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const manager = new RepositoryManager();
   context.subscriptions.push(manager);
 
-  // Repositories live inside the Git Tree panel, as its tabs; there is no
-  // separate sidebar list. This button is the one-click way in instead.
+  const provider = new RepositoryTreeProvider(manager);
+  const treeView = vscode.window.createTreeView('gittree.repositories', {
+    treeDataProvider: provider,
+    showCollapseAll: true,
+  });
+  context.subscriptions.push(treeView);
+
+  // A one-click way into Git Tree from anywhere, beside the activity bar icon.
   const statusItem = vscode.window.createStatusBarItem('gitTree.open', vscode.StatusBarAlignment.Left, 50);
   statusItem.name = 'Git Tree';
   statusItem.text = '$(git-branch) Git Tree';
@@ -34,6 +41,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('gitTree.refresh', async () => {
       const active = manager.active;
       if (active) await manager.refreshState(active.id);
+      provider.refresh();
     }),
 
     vscode.commands.registerCommand('gitTree.rescan', async () => {
@@ -131,6 +139,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   await manager.initialize();
   await refreshVisibleStates(manager);
+
+  const count = manager.repositories.size;
+  treeView.message = count === 0 ? 'No Git repositories found in this workspace.' : undefined;
 }
 
 export function deactivate(): void {

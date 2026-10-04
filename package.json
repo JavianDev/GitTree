@@ -36,6 +36,24 @@
     "onUri"
   ],
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "gittree",
+          "title": "Git Tree",
+          "icon": "media/gittree.svg"
+        }
+      ]
+    },
+    "views": {
+      "gittree": [
+        {
+          "id": "gittree.repositories",
+          "name": "Repositories",
+          "icon": "media/gittree.svg"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "gitTree.open",
@@ -67,10 +85,23 @@
       }
     ],
     "menus": {
-      "commandPalette": [
+      "view/title": [
+        {
+          "command": "gitTree.open",
+          "when": "view == gittree.repositories",
+          "group": "navigation@1"
+        },
+        {
+          "command": "gitTree.refresh",
+          "when": "view == gittree.repositories",
+          "group": "navigation@2"
+        }
+      ],
+      "view/item/context": [
         {
           "command": "gitTree.revealRepository",
-          "when": "false"
+          "when": "view == gittree.repositories && viewItem =~ /^repo:/",
+          "group": "inline"
         }
       ]
     },

@@ -859,7 +859,7 @@ export function AppShell(): React.JSX.Element {
           <div className="gt-empty">
             <p className="gt-empty-title">No repository open</p>
             <p className="gt-empty-detail">
-              Click + above to add a repository, or open a folder containing one.
+              Choose a repository from the Repositories view, or open a folder containing one.
             </p>
           </div>
         )}

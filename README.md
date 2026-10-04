@@ -463,9 +463,10 @@ GitTree runs **your** Git binary, so your config, credential helpers, hooks, SSH
 
 Choose any of these methods:
 
-**Method 1: Status Bar** (Easiest)
+**Method 1: Activity Bar** (Easiest)
 
-- Click **Git Tree** in the status bar at the bottom of the window
+- Click the **Git Tree icon** in the left activity bar (branch icon)
+- Or click **Git Tree** in the status bar at the bottom of the window
 - Or press `Ctrl+Shift+G` then `T` (Windows/Linux) / `Cmd+Shift+G` then `T` (macOS)
 
 **Method 2: Command Palette**
@@ -485,7 +486,7 @@ Choose any of these methods:
 ### First Time Setup
 
 1. **Open a folder** — or a parent folder holding several repositories
-2. **Open Git Tree** — the repository you are working in opens as a tab
+2. **Click a repository** in the Repositories view to open it as a tab
 3. Click the **+** button to add more repositories
 
 The panel opens with four panes: **Branches**, **Commit Graph**, **Files**, and **Code**.
