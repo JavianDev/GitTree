@@ -909,3 +909,8 @@
 .gt-row-stage:focus-visible {
   visibility: visible;
 }
+
+.gt-group-stage[data-action='discard'],
+.gt-row-stage[data-action='discard'] {
+  color: var(--gt-red);
+}

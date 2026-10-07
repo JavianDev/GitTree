@@ -8,6 +8,20 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **Discard and Remove did nothing.** Right-click **Discard Changes…**, **Remove…** and the toolbar's
+  discard-all asked through the browser's `confirm()`, which a VS Code webview silently refuses — so
+  every answer was "no". They now ask in the panel.
+- **Copy Path** in the file menu copies through VS Code, which works in every webview.
+
+### Added
+
+- **Discard buttons:** **↺ Discard** on each changed or new file (with several selected, on all of
+  them) and **↺ Discard All** on the Changes and Untracked Changes headers. Each asks first and lists
+  the files. Discarding a new file deletes it (`git clean`), and the right-click menu offers it too;
+  staged changes and ignored files are never touched.
+
+### Fixed
+
 - **New Pull Request's Create button did nothing on `main`:** the target defaulted to the same branch
   as the source, which disables it, and nothing said why. The target now defaults to a different
   branch, and a line beside the button says what is missing — a branch, a title, a source different

@@ -2008,3 +2008,25 @@ label.gt-sheet-warning {
 .gt-tab[data-color='blue'] { --tab-accent: var(--gt-blue); }
 .gt-tab[data-color='purple'] { --tab-accent: var(--gt-purple); }
 .gt-tab[data-color='pink'] { --tab-accent: var(--gt-pink); }
+
+/* In-panel confirmation (window.confirm is unavailable in a VS Code webview). */
+.gt-confirm-items {
+  margin: 0;
+  padding: var(--gt-space-2) var(--gt-space-3) var(--gt-space-2) var(--gt-space-6);
+  max-height: 180px;
+  overflow: auto;
+  border-radius: var(--gt-radius-control);
+  background: var(--gt-fill);
+  font-family: var(--gt-font-mono);
+  font-size: var(--gt-text-caption);
+  color: var(--gt-label);
+}
+
+.gt-confirm-more {
+  list-style: none;
+  color: var(--gt-label-secondary);
+}
+
+.gt-confirm {
+  width: min(460px, calc(100vw - 32px));
+}

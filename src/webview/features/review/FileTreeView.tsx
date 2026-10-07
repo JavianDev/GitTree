@@ -1,3 +1,4 @@
+import { rpc } from '../../rpc/client';
 import { useMemo, useRef, useState } from 'react';
 import type { FileChangeKind } from '@shared/model';
 import { FileIcon } from './FileIcon';
@@ -618,6 +619,22 @@ export function FileTree({
               {group.id === 'staged' ? '− Unstage' : '+ Stage'}
             </button>
           )}
+          {staging && onDiscard && (group.id === 'unstaged' || group.id === 'untracked') && file.nestedRepoId === undefined && (
+            <button
+              type="button"
+              className="gt-row-stage"
+              data-action="discard"
+              disabled={busy === true}
+              title={group.id === 'untracked' ? 'Discard — delete this new file (asks first)' : 'Discard — throw away these changes (asks first)'}
+              aria-label={`Discard ${file.path}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                onDiscard(selection.isSelected(key) ? actOn(key, group.id) : [file.path]);
+              }}
+            >
+              ↺ Discard
+            </button>
+          )}
           <LineCounts additions={node.additions} deletions={node.deletions} />
 
           {group.id === 'commit' && (
@@ -679,6 +696,18 @@ export function FileTree({
                 >
                   {group.id === 'staged' ? '− ' : '+ '}
                   {bulk.label}
+                </button>
+              )}
+              {onDiscard && (group.id === 'unstaged' || group.id === 'untracked') && group.files.length > 0 && (
+                <button
+                  type="button"
+                  className="gt-group-stage"
+                  data-action="discard"
+                  disabled={busy === true}
+                  title={group.id === 'untracked' ? 'Delete every new file in this section (asks first)' : 'Throw away every change in this section (asks first)'}
+                  onClick={() => onDiscard(group.files.map((f) => f.path))}
+                >
+                  ↺ Discard All
                 </button>
               )}
               <span className="gt-review-group-files">
@@ -793,9 +822,8 @@ function buildContextMenuItems(
   if (paths.length > 0) {
     items.push({
       label: paths.length === 1 ? 'Copy Path' : `Copy Paths`,
-      run: () => {
-        navigator.clipboard.writeText(paths.join('\n'));
-      },
+      // Through the host: the webview's own clipboard API is not reliable here.
+      run: () => void rpc.request('clipboard/write', { text: paths.join('\n'), label: paths.length === 1 ? 'Copied path' : `Copied ${paths.length} paths` }),
     });
   }
 
@@ -818,16 +846,12 @@ function buildContextMenuItems(
   }
 
   // Discard Changes
-  if (onDiscard && files.some((f) => f.unstaged && f.kind !== 'untracked')) {
+  if (onDiscard && files.some((f) => f.unstaged || f.kind === 'untracked')) {
     items.push({
-      label: 'Discard Changes…',
+      label: files.every((f) => f.kind === 'untracked') ? 'Discard (Delete)…' : 'Discard Changes…',
       destructive: true,
-      run: () => {
-        const fileList = paths.length === 1 ? `"${paths[0]}"` : `${paths.length} files`;
-        if (window.confirm(`Discard changes to ${fileList}? This cannot be undone.`)) {
-          onDiscard(paths);
-        }
-      },
+      // The pane asks before anything is thrown away.
+      run: () => onDiscard(paths.filter((p) => { const f = byPath.get(p); return f !== undefined && (f.unstaged || f.kind === 'untracked'); })),
     });
   }
 
@@ -836,12 +860,7 @@ function buildContextMenuItems(
     items.push({
       label: 'Remove…',
       destructive: true,
-      run: () => {
-        const fileList = paths.length === 1 ? `"${paths[0]}"` : `${paths.length} files`;
-        if (window.confirm(`Remove ${fileList} from disk? This cannot be undone.`)) {
-          onRemove(paths);
-        }
-      },
+      run: () => onRemove(paths),
     });
   }
 

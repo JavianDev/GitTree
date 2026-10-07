@@ -1,3 +1,4 @@
+import { askConfirm } from '../../shared/confirm';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { COMMANDS, type CommandContext, type CommandId } from '@shared/commands';
@@ -410,16 +411,44 @@ export function ReviewPane({
     [mutate, repoId],
   );
 
+  /**
+   * Every discard — a row's button, a section's Discard All, the right-click
+   * menu, the toolbar — comes through here, so each asks the same question.
+   * Staged changes are never touched; untracked files are deleted.
+   */
   const discard = useCallback(
-    (paths: readonly string[]) => {
-      void mutate(() => rpc.request('discard/files', { repoId, paths: [...paths] }));
+    async (paths: readonly string[]) => {
+      const kinds = new Map((status?.files ?? []).map((file) => [file.path, file.kind] as const));
+      const untracked = paths.filter((path) => kinds.get(path) === 'untracked');
+      const tracked = paths.filter((path) => kinds.get(path) !== 'untracked');
+      if (tracked.length === 0 && untracked.length === 0) return;
+      const parts = [
+        tracked.length > 0 ? `${tracked.length === 1 ? 'the unstaged changes to 1 file are' : `the unstaged changes to ${tracked.length} files are`} thrown away` : '',
+        untracked.length > 0 ? `${untracked.length === 1 ? '1 new file is' : `${untracked.length} new files are`} deleted` : '',
+      ].filter(Boolean);
+      const ok = await askConfirm({
+        title: paths.length === 1 ? `Discard ${paths[0]}?` : `Discard ${paths.length} files?`,
+        message: `${parts.join(', and ')[0]!.toUpperCase()}${parts.join(', and ').slice(1)}. Staged changes are kept. This cannot be undone.`,
+        items: paths,
+        confirmLabel: 'Discard',
+        destructive: true,
+      });
+      if (!ok) return;
+      void mutate(() => rpc.request('discard/files', { repoId, paths: tracked, untracked }));
     },
-    [mutate, repoId],
+    [mutate, repoId, status],
   );
 
   const remove = useCallback(
-    (paths: readonly string[]) => {
-      void mutate(() => rpc.request('files/remove', { repoId, paths: [...paths] }));
+    async (paths: readonly string[]) => {
+      const ok = await askConfirm({
+        title: paths.length === 1 ? `Remove ${paths[0]}?` : `Remove ${paths.length} files?`,
+        message: 'They are deleted from disk, and from git if they are tracked. This cannot be undone.',
+        items: paths,
+        confirmLabel: 'Remove',
+        destructive: true,
+      });
+      if (ok) void mutate(() => rpc.request('files/remove', { repoId, paths: [...paths] }));
     },
     [mutate, repoId],
   );
@@ -445,15 +474,12 @@ export function ReviewPane({
     [repoId],
   );
 
-  /** Every change to tracked files, back to the last commit. Untracked files are left alone. */
+  /** The toolbar's ↺: every unstaged change to a tracked file. Untracked files are left alone. */
   const discardAll = useCallback(() => {
     const paths = (status?.files ?? [])
       .filter((file) => file.unstaged && !file.conflicted && file.kind !== 'untracked')
       .map((file) => file.path);
-    if (paths.length === 0) return;
-    const what = paths.length === 1 ? `"${paths[0]}"` : `${paths.length} files`;
-    if (!window.confirm(`Discard all changes to ${what}? This cannot be undone. Untracked files are kept.`)) return;
-    discard(paths);
+    if (paths.length > 0) void discard(paths);
   }, [status, discard]);
 
   const resolveOurs = useCallback(

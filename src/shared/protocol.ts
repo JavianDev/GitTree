@@ -129,7 +129,11 @@ export interface Api {
   'stats/get': { params: { repoId: RepoId; staged: boolean }; result: { stats: FileStats[] } };
   'stage/files': { params: { repoId: RepoId; paths: string[] }; result: void };
   'unstage/files': { params: { repoId: RepoId; paths: string[] }; result: void };
-  'discard/files': { params: { repoId: RepoId; paths: string[] }; result: void };
+  /**
+   * Throws away unstaged changes. `paths` are tracked files, restored from the
+   * index; `untracked` are new files and folders, deleted (`git clean`).
+   */
+  'discard/files': { params: { repoId: RepoId; paths: string[]; untracked?: string[] }; result: void };
   /**
    * Resolves conflicted paths by taking one side wholesale, then marks them
    * resolved. Not a `CommandSpec` — the right git invocation differs per path

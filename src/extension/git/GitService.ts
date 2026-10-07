@@ -323,10 +323,20 @@ export class GitService {
     });
   }
 
-  async discardFiles(paths: string[], options?: GitServiceOptions): Promise<void> {
-    if (paths.length === 0) return;
+  /**
+   * Discards unstaged work: tracked files go back to their staged (or committed)
+   * version; untracked files and folders are deleted. Staged changes are kept.
+   */
+  async discardFiles(paths: string[], options?: GitServiceOptions, untracked: string[] = []): Promise<void> {
+    if (paths.length === 0 && untracked.length === 0) return;
     await this.runScheduled(options, async (signal) => {
-      await this.git.run({ cwd: this.cwd, args: ['restore', '--worktree', '--', ...paths], signal });
+      if (paths.length > 0) {
+        await this.git.run({ cwd: this.cwd, args: ['restore', '--worktree', '--', ...paths], signal });
+      }
+      if (untracked.length > 0) {
+        // -d for untracked folders; no -x, so ignored files inside them stay.
+        await this.git.run({ cwd: this.cwd, args: ['clean', '-f', '-d', '--', ...untracked], signal });
+      }
     });
   }
 
