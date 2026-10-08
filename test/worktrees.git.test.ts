@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -45,7 +45,9 @@ describe.skipIf(!hasGit())('worktrees against real git', () => {
   const find = async (dir: string) => (await listed()).find((record) => record.key === pathKey(dir));
 
   beforeAll(() => {
-    root = mkdtempSync(path.join(tmpdir(), 'gittree-wt-'));
+    // The long form: a Windows temp folder can be an 8.3 short path (RUNNER~1),
+    // while git reports every path long, and the two would never compare equal.
+    root = realpathSync.native(mkdtempSync(path.join(tmpdir(), 'gittree-wt-')));
     app = path.join(root, 'app');
     origin = path.join(root, 'origin.git');
     trees = path.join(root, 'app.worktrees');

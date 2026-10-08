@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -62,7 +62,8 @@ function initRepo(dir: string, fileName = 'README.md'): void {
 }
 
 export function makeWorkspace(): Workspace {
-  const base = mkdtempSync(path.join(tmpdir(), 'gittree-'));
+  // Long form, as git reports it — see worktrees.git.test.ts.
+  const base = realpathSync.native(mkdtempSync(path.join(tmpdir(), 'gittree-')));
   const parent = path.join(base, 'parent');
   mkdirSync(parent, { recursive: true });
 
