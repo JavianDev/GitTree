@@ -43,6 +43,8 @@ export class GitTreePanel {
 
   private readonly disposables: vscode.Disposable[] = [];
   private readonly logStreams = new Map<string, AbortController>();
+  /** Repositories with a command running, and how many. */
+  private readonly running = new Map<RepoId, number>();
   private readonly terminals = new TerminalBridge();
   private readonly prServices = new Map<RepoId, PullRequestService>();
   private readonly prProviders: PullRequestProvider[];
@@ -101,8 +103,8 @@ export class GitTreePanel {
     // session/profile lookups, and there is exactly one signed-in identity
     // per provider regardless of how many repos on that host are open.
     this.prProviders = [
-      new GitHubProvider(),
-      new AzureDevOpsProvider(),
+      new GitHubProvider(context.globalState),
+      new AzureDevOpsProvider(context.globalState),
       new GitLabProvider(context.secrets),
       new BitbucketProvider(context.secrets),
     ];
@@ -120,7 +122,13 @@ export class GitTreePanel {
       panel.webview.onDidReceiveMessage((message: WebviewMessage) => void this.receive(message)),
       panel.onDidDispose(() => this.dispose()),
       manager.onDidChangeRepositories(() => this.emitRepositories()),
-      manager.onDidChangeRepository((repoId) => this.emit('status/changed', { repoId })),
+      manager.onDidChangeRepository((repoId) => {
+        // A pull or rebase rewrites dozens of files under .git; each burst would
+        // reload the panel — and run more git — while the command is still
+        // going. The command's own refresh, when it finishes, covers them all.
+        if (this.running.has(repoId)) return;
+        this.emit('status/changed', { repoId });
+      }),
       manager.onDidChangeState((state) => this.emit('repos/stateChanged', { state })),
       { dispose: manager.journal.onDidRecord((entry) => this.emit('commands/recorded', { entry })) },
       this.terminals,
@@ -291,8 +299,13 @@ export class GitTreePanel {
     'unstage/files': async ({ repoId, paths }) =>
       this.requireService(repoId).unstageFiles(paths, { priority: 'foreground' }),
 
-    'discard/files': async ({ repoId, paths, untracked }) =>
-      this.requireService(repoId).discardFiles(paths, { priority: 'foreground' }, untracked ?? []),
+    'discard/files': async ({ repoId, paths, untracked, staged, stagedNew }) => {
+      const service = this.requireService(repoId);
+      if ((staged?.length ?? 0) > 0 || (stagedNew?.length ?? 0) > 0) {
+        await service.discardStaged(staged ?? [], stagedNew ?? [], { priority: 'foreground' });
+      }
+      await service.discardFiles(paths, { priority: 'foreground' }, untracked ?? []);
+    },
 
     'conflicts/resolve': async ({ repoId, paths, resolution }) =>
       this.requireService(repoId).resolveConflicts(paths, resolution, { priority: 'foreground' }),
@@ -328,6 +341,8 @@ export class GitTreePanel {
 
     'pullRequests/connection': async ({ repoId }) => this.requirePrService(repoId).connection(),
 
+    'pullRequests/signOut': async ({ repoId }) => this.requirePrService(repoId).signOut(),
+    'pullRequests/switchAccount': async ({ repoId }) => this.requirePrService(repoId).switchAccount(),
     'pullRequests/signIn': async ({ repoId }) => this.requirePrService(repoId).signIn(),
 
     'pullRequests/list': async ({ repoId, status }) => ({
@@ -467,6 +482,10 @@ export class GitTreePanel {
         });
     },
 
+    'log/fingerprint': async ({ repoId }) => ({
+      fingerprint: await this.requireService(repoId).historyFingerprint({ priority: 'visible' }),
+    }),
+
     'log/cancel': async ({ streamId }) => {
       this.logStreams.get(streamId)?.abort();
       this.logStreams.delete(streamId);
@@ -480,9 +499,17 @@ export class GitTreePanel {
 
     'commands/run': async ({ repoId, argv, stdin }) => {
       const service = this.requireService(repoId);
-      await this.worktrees.beforeCommand(argv);
-      const result = await service.run(argv, stdin);
-      await this.worktrees.afterCommand(repoId, argv, result.exitCode === 0);
+      this.running.set(repoId, (this.running.get(repoId) ?? 0) + 1);
+      let result: Awaited<ReturnType<typeof service.run>>;
+      try {
+        await this.worktrees.beforeCommand(argv);
+        result = await service.run(argv, stdin);
+        await this.worktrees.afterCommand(repoId, argv, result.exitCode === 0);
+      } finally {
+        const left = (this.running.get(repoId) ?? 1) - 1;
+        if (left > 0) this.running.set(repoId, left);
+        else this.running.delete(repoId);
+      }
 
       // Almost every mutation moves HEAD, the index, or the refs. Refreshing
       // here means the views update from one place rather than each caller

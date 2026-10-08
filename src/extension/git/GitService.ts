@@ -288,6 +288,20 @@ export class GitService {
     });
   }
 
+  /**
+   * HEAD, what it points at, and every ref with its commit — in a few
+   * milliseconds, against hundreds for a history walk. Saving a file or staging
+   * a change leaves it unchanged; a commit, fetch, pull, checkout or stash
+   * changes it.
+   */
+  async historyFingerprint(options?: GitServiceOptions): Promise<string> {
+    return this.runScheduled(options, async (signal) => {
+      const refs = await this.git.run({ cwd: this.cwd, args: ['show-ref', '--head'], signal, okExitCodes: [0, 1] });
+      const head = await this.git.run({ cwd: this.cwd, args: ['symbolic-ref', '-q', 'HEAD'], signal, okExitCodes: [0, 1] });
+      return `${head.stdout.trim()}\n${refs.stdout}`;
+    });
+  }
+
   async commitDetails(hash: string, options?: GitServiceOptions): Promise<Commit | undefined> {
     return this.runScheduled(options, async (signal) => {
       const result = await this.git.run({
@@ -336,6 +350,23 @@ export class GitService {
       if (untracked.length > 0) {
         // -d for untracked folders; no -x, so ignored files inside them stay.
         await this.git.run({ cwd: this.cwd, args: ['clean', '-f', '-d', '--', ...untracked], signal });
+      }
+    });
+  }
+
+  /**
+   * Discards staged work as well: `paths` go back to the last commit in both the
+   * index and the working tree; `added` (new in the index) are taken out of git
+   * and deleted, since the last commit has no version to go back to.
+   */
+  async discardStaged(paths: string[], added: string[], options?: GitServiceOptions): Promise<void> {
+    if (paths.length === 0 && added.length === 0) return;
+    await this.runScheduled(options, async (signal) => {
+      if (added.length > 0) {
+        await this.git.run({ cwd: this.cwd, args: ['rm', '-f', '--', ...added], signal });
+      }
+      if (paths.length > 0) {
+        await this.git.run({ cwd: this.cwd, args: ['restore', '--source=HEAD', '--staged', '--worktree', '--', ...paths], signal });
       }
     });
   }

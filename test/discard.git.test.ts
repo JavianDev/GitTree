@@ -65,6 +65,38 @@ describe.skipIf(!hasGit())('discard against real git', () => {
     expect(existsSync(path.join(dir, 'build/out.js'))).toBe(true); // ignored files are never cleaned
   });
 
+  it('discards staged files back to the last commit: edits, new files and renames', async () => {
+    git('reset', '-q', '--hard');
+    write('a.txt', 'a staged\n');
+    git('add', 'a.txt');
+    write('a.txt', 'a staged, then edited\n');
+    write('added.txt', 'brand new\n');
+    git('add', 'added.txt');
+    git('mv', 'b.txt', 'renamed.txt');
+
+    // The pane sends a rename's new name as new, and its old name to restore.
+    await service.discardStaged(['a.txt', 'b.txt'], ['added.txt', 'renamed.txt']);
+
+    expect(read('a.txt')).toBe('a1\n');
+    expect(read('b.txt')).toBe('b1\n');
+    expect(existsSync(path.join(dir, 'added.txt'))).toBe(false);
+    expect(existsSync(path.join(dir, 'renamed.txt'))).toBe(false);
+    expect(git('status', '--porcelain')).toBe('');
+  });
+
+  it('removes a staged file from git and from disk', async () => {
+    write('gone.txt', 'x\n');
+    git('add', 'gone.txt');
+    git('commit', '-q', '-m', 'gone');
+    write('gone.txt', 'edited and staged\n');
+    git('add', 'gone.txt');
+
+    await service.removeFiles(['gone.txt']);
+
+    expect(existsSync(path.join(dir, 'gone.txt'))).toBe(false);
+    expect(git('status', '--porcelain')).toBe('D  gone.txt');
+  });
+
   it('does nothing when given nothing', async () => {
     await expect(service.discardFiles([], undefined, [])).resolves.toBeUndefined();
   });

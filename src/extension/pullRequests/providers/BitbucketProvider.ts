@@ -71,6 +71,16 @@ export class BitbucketProvider implements PullRequestProvider {
     return client ? bitbucketSession(client, this.secrets) : undefined;
   }
 
+  async signOut(): Promise<void> {
+    await this.oauth()?.forget();
+    await this.secrets.delete(SECRET_KEY);
+  }
+
+  async switchAccount(): Promise<string | undefined> {
+    await this.signOut();
+    return this.session(true);
+  }
+
   async session(interactive: boolean): Promise<string | undefined> {
     const oauth = this.oauth();
     const oauthToken = await oauth?.accessToken();

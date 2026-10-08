@@ -133,7 +133,18 @@ export interface Api {
    * Throws away unstaged changes. `paths` are tracked files, restored from the
    * index; `untracked` are new files and folders, deleted (`git clean`).
    */
-  'discard/files': { params: { repoId: RepoId; paths: string[]; untracked?: string[] }; result: void };
+  'discard/files': {
+    params: {
+      repoId: RepoId;
+      paths: string[];
+      untracked?: string[];
+      /** Staged files to put back to the last commit, staged and unstaged edits alike. */
+      staged?: string[];
+      /** Files staged as new (added, or a rename's new name): taken out of git and deleted. */
+      stagedNew?: string[];
+    };
+    result: void;
+  };
   /**
    * Resolves conflicted paths by taking one side wholesale, then marks them
    * resolved. Not a `CommandSpec` — the right git invocation differs per path
@@ -168,6 +179,10 @@ export interface Api {
   'pullRequests/connection': { params: { repoId: RepoId }; result: PullRequestConnection };
   /** Triggers the provider's native interactive sign-in popup (or, for GitLab, the PAT prompt). */
   'pullRequests/signIn': { params: { repoId: RepoId }; result: { signedIn: boolean } };
+  /** Stops using the saved sign-in (GitLab/Bitbucket tokens are deleted). */
+  'pullRequests/signOut': { params: { repoId: RepoId }; result: void };
+  /** Signs in afresh: another GitHub/Microsoft account, or a new GitLab/Bitbucket token. */
+  'pullRequests/switchAccount': { params: { repoId: RepoId }; result: { signedIn: boolean } };
   'pullRequests/list': {
     params: { repoId: RepoId; status: PullRequestStatus };
     result: { pullRequests: PullRequestEntry[] };
@@ -253,6 +268,11 @@ export interface Api {
   /** Begins a history walk. The caller already knows the id, so nothing is returned. */
   'log/start': { params: LogRequest; result: void };
   'log/cancel': { params: { streamId: string }; result: void };
+  /**
+   * A cheap summary of HEAD, every ref and the stash. Equal fingerprints mean
+   * the history graph would come out the same, so it need not be walked again.
+   */
+  'log/fingerprint': { params: { repoId: RepoId }; result: { fingerprint: string } };
   /** Full record for one commit — body, committer, signature — loaded on selection. */
   'commit/get': { params: { repoId: RepoId; hash: string }; result: Commit };
 

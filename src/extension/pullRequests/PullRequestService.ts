@@ -75,6 +75,20 @@ export class PullRequestService {
     return { signedIn: Boolean(token) };
   }
 
+  /** Forgets (or stops using) the sign-in for this repository's provider. */
+  async signOut(): Promise<void> {
+    const detected = await this.resolve();
+    if (detected) await this.providerFor(detected.provider).signOut();
+  }
+
+  /** Signs in again with another account or a new token. */
+  async switchAccount(): Promise<{ signedIn: boolean }> {
+    const detected = await this.resolve();
+    if (!detected) return { signedIn: false };
+    const token = await this.providerFor(detected.provider).switchAccount();
+    return { signedIn: Boolean(token) };
+  }
+
   private async requireToken(): Promise<{ provider: PullRequestProvider; ref: DetectedProvider['ref']; token: string }> {
     const detected = await this.resolve();
     if (!detected) throw new Error('This repository is not hosted on a supported pull request provider.');

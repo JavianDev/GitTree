@@ -417,7 +417,36 @@ export function ReviewPane({
    * Staged changes are never touched; untracked files are deleted.
    */
   const discard = useCallback(
-    async (paths: readonly string[]) => {
+    async (paths: readonly string[], fromStaged = false) => {
+      if (fromStaged) {
+        // Back to the last commit: staged and unstaged edits both go. A file the
+        // last commit doesn't have (new, or a rename's new name) is deleted.
+        const byPath = new Map((status?.files ?? []).map((file) => [file.path, file] as const));
+        const staged: string[] = [];
+        const stagedNew: string[] = [];
+        for (const path of paths) {
+          const file = byPath.get(path);
+          if (!file) continue;
+          if (file.index === 'A') stagedNew.push(path);
+          else if ((file.index === 'R' || file.index === 'C') && file.origPath) {
+            stagedNew.push(path);
+            if (file.index === 'R') staged.push(file.origPath);
+          } else staged.push(path);
+        }
+        if (staged.length === 0 && stagedNew.length === 0) return;
+        const ok = await askConfirm({
+          title: paths.length === 1 ? `Discard ${paths[0]}?` : `Discard ${paths.length} staged files?`,
+          message:
+            'Staged and unstaged changes are thrown away and the files go back to the last commit' +
+            (stagedNew.length > 0 ? `; ${stagedNew.length === 1 ? '1 new file is' : `${stagedNew.length} new files are`} deleted` : '') +
+            '. This cannot be undone.',
+          items: paths,
+          confirmLabel: 'Discard',
+          destructive: true,
+        });
+        if (ok) void mutate(() => rpc.request('discard/files', { repoId, paths: [], staged, stagedNew }));
+        return;
+      }
       const kinds = new Map((status?.files ?? []).map((file) => [file.path, file.kind] as const));
       const untracked = paths.filter((path) => kinds.get(path) === 'untracked');
       const tracked = paths.filter((path) => kinds.get(path) !== 'untracked');

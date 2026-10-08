@@ -1,7 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PrProvider, PullRequestConnection, PullRequestEntry, PullRequestStatus } from '@shared/model';
 import { RpcRequestError, rpc } from '../../rpc/client';
 import { ContextMenu, type ContextMenuItem } from '../../shared/ContextMenu';
+import { askConfirm } from '../../shared/confirm';
+
+/** Least time between automatic reloads of the list (manual refresh is immediate). */
+const PR_AUTO_RELOAD_MS = 60_000;
 
 export interface PullRequestSectionProps {
   repoId: string;
@@ -62,6 +66,7 @@ export function PullRequestSection({
   const [collapsed, setCollapsed] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
   const [listError, setListError] = useState<string | undefined>();
+  const [accountMenu, setAccountMenu] = useState<{ x: number; y: number } | undefined>();
   const [contextMenu, setContextMenu] = useState<
     { x: number; y: number; pr: PullRequestEntry } | undefined
   >();
@@ -118,7 +123,22 @@ export function PullRequestSection({
     };
   }, [repoId, status, connection?.detected, connection?.signedIn]);
 
-  useEffect(() => loadList(), [loadList, revision]);
+  /*
+   * Each status change used to refetch the list from the host's API — a network
+   * round trip on every save and several during a pull. Automatic reloads now
+   * wait a minute since the last one; the refresh button still reloads at once.
+   */
+  const lastAuto = useRef(0);
+  const lastLoader = useRef(loadList);
+  useEffect(() => {
+    const now = Date.now();
+    // A new loader (another filter, a sign-in) always reloads; a status tick waits.
+    const sameLoader = lastLoader.current === loadList;
+    lastLoader.current = loadList;
+    if (sameLoader && now - lastAuto.current < PR_AUTO_RELOAD_MS) return;
+    lastAuto.current = now;
+    loadList();
+  }, [loadList, revision]);
 
   if (!connection || !connection.detected) return null;
 
@@ -136,6 +156,53 @@ export function PullRequestSection({
       })
       .catch(() => setSigningIn(false));
   };
+
+  /** GitLab and Bitbucket keep a token Git Tree stored; GitHub and Azure DevOps use a VS Code account. */
+  const usesToken = connection.provider === 'gitlab' || connection.provider === 'bitbucket';
+
+  const switchAccount = () => {
+    setSigningIn(true);
+    void rpc
+      .request('pullRequests/switchAccount', { repoId })
+      .then((result) => {
+        setSigningIn(false);
+        setListError(undefined);
+        setConnection((current) => (current ? { ...current, signedIn: result.signedIn } : current));
+        lastAuto.current = 0;
+        loadList();
+      })
+      .catch((error: unknown) => {
+        setSigningIn(false);
+        setListError(error instanceof RpcRequestError ? error.displayText : String(error));
+      });
+  };
+
+  const disconnect = async () => {
+    const ok = await askConfirm({
+      title: `Disconnect from ${providerLabel}?`,
+      message: usesToken
+        ? `Git Tree deletes the ${providerLabel} token it saved for pull requests. Sign in again any time.`
+        : `Git Tree stops using your ${providerLabel} account for pull requests until you sign in again. The account stays signed in to VS Code — sign it out under Accounts in VS Code's activity bar.`,
+      confirmLabel: 'Disconnect',
+      destructive: true,
+    });
+    if (!ok) return;
+    await rpc.request('pullRequests/signOut', { repoId }).catch(() => undefined);
+    setPullRequests([]);
+    setListError(undefined);
+    setConnection((current) => (current ? { ...current, signedIn: false } : current));
+  };
+
+  const accountItems: ContextMenuItem[] = [
+    { label: 'Refresh', run: () => loadList() },
+    {
+      label: usesToken ? 'Replace Token…' : 'Use a Different Account…',
+      hint: usesToken ? `Forget the saved ${providerLabel} token and enter a new one` : `Choose another ${providerLabel} account`,
+      run: switchAccount,
+    },
+    { label: '', separator: true, run: () => undefined },
+    { label: 'Disconnect…', destructive: true, run: () => void disconnect() },
+  ];
 
   return (
     <section>
@@ -187,6 +254,20 @@ export function PullRequestSection({
                 </select>
                 <button type="button" className="gt-button" data-size="small" onClick={onCreate}>
                   + New
+                </button>
+                <button
+                  type="button"
+                  className="gt-button"
+                  data-size="small"
+                  aria-label={`${providerLabel} account`}
+                  title={`${providerLabel} account: refresh, ${usesToken ? 'replace the token' : 'switch account'}, or disconnect`}
+                  disabled={signingIn}
+                  onClick={(event) => {
+                    const box = event.currentTarget.getBoundingClientRect();
+                    setAccountMenu({ x: box.left, y: box.bottom + 4 });
+                  }}
+                >
+                  ⋯
                 </button>
               </div>
 
@@ -240,6 +321,10 @@ export function PullRequestSection({
             </>
           )}
         </div>
+      )}
+
+      {accountMenu && (
+        <ContextMenu x={accountMenu.x} y={accountMenu.y} items={accountItems} onClose={() => setAccountMenu(undefined)} />
       )}
 
       {contextMenu && (

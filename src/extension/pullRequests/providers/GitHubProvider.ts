@@ -43,7 +43,32 @@ const ACCEPT = 'application/vnd.github+json';
 export class GitHubProvider implements PullRequestProvider {
   readonly id = 'github' as const;
 
+  /**
+   * VS Code owns this login and an extension cannot delete it, so a disconnect
+   * is remembered here: silent lookups return nothing until the user signs in.
+   */
+  constructor(private readonly state: vscode.Memento) {}
+
+  private get disconnectedKey(): string {
+    return `gitTree.pullRequests.disconnected.${this.id}`;
+  }
+
+  async signOut(): Promise<void> {
+    await this.state.update(this.disconnectedKey, true);
+  }
+
+  async switchAccount(): Promise<string | undefined> {
+    await this.state.update(this.disconnectedKey, false);
+    const session = await vscode.authentication.getSession('github', ['repo'], {
+      forceNewSession: { detail: 'Choose the account Git Tree should use for pull requests.' },
+      clearSessionPreference: true,
+    });
+    return session?.accessToken;
+  }
+
   async session(interactive: boolean): Promise<string | undefined> {
+    if (!interactive && this.state.get<boolean>(this.disconnectedKey)) return undefined;
+    if (interactive) await this.state.update(this.disconnectedKey, false);
     const session = await vscode.authentication.getSession('github', ['repo'], {
       createIfNone: interactive,
       silent: !interactive,

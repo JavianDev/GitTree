@@ -14,6 +14,10 @@ Git Tree is **free and open source**. If you find it useful, [buying a coffee](h
 
 ## 🆕 New in 0.13 — Fewer Clicks, Clearer Errors
 
+- **Discard anywhere:** **↺ Discard** on any file and **↺ Discard All** on every section — unstaged
+  changes, new files (deleted), and staged files (back to the last commit). Each asks first.
+- **Faster with big histories:** the graph re-walks history only when a commit, branch, tag or stash
+  actually moved, and the panel waits for a pull or push to finish instead of reloading mid-command.
 - **Stage / Unstage buttons:** every section has **Stage All** or **Unstage All**, and the file under
   your pointer (or every selected file) has its own **Stage** or **Unstage** button, beside the
   checkboxes.
@@ -267,6 +271,8 @@ secret storage and refresh automatically; a rejected one is forgotten so you're 
 ![A pull request: the sidebar's Pull Requests section, the PR's reviewers, checks, linked issue and actions, and its overall diff](./media/screenshots/19-pull-requests.png)
 
 - List open, completed, or abandoned pull requests with a status filter
+- Disconnect, or switch to another account (GitHub, Azure DevOps) or a new token (GitLab, Bitbucket),
+  from the **⋯** beside **+ New**
 - Create a PR against any branch, mark it draft, write the description — a branch that isn't on the
   remote yet is pushed first (**Push & Create**)
 - Vote — approve, approve with suggestions, reject, or (Azure DevOps only) wait for author

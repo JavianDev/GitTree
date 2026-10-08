@@ -260,7 +260,8 @@ export interface FileTreeProps {
   /** Reports a refused drop, with the reason, so it is never silent. */
   onRefuse: (message: string) => void;
   /** Right-click menu actions */
-  onDiscard?: (paths: readonly string[]) => void;
+  /** `fromStaged`: discard from Staged Changes — back to the last commit. */
+  onDiscard?: (paths: readonly string[], fromStaged?: boolean) => void;
   onRemove?: (paths: readonly string[]) => void;
   onStopTracking?: (paths: readonly string[]) => void;
   onIgnore?: (paths: readonly string[]) => void;
@@ -619,17 +620,23 @@ export function FileTree({
               {group.id === 'staged' ? '− Unstage' : '+ Stage'}
             </button>
           )}
-          {staging && onDiscard && (group.id === 'unstaged' || group.id === 'untracked') && file.nestedRepoId === undefined && (
+          {staging && onDiscard && (group.id === 'staged' || group.id === 'unstaged' || group.id === 'untracked') && file.nestedRepoId === undefined && (
             <button
               type="button"
               className="gt-row-stage"
               data-action="discard"
               disabled={busy === true}
-              title={group.id === 'untracked' ? 'Discard — delete this new file (asks first)' : 'Discard — throw away these changes (asks first)'}
+              title={
+                group.id === 'untracked'
+                  ? 'Discard — delete this new file (asks first)'
+                  : group.id === 'staged'
+                    ? 'Discard — back to the last commit, staged changes too (asks first)'
+                    : 'Discard — throw away these changes (asks first)'
+              }
               aria-label={`Discard ${file.path}`}
               onClick={(event) => {
                 event.stopPropagation();
-                onDiscard(selection.isSelected(key) ? actOn(key, group.id) : [file.path]);
+                onDiscard(selection.isSelected(key) ? actOn(key, group.id) : [file.path], group.id === 'staged');
               }}
             >
               ↺ Discard
@@ -698,14 +705,20 @@ export function FileTree({
                   {bulk.label}
                 </button>
               )}
-              {onDiscard && (group.id === 'unstaged' || group.id === 'untracked') && group.files.length > 0 && (
+              {onDiscard && (group.id === 'staged' || group.id === 'unstaged' || group.id === 'untracked') && group.files.length > 0 && (
                 <button
                   type="button"
                   className="gt-group-stage"
                   data-action="discard"
                   disabled={busy === true}
-                  title={group.id === 'untracked' ? 'Delete every new file in this section (asks first)' : 'Throw away every change in this section (asks first)'}
-                  onClick={() => onDiscard(group.files.map((f) => f.path))}
+                  title={
+                    group.id === 'untracked'
+                      ? 'Delete every new file in this section (asks first)'
+                      : group.id === 'staged'
+                        ? 'Put every staged file back to the last commit (asks first)'
+                        : 'Throw away every change in this section (asks first)'
+                  }
+                  onClick={() => onDiscard(group.files.map((f) => f.path), group.id === 'staged')}
                 >
                   ↺ Discard All
                 </button>
@@ -787,7 +800,7 @@ function buildContextMenuItems(
   actOn: (key: string, group: FileGroupId) => string[],
   onStage?: (paths: readonly string[]) => void,
   onUnstage?: (paths: readonly string[]) => void,
-  onDiscard?: (paths: readonly string[]) => void,
+  onDiscard?: (paths: readonly string[], fromStaged?: boolean) => void,
   onRemove?: (paths: readonly string[]) => void,
   onStopTracking?: (paths: readonly string[]) => void,
   onIgnore?: (paths: readonly string[]) => void,
@@ -846,7 +859,14 @@ function buildContextMenuItems(
   }
 
   // Discard Changes
-  if (onDiscard && files.some((f) => f.unstaged || f.kind === 'untracked')) {
+  if (onDiscard && group === 'staged') {
+    items.push({
+      label: 'Discard Changes (Staged Too)…',
+      destructive: true,
+      hint: 'Back to the last commit: staged and unstaged changes are thrown away',
+      run: () => onDiscard(paths, true),
+    });
+  } else if (onDiscard && files.some((f) => f.unstaged || f.kind === 'untracked')) {
     items.push({
       label: files.every((f) => f.kind === 'untracked') ? 'Discard (Delete)…' : 'Discard Changes…',
       destructive: true,

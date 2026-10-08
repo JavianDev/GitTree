@@ -6,6 +6,26 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Discard staged files too:** **↺ Discard** on Staged Changes rows, **↺ Discard All** on its header,
+  and **Discard Changes (Staged Too)…** in its right-click menu put files back to the last commit —
+  staged and unstaged edits alike. A file staged as new, or a rename's new name, is taken out of git
+  and deleted. Each asks first. **Remove…** works on staged files as well.
+- **Pull request account menu** (**⋯** beside **+ New**): Refresh, **Use a Different Account…**
+  (GitHub, Azure DevOps) or **Replace Token…** (GitLab, Bitbucket), and **Disconnect…**, which deletes
+  a saved token, or stops Git Tree using a VS Code account until you sign in again.
+
+### Changed — faster pulls and graph loading
+
+- **The graph re-walks history only when history moved.** Saving or staging used to re-walk thousands
+  of commits; a fingerprint of HEAD and every ref (`git show-ref`, a few milliseconds) now decides.
+- **No reloads while a command runs.** A pull or rebase rewrites dozens of files under `.git`, and
+  each burst reloaded the panel — running more git — mid-command. The panel now refreshes once, when
+  the command finishes.
+- **The pull request list reloads at most once a minute** on its own (it was a network call on every
+  save); the refresh in the **⋯** menu, a filter change or a sign-in reload it at once.
+
 ### Changed
 
 - **Pull no longer autostashes by default.** It runs `git pull --rebase`; **Autostash** is still in

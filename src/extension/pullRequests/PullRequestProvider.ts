@@ -53,6 +53,12 @@ export interface PullRequestProvider {
   /** Silent by default; `interactive: true` shows the provider's own sign-in UI. */
   session(interactive: boolean): Promise<string | undefined>;
 
+  /** Stops using the saved sign-in until the user signs in again. */
+  signOut(): Promise<void>;
+
+  /** Signs in afresh — another account, or a new token in place of the old one. */
+  switchAccount(): Promise<string | undefined>;
+
   list(
     ref: ProviderRepoRef,
     status: PullRequestStatus,
