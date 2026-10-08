@@ -212,7 +212,7 @@ One-click toolbar buttons for the most common operations. Each opens the command
 | Action | Keyboard | Notes |
 | --- | --- | --- |
 | Fetch | `f` | `--all` and `--prune` by default |
-| Pull | `p` | `--rebase --autostash` by default |
+| Pull | `p` | `--rebase` by default; tick **Autostash** in the sheet to shelve uncommitted work around it |
 | Push | `Shift+P` | Sets upstream on first push |
 | Branch Create | `b` | Checks out immediately |
 | Merge | `m` | `--no-ff` by default (leaves history clear) |
@@ -583,6 +583,19 @@ Here's the quick reference:
 `node_modules`, `dist`, `build`, `target`, `.venv` and similar are skipped automatically.
 
 ---
+
+## 🧪 Tested Before Every Release
+
+Every release runs the full test suite first — typechecking plus 700+ tests, including real-git tests
+of commits, pushes, worktrees, discards, cherry-picks, reverts, resets, archives and patches. The
+`vscode:prepublish` step runs `npm run verify` before building, so a failing test stops a release
+before anything is packaged. The same checks run on every push and pull request on GitHub
+(Windows and Linux).
+
+```bash
+npm run verify    # typecheck + all tests
+npm run release   # verify, then publish a patch release
+```
 
 ## 🔒 Privacy
 

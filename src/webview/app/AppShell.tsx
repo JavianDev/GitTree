@@ -41,7 +41,8 @@ import type { CommandId as KeyCommandId } from './keymap';
 import { ShortcutsSheet } from './ShortcutsSheet';
 import { SplitPane } from './SplitPane';
 import { ThemeToggle } from './ThemeToggle';
-import { Toolbar, type ToolbarAction } from './Toolbar';
+import { Toolbar } from './Toolbar';
+import { toolbarActions } from './toolbarActions';
 import { useKeyboard } from './useKeyboard';
 import { useLayout } from './useLayout';
 import { useRepositories } from './useRepositories';
@@ -399,43 +400,7 @@ export function AppShell(): React.JSX.Element {
     [selectRef, switchBranch],
   );
 
-  const actions = useMemo<Partial<Record<CommandId, ToolbarAction>>>(() => {
-    const branch = activeState?.branch;
-
-    return {
-      commit: {
-        spec: COMMANDS.commit,
-        context: {},
-        disabledReason:
-          (activeState?.counts.staged ?? 0) > 0 ? undefined : 'Stage at least one change first.',
-      },
-      fetch: { spec: COMMANDS.fetch, context: { prune: true, remote: 'origin' } },
-      pull: {
-        spec: COMMANDS.pull,
-        context: { rebase: true, autostash: true, remote: 'origin', branch: branch?.head },
-        disabledReason: branch?.upstream ? undefined : 'This branch has no upstream to pull from.',
-      },
-      push: {
-        spec: COMMANDS.push,
-        context: { remote: 'origin', branch: branch?.head, setUpstream: !branch?.upstream },
-        ...(branch && branch.ahead > 0 ? { badge: String(branch.ahead) } : {}),
-        disabledReason: branch?.detached ? 'HEAD is detached; check out a branch first.' : undefined,
-      },
-      'branch.create': { spec: COMMANDS['branch.create'], context: { checkoutAfterCreate: true } },
-      merge: { spec: COMMANDS.merge, context: {} },
-      'stash.push': {
-        spec: COMMANDS['stash.push'],
-        context: { includeUntracked: true },
-        disabledReason: pendingCount > 0 ? undefined : 'Nothing to stash — the working tree is clean.',
-      },
-      discard: {
-        spec: COMMANDS.discard,
-        context: { paths: [...selectedPaths] },
-        disabledReason: selectedPaths.length > 0 ? undefined : 'Select files in the review pane to discard.',
-      },
-      'tag.create': { spec: COMMANDS['tag.create'], context: { annotated: true } },
-    };
-  }, [activeState, pendingCount, selectedPaths]);
+  const actions = useMemo(() => toolbarActions(activeState, pendingCount, selectedPaths), [activeState, pendingCount, selectedPaths]);
 
   const runAction = useCallback((id: CommandId, extra?: Partial<CommandContext>) => {
     // Committing needs a message, which belongs with the files it describes.

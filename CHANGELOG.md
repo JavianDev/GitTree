@@ -6,6 +6,21 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **Pull no longer autostashes by default.** It runs `git pull --rebase`; **Autostash** is still in
+  the Pull sheet, unticked, for when you want uncommitted work shelved around the pull.
+- **Tests gate every release.** `vscode:prepublish` now runs `npm run verify` (typecheck and every
+  test) before building, so a failing test stops a publish before anything is packaged; `npm run
+  release` verifies before bumping the version. A GitHub Actions workflow runs the same checks on
+  every push and pull request, on Windows and Linux.
+
+### Added
+
+- Tests for the toolbar's defaults (Pull, Push, Fetch, Stash, Tag, New Branch and when each is
+  unavailable), New Pull Request's push-first and "why is Create disabled" rules, and every command in
+  the registry building an argv that survives the editable command line — 737 tests in all.
+
 ### Fixed
 
 - **Discard and Remove did nothing.** Right-click **Discard Changes…**, **Remove…** and the toolbar's

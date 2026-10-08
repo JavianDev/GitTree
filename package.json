@@ -350,7 +350,8 @@
     "test:watch": "vitest",
     "verify": "npm run typecheck && npm test",
     "prepare": "git config core.hooksPath .githooks || exit 0",
-    "vscode:prepublish": "npm run build"
+    "vscode:prepublish": "npm run verify && npm run build",
+    "release": "npm run verify && npx vsce publish patch"
   },
   "dependencies": {
     "react": "^19.1.0",

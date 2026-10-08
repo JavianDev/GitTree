@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { RefEntry } from '@shared/model';
 import { RpcRequestError, rpc } from '../../rpc/client';
+import { createPlan, defaultTarget } from './createPlan';
 
 export interface CreatePullRequestSheetProps {
   repoId: string;
@@ -8,8 +9,6 @@ export interface CreatePullRequestSheetProps {
   onClose: () => void;
   onCreated: (id: number) => void;
 }
-
-const DEFAULT_TARGETS = ['main', 'master'];
 
 /** Source/target branch pickers, title, description, draft — the create form. */
 export function CreatePullRequestSheet({
@@ -28,31 +27,7 @@ export function CreatePullRequestSheet({
   const [error, setError] = useState<string | undefined>();
   const [pushFirst, setPushFirst] = useState(true);
 
-  /*
-   * A pull request is opened between two branches *on the host*. A branch that
-   * exists only here — or whose newest commits are only here — makes the host
-   * refuse ("head invalid") or open a PR without them, so it is pushed first.
-   */
-  const sourceRef = branches.find((ref) => ref.name === sourceBranch);
-  const remote = sourceRef?.upstream && !sourceRef.gone ? sourceRef.upstream.split('/')[0]! : 'origin';
-  const unpublished = sourceRef !== undefined && (!sourceRef.upstream || sourceRef.gone === true);
-  const unpushed = sourceRef !== undefined && !unpublished ? (sourceRef.ahead ?? 0) : 0;
-  const needsPush = unpublished || unpushed > 0;
-  const pushArgv = ['push', ...(unpublished ? ['--set-upstream'] : []), remote, sourceBranch];
-  const targetRef = branches.find((ref) => ref.name === targetBranch);
-
-  /** Why Create cannot run yet, said beside the button rather than left to guess. */
-  const blocked = !sourceBranch
-    ? 'Choose the branch with your changes.'
-    : !targetBranch
-      ? 'Choose the branch to merge into.'
-      : sourceBranch === targetBranch
-        ? 'Source and target are the same branch — choose the branch with your changes as the source.'
-        : sourceRef && targetRef && sourceRef.oid === targetRef.oid
-          ? `${sourceBranch} has no commits that ${targetBranch} doesn’t already have — commit something on it first.`
-          : !title.trim()
-            ? 'Add a title.'
-            : undefined;
+  const { remote, unpublished, unpushed, needsPush, pushArgv, blocked } = createPlan(branches, sourceBranch, targetBranch, title);
 
   useEffect(() => {
     void rpc
@@ -62,9 +37,8 @@ export function CreatePullRequestSheet({
         setBranches(local);
 
         if (!targetBranch) {
-          // Never the source itself: on main, "main → main" left Create disabled
-          // with nothing on screen saying why.
-          const fallback = DEFAULT_TARGETS.find((name) => name !== currentBranch && local.some((ref) => ref.name === name));
+          // Never the source itself: "main → main" leaves Create disabled.
+          const fallback = defaultTarget(local, currentBranch);
           if (fallback) setTargetBranch(fallback);
         }
       })

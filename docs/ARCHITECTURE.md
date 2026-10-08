@@ -41,9 +41,9 @@ command that runs, so there is exactly one definition of each action —
 [`src/shared/commands.ts`](../src/shared/commands.ts) — and both sides call its `build()`:
 
 ```ts
-const argv = COMMANDS.pull.build({ rebase: true, autostash: true, remote: 'origin' });
-// webview → renders "git pull --rebase --autostash origin"
-// host    → spawns  git   pull --rebase --autostash origin
+const argv = COMMANDS.pull.build({ rebase: true, remote: 'origin' });
+// webview → renders "git pull --rebase origin"
+// host    → spawns  git   pull --rebase origin
 ```
 
 Drift isn't a bug that can be introduced, because there is no second code path to drift from.

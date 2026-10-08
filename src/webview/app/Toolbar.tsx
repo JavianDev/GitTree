@@ -30,14 +30,9 @@ const LAYOUT: Array<CommandId | null> = [
   'tag.create',
 ];
 
-export interface ToolbarAction {
-  spec: CommandSpec;
-  context: CommandContext;
-  /** Reason the action is unavailable. Present means disabled. */
-  disabledReason?: string;
-  /** Badge text, e.g. the ahead count on Push. */
-  badge?: string;
-}
+import type { ToolbarAction } from './toolbarActions';
+
+export type { ToolbarAction };
 
 export interface ToolbarProps {
   actions: Partial<Record<CommandId, ToolbarAction>>;
